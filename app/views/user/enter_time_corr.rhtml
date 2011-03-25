@@ -1,0 +1,75 @@
+<!--  Site: AssetCorrelation   Zone: My Site   Size: Leaderboard (728x90)  -->
+<script type="text/javascript"><!--
+	google_ad_client = "pub-3231194436906765";
+	/* AssetCorrelation 728x90 */
+	google_ad_slot = "6695247050";
+	google_ad_width = 728;
+	google_ad_height = 90;
+	//-->
+</script>
+<script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
+<!-- end Leaderboard ad -->
+
+<div class="details-form">
+
+<p> Correlation between any two assets (or asset classes) varies over time. This tool graphically depicts
+	the drift in correlation between assets. </p>
+
+<p> Enter two ticker symbols and the period for which you would like to calculate the correlation over time.</p>
+
+<fieldset>
+<legend> Enter 2 Ticker Symbols </legend>
+	<% form_tag :action => 'corr_time' do %>
+	  <p>
+		Tickers: <%= text_field_tag( :tickers, params[:tickers], :size => 10 )%>
+		Period : <%= select_tag(:period,
+								options_for_select([["6 Months", 183], 
+													["1 Year",   366], 
+													["2 Years",  731], 
+													["5 Years", 1826],
+													["10 Years",3652]],
+								params[:period])) %>
+								
+		<span id='ajaxWrapper'>
+			<%= render :partial=>'feedback' %>
+		</span>	
+	  </p>
+		
+	  <p align="left"><%= submit_tag "Draw Graph", :class => "submit" %></p>								
+	
+		<%= observe_field 	:tickers,
+							:frequency	=> 0.8,
+							:update		=> 'ajaxWrapper',
+							:url		=> {:action => 'feedback', :only_path => false},
+							:with		=> "'tickers=' + encodeURIComponent(value)"
+		 %>
+	
+	
+	
+	<% end %>
+</fieldset>
+
+
+<p> Note: The graph is calculated using a rolling, three month correlation window.</p>
+
+</div>
+
+<!-- Google Code for Enters Custom Portfolio Conversion Page -->
+<script language="JavaScript" type="text/javascript">
+<!--
+var google_conversion_id = 1055933402;
+var google_conversion_language = "en_US";
+var google_conversion_format = "3";
+var google_conversion_color = "ffffff";
+if (1.0) {
+  var google_conversion_value = 1.0;
+}
+var google_conversion_label = "yScqCMbvZBDah8H3Aw";
+//-->
+</script>
+<script language="JavaScript" src="http://www.googleadservices.com/pagead/conversion.js">
+</script>
+<noscript>
+<img height="1" width="1" border="0" src="http://www.googleadservices.com/pagead/conversion/1055933402/?value=1.0&amp;label=yScqCMbvZBDah8H3Aw&amp;script=0"/>
+</noscript>
+<!-- End of Google Code for Enters Custom Portfolio Conversion Page -->

@@ -1,0 +1,42 @@
+<!-- Admin Home Page -->
+
+<div id="investment-list">
+	
+	<!-- <h1>Fund II</h1> -->
+	
+	<table cellpadding="6" cellspacing="0">
+	  <tr> 
+	  	  <td><b><%= link_to 'Name', 		:action => 'list_ports', :sort_order => 'username'%></b></td>
+		  <td><b><%= link_to 'Period',		:action => 'list_ports', :sort_order => 'period'%></b></td>		  
+		  <td><b><%= link_to 'Tickers',		:action => 'list_ports', :sort_order => 'tickers'%></b></td>
+		  <td><b><%= link_to 'Return',		:action => 'list_ports', :sort_order => 'port_ret'%></b></td>
+		  <td><b><%= link_to 'Std Dev',		:action => 'list_ports', :sort_order => 'std_dev'%></b></td>
+		  <td><b><%= link_to 'Correlation',	:action => 'list_ports', :sort_order => 'intra_corr'%></b></td>		  		  		  
+		  <td><b><%= link_to 'Created', 	:action => 'list_ports', :sort_order => 'created_at'%></b></td>
+		  <td><b><%= link_to 'Updated', 	:action => 'list_ports', :sort_order => 'updated_at'%></b></td>			  		  
+
+		  
+	  </tr>
+	<% for port in @portfolios %>
+	  <tr valign="top" class="<%= cycle('list-line-odd', 'list-line-even') %>">
+		<td> 				<%= port.username		%></td>		 
+	 	<td> 				<%= port.period			%></td>
+	 	<td> 				<%= port.tickers 		%></td>
+	 	<td> 				<%= port.port_ret 		%></td>	
+	 	<td> 				<%= port.std_dev	 	%>%</td>	
+	 	<td> 				<%= port.intra_corr 	%></td>		
+	 	<td> 				<%= port.created_at 	%></td>	
+	 	<td> 				<%= port.updated_at 	%></td>
+									
+	    <td><%= link_to 'Update', :action => 'update_port', :id => port %></td>
+	    <td><%= link_to 'Edit',   :action => 'edit', :id => port %></td>
+	    <td><%= link_to 'X', { :action => 'destroy_port', :id => port }, :confirm => 'Are you sure?', :method => :post %></td>		
+	  </tr>
+	<% end %>
+
+	</table>
+</div>
+
+
+
+

@@ -1,0 +1,27 @@
+<span class="search_results" id="investment-list">
+	<table cellpadding="6" cellspacing="0">
+	  <tr> 
+	  	  <td><b>Name</b></td>
+		  <td><b>Period</b></td>		  
+		  <td><b>Tickers</b></td>
+		  <td><b>Return</b></td>
+		  <td><b>Correlation</b></td>		  		  		  
+		  <td><b>Updated</b></td>			  		  
+
+		  
+	  </tr>
+	<% for port in @portfolio %>
+	  <tr valign="top" class="<%= cycle('list-line-odd', 'list-line-even') %>">
+		<td> 				<%= port.username %></td>		 
+	 	<td> 				<%= port.period %></td>
+	 	<td> 				<%= port.tickers %></td>
+	 	<td> 				<%= port.port_ret %></td>		
+	 	<td> 				<%= port.intra_corr %></td>		
+	 	<td> 				<%= port.updated_at %></td>									
+	    <td><%= link_to 'Update', :action => 'loadcalc', :id => port %></td>
+	  </tr>
+	<% end %>
+
+	</table>
+</span>
+

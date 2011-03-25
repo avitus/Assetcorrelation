@@ -1,0 +1,91 @@
+NoMethodError (You have a nil object when you didn't expect it!
+You might have expected an instance of ActiveRecord::Base.
+The error occurred while evaluating nil.[]):
+    /app/models/correlation_matrix.rb:496:in `quote_align'
+
+---
+
+Processing ApplicationController#index (for 75.219.88.146 at 2009-04-26 20:29:56) [GET]
+  Session ID: 846ab1a1ceb44d48685545c8e72491ec
+  Parameters: {}
+
+
+ActionController::RoutingError (No route matches "/user/favicon.gif" with {:method=>:get}):
+    /usr/lib/ruby/gems/1.8/gems/actionpack-2.1.1/lib/action_controller/routing/recognition_optimisation.rb:67:in `recognize_path'
+
+Processing ApplicationController#index (for 70.217.214.149 at 2009-04-27 12:46:35) [GET]
+  Session ID: 7a3fa1c3d7cb94d13edd3f2736c6d03f
+  Parameters: {}
+
+
+ActionController::RoutingError (No route matches "/user/favicon.ico" with {:method=>:get}):
+
+---
+
+Processing ChartController#load_ef (for 130.91.147.108 at 2009-04-27 12:28:12) [GET]
+  Session ID: 46d5726aae093d2f7eb35c288fc9c20b
+  Parameters: {"action"=>"load_ef", "controller"=>"chart"}
+
+
+NoMethodError (You have a nil object when you didn't expect it!
+The error occurred while evaluating nil.<):
+    /app/controllers/chart_controller.rb:51:in `load_ef'
+    /usr/lib/ruby/gems/1.8/gems/actionpack-2.1.1/lib/action_controller/base.rb:1166:in `send'
+
+---
+
+Processing UserController#correlations (for 209.162.32.130 at 2009-04-27 18:37:39) [GET]
+  Session ID: 935ce7efc3d6257a073a147996341c80
+  Parameters: {"format"=>"ico", "action"=>"correlations", "id"=>"favicon", "controller"=>"user"}
+
+
+Errno::EDOM (Numerical argument out of domain - sqrt):
+    /app/models/correlation_matrix.rb:426:in `sqrt'
+    /app/models/correlation_matrix.rb:426:in `standard_deviation'
+
+---
+
+Processing ApplicationController#index (for 89.122.29.33 at 2009-04-29 13:39:27) [GET]
+  Session ID: 252735fa64f992e052871b2a8856636d
+  Parameters: {}
+
+
+ActionController::RoutingError (No route matches "/\"" with {:method=>:get}):
+    /usr/lib/ruby/gems/1.8/gems/actionpack-2.1.1/lib/action_controller/routing/recognition_optimisation.rb:67:in `recognize_path'
+
+---
+
+Processing AdminController#index (for 66.201.43.197 at 2009-05-02 10:37:20) [GET]
+  Session ID: 5a23f712170366555b1a6d70b3e36487
+  Parameters: {"action"=>"index", "controller"=>"admin"}
+
+
+ArgumentError (undefined class/module Correlation_matrix):
+    /usr/lib/ruby/1.8/pstore.rb:354:in `load'
+    /usr/lib/ruby/1.8/pstore.rb:354:in `load'
+    /usr/lib/ruby/1.8/pstore.rb:310:in `transaction'
+
+
+---
+
+Errno::ETIMEDOUT (Connection timed out - connect(2)):
+    /usr/lib/ruby/1.8/net/http.rb:560:in `initialize'
+    /usr/lib/ruby/1.8/net/http.rb:560:in `open'
+    /usr/lib/ruby/1.8/net/http.rb:560:in `connect'
+    /usr/lib/ruby/1.8/timeout.rb:48:in `timeout'
+    /usr/lib/ruby/1.8/timeout.rb:76:in `timeout'
+    /usr/lib/ruby/1.8/net/http.rb:560:in `connect'
+    /usr/lib/ruby/1.8/net/http.rb:553:in `do_start'
+    /usr/lib/ruby/1.8/net/http.rb:542:in `start'
+    /usr/lib/ruby/1.8/net/http.rb:440:in `start'
+    /home/andyvitus/.gems/gems/yahoofinance-1.2.2/lib/yahoofinance.rb:409:in `retrieve_raw_historical_quotes'
+    /home/andyvitus/.gems/gems/yahoofinance-1.2.2/lib/yahoofinance.rb:451:in `get_historical_quotes'
+    /home/andyvitus/.gems/gems/yahoofinance-1.2.2/lib/yahoofinance.rb:484:in `get_historical_quotes_days'
+    /app/controllers/application.rb:110:in `ticker_exists'
+    /app/controllers/application.rb:86:in `invalid_tickers'
+    /app/controllers/application.rb:86:in `each'
+    /app/controllers/application.rb:86:in `invalid_tickers'
+    /app/controllers/admin_controller.rb:242:in `get_port_current'
+    /app/controllers/admin_controller.rb:55:in `update_all'
+    /app/controllers/admin_controller.rb:46:in `each'
+    /app/controllers/admin_controller.rb:46:in `update_all'

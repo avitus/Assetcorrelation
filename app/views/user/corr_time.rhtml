@@ -1,0 +1,54 @@
+<head>
+	<title>Correlation Over Time</title>
+</head>
+
+<!--  Rubicon Project tag -->
+<!--  Site: AssetCorrelation   Zone: My Site   Size: Leaderboard (728x90)  -->
+<script language="JavaScript" type="text/javascript">
+var cb = Math.random();
+var d = document;
+d.write('<script language="JavaScript" type="text/javascript"');
+d.write('src="http://optimized-by.rubiconproject.com/a/7117/11477/19069-2.js?cb='+cb+'">');
+d.write('<\/scr'+'ipt>');
+</script>
+<!-- end Rubicon Project tag -->
+
+<div id="investment-list">
+
+  <h1>Correlation Over Time</h1>
+  
+	<div>
+     <%= ziya_chart load_chart_url, :size => "1000x600" -%>
+	</div>
+
+</div>
+
+<div float="left">
+  <table cellpadding="3" cellspacing="1" border="0">
+  	<tr>
+  		<td>Asset 1 - </td>
+		<td><%=@tickers[0]%></td>
+		<td>: <%=@company_names[0]%></td>
+  	</tr>
+	<tr>
+		<td>Asset 2 - </td>
+		<td><%=@tickers[1]%></td>		
+		<td>: <%=@company_names[1]%></td>
+	</tr>
+	<tr>
+		<td>Start Date</td>
+		<td></td>		
+		<td><%=@x.start_date%></td>
+	</tr>
+	<tr>
+		<td>End Date</td>
+		<td></td>		
+		<td><%=@x.end_date%></td>
+	</tr>	
+	<tr>
+		<td>Period</td>
+		<td></td>		
+		<td><%=@period%> days</td>
+	</tr>	
+  </table>
+</div>  

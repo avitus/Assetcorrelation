@@ -1,0 +1,78 @@
+<div class="details-form">
+
+<p> Enter a portfolio of up to 16 ticker symbols (separated by a space) and the period 
+    for which you would like to calculate the correlation matrix. Larger portfolios will
+	require a minute of patience while the correlation matrix is calculated.</p>
+	
+<p> If you want to calculate correlations for longer periods,
+	please ensure that the tickers you are requesting have data for that length of time.
+	If one of the assets in the portfolio has insufficient trading history, the period will
+	be shortened accordingly.</p>
+
+<%= error_messages_for 'portfolio' %>
+
+<fieldset>
+	<legend> Enter a custom portfolio </legend>
+	<% form_for :portfolio, :url => { :action => :save_port } do |form| %>
+
+		<p>
+	  		<label for="username">Portfolio Name:</label>
+			<%= form.text_field :username, :size => 20 %>
+		</p>
+		
+		<p>
+	  		<label for="tickers">Tickers:</label>
+			<%= form.text_field :tickers, :size => 60 %>
+			<span id='ajaxWrapper'>
+				<%= render :partial=>'feedback' %>
+			</span>	  
+		</p>
+		
+		<p>
+	  		<label for="investment_period">Period:</label>
+			<%= form.select(:period,
+							   [["1 Month",    31],
+								["3 Months",   91],
+								["6 Months",  183], 
+								["1 Year",    366], 
+								["2 Years",   731], 
+								["5 Years",  1826],
+								["10 Years", 3652],
+								["20 Years", 7304]]) %>
+		</p>
+		
+		<br>
+ 	  	  	  	  	  	  	  
+	  <%= submit_tag "Save Portfolio", :class => "submit" %>	  	  
+	  
+	  <%= observe_field :portfolio_tickers,
+						:frequency	=> 0.8,
+						:update		=> 'ajaxWrapper',
+						:url		=> {:action => 'feedback', :only_path => false},
+						:with		=> "'tickers=' + encodeURIComponent(value)"
+	   %>
+  
+	<% end %>	  
+</fieldset>
+
+</div>
+
+<!-- Google Code for Enters Custom Portfolio Conversion Page -->
+<script language="JavaScript" type="text/javascript">
+<!--
+var google_conversion_id = 1055933402;
+var google_conversion_language = "en_US";
+var google_conversion_format = "3";
+var google_conversion_color = "ffffff";
+if (1.0) {
+  var google_conversion_value = 1.0;
+}
+var google_conversion_label = "yScqCMbvZBDah8H3Aw";
+//-->
+</script>
+<script language="JavaScript" src="http://www.googleadservices.com/pagead/conversion.js">
+</script>
+<noscript>
+<img height="1" width="1" border="0" src="http://www.googleadservices.com/pagead/conversion/1055933402/?value=1.0&amp;label=yScqCMbvZBDah8H3Aw&amp;script=0"/>
+</noscript>
+<!-- End of Google Code for Enters Custom Portfolio Conversion Page -->

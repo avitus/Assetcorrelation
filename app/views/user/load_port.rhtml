@@ -1,0 +1,30 @@
+<div class="details-form">
+	
+	
+	<fieldset>
+		<legend> Enter Portfolio Name</legend>
+			<% form_tag('javascript:void(0)') do %>
+			  <p>
+				Portfolio Name: <%= text_field_tag( :search, params[:search], :size => 20 )%>	
+			  </p>
+			  							
+			<% end %>	
+			
+
+		
+	</fieldset>
+				
+	<%= observe_field 	:search,
+						:frequency	=> 0.8,
+						:update		=> 'search_results',
+						:url		=> {:action => 'search_ports', :only_path => false},
+						:with		=> "'search=' + encodeURIComponent(value)"
+	%>
+</div>			
+
+
+<br>
+
+<div id='search_results'>
+	<%= render :partial=>'search_results' %>
+</div>

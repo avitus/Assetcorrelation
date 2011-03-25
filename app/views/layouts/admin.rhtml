@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+			
+<html xmlns="http://www.w3.org/1999/xhtml">
+	
+	<head>
+		<meta name="verify-v1" content="swkiVh2AG5XZ8mZC2g3L8h/Ib8TlWwdltzbVfZpd3ag=" />
+		<meta name="msvalidate.01" content="CF09FFE3B3A14B6EA670C040CB03B375" />
+		<meta name="y_key" content="50574df83a74bfd5" > 
+		  
+		<link rel="shortcut icon" href="/images/favicon.ico" >
+		<link rel="icon" 		  href="/images/favicon.ico" >
+		
+		<title><%= @page_title || "Asset Correlations" %></title>
+		
+		<%= stylesheet_link_tag "fundsim", :media => "all" %>
+		<%= javascript_include_tag :defaults %>
+	</head>
+	
+	
+	
+	<body id="user">
+	
+		
+		  <div id="banner">
+			    <%= image_tag("fundsim.gif") %>
+			    <%= @page_title || "Asset Correlations" %>
+		  </div> <!-- End of Banner -->
+		  
+		  <div id="columns">	  	
+		    <div id="side">	    	
+					<h3 class="toggler menusection">Admin Functions</h3>
+						<div class="element menusection">
+							<ul>
+								<li><%= link_to 'Admin',		 		:action => 'index'%></li>																	
+								<li><%= link_to 'Statistics',			:action => 'db_stats'%></li>								
+								<li><%= link_to 'Update All',			:action => 'update_all'%></li>	
+								<li><%= link_to ' -  1 Mo',				:action => 'update_all', :period =>   31 %></li>	
+								<li><%= link_to ' -  3 Mo',				:action => 'update_all', :period =>   91 %></li>	
+								<li><%= link_to ' -  6 Mo',				:action => 'update_all', :period =>  183 %></li>	
+								<li><%= link_to ' -  1 Yr',				:action => 'update_all', :period =>  366 %></li>	
+								<li><%= link_to ' -  2 Yr',				:action => 'update_all', :period =>  731 %></li>	
+								<li><%= link_to ' -  5 Yr',				:action => 'update_all', :period => 1826 %></li>	
+								<li><%= link_to ' - 10 Yr',				:action => 'update_all', :period => 3652 %></li>	
+								<li><%= link_to ' - 20 Yr',				:action => 'update_all', :period => 7304 %></li>
+								<li><%= link_to 'List Assets',			:action => 'list_assets'%></li>	
+								<li><%= link_to 'Add all Assets',		:action => 'add_all_ports_to_asset_db'%></li>
+								<li><%= link_to 'Valid trade dates',	:action => 'create_valid_trading_days'%></li>																																																																																																																																												
+							</ul>
+						</div>
+																																  
+		    </div>	<!-- End of Left Side -->	
+		    <div id="main">
+			      <% if flash[:notice] -%>
+				    <div id="notice"><%= flash[:notice] %></div>
+				  <% end -%>	
+			      <%= yield :layout %>
+		    </div>	<!-- End of Main (Right Side) -->	
+		  </div> <!-- End of Cols -->
+		  
+			  
+	</body>
+
+</html>

@@ -1,0 +1,201 @@
+<%= chart :scatter %>
+
+  <%=comp :axis_category %>
+    shadow:              low
+    size:                 16
+    alpha:               100
+    orientation:  horizontal
+    decimals:              1
+    suffix:                %
+
+  <%=comp :axis_ticks %>
+    value_ticks:         true
+    minor_count:            1
+    major_thickness:        2
+    minor_thickness:        1    
+    position:         outside
+    category_ticks:      true
+
+
+  <%=comp :axis_value %>
+    shadow:        low
+    steps:           4
+    size:           16
+    alpha:         100   
+    decimals:        1
+    suffix:          %
+    show_min:     true
+        
+
+  <%=comp :chart_border %>
+    top_thickness:          0
+    bottom_thickness:       2
+    left_thickness:         2
+    color:             222222
+    right_thickness:        0
+
+  <%=comp :chart_grid_h %>
+    alpha:          10
+    thickness:       1
+    type:       dashed
+    color:      ffffff
+
+  <%=comp :chart_grid_v %>
+    alpha:          10
+    thickness:       1
+    type:       dashed
+    color:      ffffff
+
+  <%=comp :chart_label %>
+    shadow:       none
+    size:          9
+    alpha:        0
+    color:     d2fc00
+    position:   below
+    suffix:        %
+    decimals:      1
+
+  <%=comp :chart_pref %>
+    point_size:    5
+    point_shape:   circle
+
+  <%=comp :chart_rect %>
+    x:                  120
+    y:                   90 
+    height:             460
+    width:              860
+           
+    positive_alpha:     100
+    negative_alpha:     100  
+    positive_color:  586900
+    negative_color:  283000    
+    bevel:               bg
+ 
+  <%=comp :draw %>
+    components:
+      - <%= drawing :rect %>
+          x:                        0
+          delay:                    0
+          y:                       15
+          height:                 620
+          width:                 1050
+          fill_color:          B99500
+          bevel:                   bg
+          line_thickness:           0
+          transition:        dissolve
+          layer:           background
+          text:            '          '   
+          
+      - <%= drawing :text %>
+          shadow:    high
+          alpha:       80
+          size:        20
+          x:          475
+          y:          580    
+          color:   000000
+          height:     100
+          width:      400
+          text:  'Risk (Std Dev)'
+    
+      - <%= drawing :text %>
+          shadow:    high
+          alpha:       80
+          size:        20
+          x:           25
+          y:          350
+          color:   000000
+          height:     100
+          width:      400
+          text:  'Annual Return'
+          rotation:   270    
+    
+    
+  <%=comp :legend %>
+  
+    fill_color:         283000
+    fill_alpha:         100
+    color:               d2fc00
+    size:                16  
+    shadow:                 low
+    line_alpha:               0
+    alpha:                   65
+    bullet:              circle
+    line_color:          000000
+    color:               d2fc00
+    line_thickness:           0
+    width:                  300
+    layout:          horizontal
+
+  <%=comp :series_color %>
+    colors: d2fc00,B99500
+
+  <%=comp :series_explode %>
+    numbers: 100, 100, 200
+
+  <%=comp :chart_type %>
+
+
+  <%=comp :filter %>
+    filters:
+      - <%= filter_type :shadow %>
+          inner:        true
+          blurY:         200
+          angle:         135
+          alpha:          20
+          id:        shadow1
+          color:      000000
+          quality:         1
+          distance:       50
+          blurX:         300
+      - <%= filter_type :shadow %>
+          blurY:       5
+          angle:      45
+          alpha:      50
+          id:        low
+          color:       0
+          distance:    2
+          blurX:       5
+      - <%= filter_type :shadow %>
+          blurY:         10
+          angle:         45
+          alpha:     75high
+          id:          high
+          color:          0
+          distance:       3
+          blurX:         10
+      - <%= filter_type :bevel %>
+          blurY:              100
+          angle:               45
+          highlightAlpha:      20
+          shadowColor:     002266
+          type:             inner
+          id:              bevel1
+          highlightColor:  aa44ff
+          shadowAlpha:         10
+          blurX:              150
+          distance:            20
+      - <%= filter_type :bevel %>
+          blurY:               2
+          angle:              45
+          highlightAlpha:     35
+          type:            inner
+          id:              small
+          shadowAlpha:        25
+          blurX:               2
+          distance:            1
+      - <%= filter_type :bevel %>
+          id:                bg      
+          blurY:             20
+          blurX:             20          
+          angle:             45
+          highlightAlpha:    25
+          shadowAlpha:       25          
+          type:            inner
+          distance:          10
+          strength:          10
+      - <%= filter_type :blur %>
+          blurY:        0
+          id:       blur1
+          quality:      1
+          blurX:      100
+

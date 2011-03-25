@@ -1,0 +1,187 @@
+<div id="investment-list">
+	<div>
+	<!--
+	 ! Show Correlation Matrix
+	-->		
+	  <h1>Custom Correlation Matrix</h1>
+	  
+	  <p> 
+	  	The following table shows return correlations between the assets you entered for the past 
+		<%=days_to_words(@corr_matrix.period_actual)%>.
+	  </p>	  
+	
+	  <table cellpadding="6" cellspacing="1" border="1">
+
+		<!-- Headings for matrix -->	
+	    <tr>
+	      <td></td>
+	      <td></td>		  
+		  <td></td>
+	      <% for index in 0...@corr_matrix.stock_names.length-1 %>
+		    <td align="center"><%=@corr_matrix.stock_names[index]%></td>
+		  <% end %>
+		  <td align="center">Return</td>
+		  <td align="center">StdDev</td>	  	  
+		</tr>
+		
+		<!-- First row of matrix -->
+	    <tr>
+	      <td align="center"><%= link_to  image_tag("delete_icon.gif", :size => "12x12", :border => 0), 
+				{:action=>'remove_from_custom', :ticker=>@corr_matrix.stock_names[0]}, :method => :delete %></td>	
+	      <td align="left"><%=@corr_matrix.stock_fullnames[0]%></td>
+		  <td align="center"><%=@corr_matrix.stock_names[0]%></td>
+	      <% for index in 0...@corr_matrix.stock_names.length-1 %>
+		    <td></td>
+		  <% end %>
+		  <td align="center"><%=number_with_precision(@corr_matrix.stock_returns[0], 1)%>%</td>
+		  <td align="center"><%=number_with_precision(@corr_matrix.stock_stddevs[0], 1)%>%</td>
+  
+	  	</tr>		
+	
+	    <!-- Main rows of matrix -->
+		<% for row in 0...@corr_matrix.stock_names.length-1 %>
+		<tr>
+	        <td align="center"><%= link_to image_tag("delete_icon.gif", :size => "12x12", :border => 0),
+					{:action=>'remove_from_custom',:ticker=>@corr_matrix.stock_names[row+1]}, :method => :delete %></td>					
+			<td align="left"><%=@corr_matrix.stock_fullnames[row+1]%></td>
+			<td align="center"><%=@corr_matrix.stock_names[row+1]%></td>
+			<% for col in 0..row %>
+		       <td align="center" <%=css_correlation(@corr_matrix[row,col])%>><%=number_with_precision(@corr_matrix[row,col], 2) %></td>  			
+			<% end %>
+			<% for blanks in row+1...@corr_matrix.stock_names.length-1 %>
+			   <td align="center"></td>
+			<% end %>
+			<td align="center"><%=number_with_precision(@corr_matrix.stock_returns[row+1], 1)%>%</td>
+			<td align="center"><%=number_with_precision(@corr_matrix.stock_stddevs[row+1], 1)%>%</td>
+
+		</tr>
+		<% end %>
+		
+		<!-- Final Row -->	
+	    <tr><b>
+	      <td></td>
+	      <td>Portfolio</td>		  
+		  <td></td>
+	      <% for index in 0...@corr_matrix.stock_names.length-1 %>
+		    <td border="0"></td>
+		  <% end %>
+		  <td align="center"><%=number_with_precision(@corr_matrix.portfolio_return, 1)%>%</td>
+		  <td align="center"><%=number_with_precision(@corr_matrix.portfolio_stdev, 1)%>%</td>	  	  
+		</b></tr>		
+		
+	  </table>
+	  	
+	  <!-- Comparison Button -->
+	  <div id="CompareButton">
+	  	<%= button_to 'Compare', :action => 'efficient_frontier', 
+											:stdev => @corr_matrix.portfolio_stdev, 
+											:portret => @corr_matrix.portfolio_return,
+											:period => @corr_matrix.period_actual %>  
+	  </div>		
+		  
+	  <div>
+		  <!-- Box to add a ticker -->
+		  <% form_tag :action => 'add_to_custom' do %>
+		  	  <p align="left"><%= submit_tag "Add Ticker", :class => "submit" %>
+				<%= text_field_tag( :tickers, params[:tickers], :size => 10 )%>							
+				<span id='ajaxWrapper'>
+					<%= render :partial=>'feedback' %>
+				</span>	
+			  </p>								
+			<%= observe_field 	:tickers,
+								:frequency	=> 0.8,
+								:update		=> 'ajaxWrapper',
+								:url		=> {:action => 'feedback', :only_path => false},
+								:with		=> "'tickers=' + encodeURIComponent(value)"
+			 %>
+		  <% end %>
+	  </div>
+	  
+	  <!-- Portfolio Data -->	  
+	  <table cellpadding="6" cellspacing="1" border="0">
+	  	<tr>
+	  		<td>Intra-portfolio diversification</td>
+			<td>= <%=number_with_precision(@corr_matrix.diversification_measure, 2)%></td>
+	  	</tr>
+		<tr>
+			<td>Start Date</td>
+			<td>= <%=@corr_matrix.start_date%></td>
+		</tr>
+		<tr>
+			<td>End Date</td>
+			<td>= <%=@corr_matrix.end_date%></td>
+		</tr>						
+	  </table>
+	
+	<br>
+	  
+	<!-- Explanatory Information -->	  
+	<p>
+	Each cell represents the correlation between the two corresponding assets. 
+	</p>
+	
+	  <table cellpadding="6" cellspacing="1" border="1">
+	
+	    <tr>
+		  <td align="center"><b>Cell Color</b></td>
+		  <td align="left"><b>Description</b></td>
+		  <td align="left"><b>Diversification Benefit</b></td>
+		</tr>
+		
+		<tr>
+		  <td align="center" <%=css_correlation(-0.65)%>>-0.65</td>  			
+	      <td align="left">Asset pair with negative correlation</td> 
+		  <td align="left">Excellent Diversification</td>
+		</tr>
+		
+		<tr>
+		  <td align="center" <%=css_correlation(-0.15)%>>-0.15</td>  			
+	      <td align="left">Asset pair with slight negative correlation</td> 
+		  <td align="left">Good Diversification</td>
+		</tr>
+		
+		<tr>
+		  <td align="center" <%=css_correlation(0.2)%>>0.2</td>  			
+	      <td align="left">Asset pair with mild positive correlation</td> 
+		  <td align="left">Moderate Diversification</td>
+		</tr>
+		
+		<tr>
+		  <td align="center" <%=css_correlation(0.8)%>>0.8</td>  			
+	      <td align="left">Asset pair with strong positive correlation</td> 
+		  <td align="left">Poor Diversification</td>
+		</tr>			
+	  </table>
+	
+	</div>
+</div>
+
+<br>
+
+<div id="banner-ad">
+
+	  <script type="text/javascript"><!--
+		google_ad_client = "pub-3231194436906765";
+		/* 468x60 Small Banner */
+		google_ad_slot = "3423645666";
+		google_ad_width = 468;
+		google_ad_height = 60;
+		//-->
+	  </script>
+	  <script type="text/javascript"
+		src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+	  </script>  
+</div>
+
+</div>
+
+<!-- A/B Testing - Goal -->
+<script>
+if(typeof(urchinTracker)!='function')document.write('<sc'+'ript src="'+
+'http'+(document.location.protocol=='https:'?'s://ssl':'://www')+
+'.google-analytics.com/urchin.js'+'"></sc'+'ript>')
+</script>
+<script>
+_uacct = 'UA-5345915-2';
+urchinTracker("/2892582449/goal");
+</script>

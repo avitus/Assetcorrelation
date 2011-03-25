@@ -1,0 +1,49 @@
+# General Apache options
+AddHandler fastcgi-script .fcgi
+AddHandler cgi-script .cgi
+Options +FollowSymLinks +ExecCGI
+
+# If you don't want Rails to look in certain directories,
+# use the following rewrite rules so that Apache won't rewrite certain requests
+# 
+# Example:
+#   RewriteCond %{REQUEST_URI} ^/notrails.*
+#   RewriteRule .* - [L]
+
+# Redirect all requests not available on the filesystem to Rails
+# By default the cgi dispatcher is used which is very slow
+# For better performance replace the dispatcher with the fastcgi one
+#
+# ALV Note: Uncommenting this dispatch.fcgi rewrite rule breaks stylesheet loading
+# Example:
+# RewriteRule ^(.*)$ dispatch.fcgi [QSA,L]
+RewriteEngine On
+
+# If your Rails application is accessed via an Alias directive,
+# then you MUST also set the RewriteBase in this htaccess file.
+#
+# Example:
+# Alias /FundSim /home/andyvitus/assetcorrelation.com/FundSim/public
+# RewriteBase /FundSim
+
+RewriteRule ^$ index.html [QSA]
+RewriteRule ^([^.]+)$ $1.html [QSA]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ dispatch.fcgi [QSA,L]
+# RewriteCond %{REQUEST_URI} ^/stats/(.*)$ [OR]
+RewriteCond %{REQUEST_URI} ^/javascripts/(.*)$
+RewriteCond %{REQUEST_URI} ^/favicon.ico$
+RewriteCond %{REQUEST_URI} ^/images/(.*)$
+RewriteCond %{REQUEST_URI} ^/stylesheets/(.*)$
+RewriteCond %{REQUEST_URI} ^/robots.txt$
+RewriteCond %{REQUEST_URI} ^/charts_library/(.*)$
+
+
+# In case Rails experiences terminal errors
+# Instead of displaying this message you can supply a file here which will be rendered instead
+# 
+# Example:
+#   ErrorDocument 500 /500.html
+
+ErrorDocument 500 "<h2>Application error</h2>Rails application failed to start properly"
+

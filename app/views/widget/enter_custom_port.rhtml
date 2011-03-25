@@ -1,0 +1,56 @@
+<div class="widget details-form">
+	<p> Enter a portfolio of up to 16 ticker symbols (separated by a space) and the period 
+	    for which you would like to calculate the correlation matrix. Larger portfolios will
+		require a minute of patience while the correlation matrix is calculated.</p>
+		
+	<p> If you want to calculate correlations for longer periods,
+		please ensure that the tickers you are requesting have data for that length of time.
+		If one of the assets in the portfolio has insufficient trading history, the period will
+		be shortened accordingly.</p>
+	
+	<%= error_messages_for 'portfolio' %>
+	
+	<fieldset>
+		<legend> Enter a custom portfolio </legend>
+		<% form_for :portfolio, :url => { :action => :custom } do |form| %>
+	
+			<p>
+		  		<label for="username">Portfolio Name:</label>
+				<%= form.text_field :username, :size => 20 %>
+			</p>
+			
+			<p>
+		  		<label for="tickers">Tickers:</label>
+				<%= form.text_field :tickers, :size => 60 %>
+				<span id='ajaxWrapper'>
+					<%= render :partial=>'feedback' %>
+				</span>	  
+			</p>
+			
+			<p>
+		  		<label for="investment_period">Period:</label>
+				<%= form.select(:period,
+								   [["1 Month",    31],
+									["3 Months",   91],
+									["6 Months",  183], 
+									["1 Year",    366], 
+									["2 Years",   731], 
+									["5 Years",  1826],
+									["10 Years", 3652],
+									["20 Years", 7304]]) %>
+			</p>
+			
+			<br>
+	 	  	  	  	  	  	  	  
+		  <%= submit_tag "Create Matrix", :class => "submit" %>	  	  
+		  
+		  <%= observe_field :portfolio_tickers,
+							:frequency	=> 0.8,
+							:update		=> 'ajaxWrapper',
+							:url		=> {:action => 'feedback', :only_path => false},
+							:with		=> "'tickers=' + encodeURIComponent(value)"
+		   %>
+	  
+		<% end %>	  
+	</fieldset>
+</div>

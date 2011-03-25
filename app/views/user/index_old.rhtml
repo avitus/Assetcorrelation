@@ -1,0 +1,112 @@
+<script>
+function utmx_section(){}function utmx(){}
+(function(){var k='2892582449',d=document,l=d.location,c=d.cookie;function f(n){
+if(c){var i=c.indexOf(n+'=');if(i>-1){var j=c.indexOf(';',i);return c.substring(i+n.
+length+1,j<0?c.length:j)}}}var x=f('__utmx'),xx=f('__utmxx'),h=l.hash;
+d.write('<sc'+'ript src="'+
+'http'+(l.protocol=='https:'?'s://ssl':'://www')+'.google-analytics.com'
++'/siteopt.js?v=1&utmxkey='+k+'&utmx='+(x?x:'')+'&utmxx='+(xx?xx:'')+'&utmxtime='
++new Date().valueOf()+(h?'&utmxhash='+escape(h.substr(1)):'')+
+'" type="text/javascript" charset="utf-8"></sc'+'ript>')})();
+</script><script>utmx("url",'A/B');</script>
+
+
+<div id="investment-list">
+		
+<h3>About Asset Correlations</h3>	
+<p>
+	The concept of correlation between asset classes is the foundation of modern portfolio theory. This
+	website is a useful utility for checking the correlation between asset classes and between various 
+	sectors of the international stock market.</p>
+
+<h3>The Major Asset Classes</h3>
+<p>
+	If you click on the <u><%= link_to 'Correlation Matrix',:action => 'correlations',:id => 90 %></u> link on the left, 
+	it will generate a correlation matrix for
+	some exchange traded funds that cover the major asset classes, as well as some common indices. 
+	Be patient as calculating the correlation matrix can take about 10 seconds or so. </p>
+	
+<p>
+	The algorithm uses daily returns to calculate the correlation matrix, rather than daily price changes. The
+	price history is updated around 6pm (Pacific Time) to reflect that day's closing prices. </p>
+
+<p>
+	For each type of correlation matrix there are various periods. Unfortunately, many of the representative index
+	funds have been recently introduced so I can't yet calculate the correlations for longer periods. Rest
+	assured that I will add longer time periods once the trading history is available. You will notice that as 
+	you change the length of the time period that the correlation matrix can change dramatically.</p>
+
+<p>		
+	There is also a page that gives <u><%= link_to 'current price quotes',	:action => 'quote_publics'%></u> 
+	for all the index funds used to calculated
+	the correlation matrix for the major asset classes.</p>
+
+<h3>Geographical Diversification</h3>
+	
+<p> iShares has recently added a whole slew of country ETF's which track the major stock indices for various
+    countries. I've added a <u><%= link_to 'country correlation matrix',:action => 'countries',:id => 90 %></u>
+	for these countries covering the last three months (90  
+	days of data). As time passes I will add longer periods. However, it is already interesting to note 
+	how closely coupled the major European stock indices are.</p>
+
+<h3>Sector Diversification</h3>	
+
+<p> There is also a page showing a <u><%= link_to 'sector matrix',	:action => 'sectors',:id => 90 %></u>
+	for the nine major sectors of the S&P index.</p> 
+
+
+<h3>Bond Diversification</h3>	
+
+<p> I've added a new page showing a <u><%= link_to 'bond correlation matrix',:action => 'bonds',:id => 90 %></u> 
+	for the various bond terms. </p> 	
+	
+
+
+<h3>Calculate Your Own Portfolio Diversification</h3>
+
+<p>
+	You can now	<u><%= link_to 'create a correlation matrix for your own portfolio', :action => 'enter_custom_port'%></u>. 
+	This feature currently has limited error checking so if you
+	enter tickers that don't exist or don't have sufficient history you will probably get an
+	unintelligle error message. For now, click on 'New' (under 'Custom Portfolio') to enter 
+	your own portfolio.</p>
+	
+<h3>Determine the Variation in Correlation between Two Assets Over Time</h3>
+
+<p>
+	Correlation between two assets (or, asset classes) varies over time. For a well-diversified portfolio, it is 
+	important that low/negative correlations persist for meaningful time frames. This page allows you to 
+	<u><%= link_to 'graphically view the change in correlation', :action => 'enter_time_corr'%></u> 
+	between two stocks, bonds or index funds over time.
+</p>	
+	
+<h3>Coming Soon - How does your risk/return compare</h3>
+
+<p>
+	If you use a meaningful name when you enter your portfolio, you will be able to compare it to other submitted
+	portfolios. </p>
+
+
+<a href="http://www.stumbleupon.com/submit?url=www.assetcorrelation.com"> 
+	<img 
+		border=0 
+		src="/images/120x20_su_black.gif" 
+		alt="">
+</a>
+
+</div>
+
+<!-- A/B Testing Code -->
+<script>
+if(typeof(urchinTracker)!='function')document.write('<sc'+'ript src="'+
+'http'+(document.location.protocol=='https:'?'s://ssl':'://www')+
+'.google-analytics.com/urchin.js'+'"></sc'+'ript>')
+</script>
+<script>
+_uacct = 'UA-5345915-2';
+urchinTracker("/2892582449/test");
+</script>
+
+
+
+

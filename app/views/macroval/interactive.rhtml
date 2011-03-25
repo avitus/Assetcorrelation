@@ -1,0 +1,34 @@
+<div class="details-form">
+		
+	<fieldset>
+		<legend> Enter Filter Parameters</legend>
+		
+ 			<% form_tag( {:action => 'interactive'}, { :id => 'advanced_search' } ) do %>
+			  <p>
+				Start: 		<%= text_field_tag( :start, params[:start],  	:size =>  6 )%>	
+				Finish: 	<%= text_field_tag( :finish, params[:finish], 	:size =>  6 )%>				
+				Parameter: 	<%= select( "search_on", "field", 
+										{ 
+											"10 Yr PE"			=> "pe_tenyear",
+ 											"Inflation Rate"	=> "inflation",
+											"10 Yr Rate"		=> "ten_year_rate",
+											"Equity Risk Yield"	=> "equity_risk_yield",
+											"Date"				=> "year_month"
+										}) %>			
+			  </p>
+			  							
+			<% end %>
+					
+	</fieldset>
+				
+	<%= observe_form 	'advanced_search',
+						:frequency	=> 0.5,
+						:update		=> 'search_results',
+						:url		=> {:action => 'filter_db', :only_path => false} %>
+</div>	
+
+<div id="search_results">
+	<%= render :partial=>'macroval' %>
+</div>
+
+

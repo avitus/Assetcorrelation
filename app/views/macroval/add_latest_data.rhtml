@@ -1,0 +1,47 @@
+<div id="investment-list">
+	
+	<table cellpadding="6" cellspacing="0">
+		<tr> 
+			<th>Date		</th>
+			<th>S&P			</th>
+			<th>Dividend	</th>
+			<th>Earnings	</th>
+			<th>CPI			</th>
+			<th>10 Yr Rate	</th> 															
+		</tr>
+	  
+		<% for month in @db %>
+		  	<tr valign="top" class="<%= cycle('list-line-odd', 'list-line-even') %>">
+				<td align="left" ><%= number_with_precision(month.year_month, 2)				%></td>		 
+			 	<td align="right" class="edit" id=<%= [month.id, "-", "spcomposite"] %>><%= number_with_precision(month.spcomposite.to_f, 2)		%></td>
+			 	<td align="right" class="edit" id=<%= [month.id, "-", "dividends"] %>><%= number_with_precision(month.dividends.to_f , 2)			%></td>
+			 	<td align="right" class="edit" id=<%= [month.id, "-", "earnings"] %>><%= number_with_precision(month.earnings.to_f,  2)	 		%></td>
+			 	<td align="right" class="edit" id=<%= [month.id, "-", "cpi"] %>><%= number_with_precision(month.cpi.to_f, 2)		 		%></td>	
+			 	<td align="right" class="edit" id=<%= [month.id, "-", "ten_year_rate"] %>><%= number_with_precision(month.ten_year_rate.to_f, 2)		%></td>																							
+			</tr>
+		<% end %>
+
+	</table>
+</div>
+
+<br>
+
+<%= button_to "Add new month", { :action => "add_month_to_db" }, :confirm => "Are you sure?" %>
+
+
+<!-- http://www.appelsiini.net/projects/jeditable -->
+<script type="text/javascript">
+	 $(document).ready(function() {   
+	     $('.edit').editable('/macroval/update_month', {
+	         indicator : 'Saving...',
+	         tooltip   : 'Click to edit...'
+	     });
+	     $('.edit_area').editable('/macroval/update_month', { 
+	         type      : 'textarea',
+	         cancel    : 'Cancel',
+	         submit    : 'OK',
+	         indicator : 'Saving...',
+	         tooltip   : 'Click to edit...'
+	     });
+	 });
+</script>

@@ -1,0 +1,39 @@
+<div id="investment-list">
+	
+	<!-- <h1>Fund II</h1> -->
+	
+	<table cellpadding="6" cellspacing="0">
+	  <tr> 
+	  	  <td>               <b><%= link_to 'Company', 	:action => 'index', :sort_order => 'company'%>   </b></td>
+		  <td>               <b><%= link_to 'Partner', 	:action => 'index', :sort_order => 'partner'%>   </b></td>
+		  <td align="right"> <b><%= link_to 'Cost', 	:action => 'index', :sort_order => 'investment'%></b></td>
+		  <td align="right"> <b>            Multiple													 </b></td>
+		  <td align="right"> <b><%= link_to 'Date',		:action => 'index', :sort_order => 'date'	   %></b></td>
+	  </tr>
+	<% for investment in @investments %>
+	  <tr valign="top" class="<%= cycle('list-line-odd', 'list-line-even') %>">
+		<td> 				<%= investment.company %></td>		 
+	 	<td> 				<%= investment.partner %></td>
+	 	<td align="right"> 	<%= number_to_currency(investment.investment, 0)%></td>
+		<td align="center"> <%= number_with_precision(investment.multiple, 2)%>x</td>
+		<td align="right">  <%= investment.date_initial %></td>
+	    <td><%= link_to 'Show', :action => 'show', :id => investment %></td>
+	    <td><%= link_to 'Edit', :action => 'edit', :id => investment %></td>
+	    <td><%= link_to 'Delete', { :action => 'destroy', :id => investment }, :confirm => 'Are you sure?', :method => :post %></td>		
+	  </tr>
+	<% end %>
+	  <tr valign="top" class="<%= cycle('list-line-odd', 'list-line-even') %>">
+	  	<td> <b> Total </b> </td>
+		<td> </td>	
+		<td> <b> <%= number_to_currency(@investments.sum { |investment| investment.investment }, 0) %> </b></td>
+		<td> </td>
+		<td> </td>		
+		<td> </td>	
+		<td> </td>	
+	  </tr>
+	</table>
+</div>
+
+<br />
+
+<%= link_to 'New investment', :action => 'new' %>

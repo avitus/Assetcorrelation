@@ -1,0 +1,47 @@
+<div id="investment-list">
+	
+	<table cellpadding="6" cellspacing="0">
+		<tr> 
+			<th>Date		</th>
+			<th>S&P			</th>
+			<th>Dividend	</th>
+			<th>Earnings	</th>
+			<th>CPI			</th>
+			<th>10 Yr Rate	</th>
+			<th>S&P (Real)	</th>
+			<th>Div (Real)	</th>
+			<th>Earn (Real)	</th>
+			<th>10Yr P/E	</th>
+			<th>Mo. Return	</th>	  		  		  		  		  		  		  		  	  		    
+			<!-- <th>1 Yr Return </th>	 
+			<th>3 Yr Return </th>	 -->
+			<th>Eq RiskYield</th>	 
+			<th>Div Yield	</th>	 
+			<th>Earn Yield	</th>	 
+			<th>Inflation	</th>	 															
+		</tr>
+	  
+		<% for month in @db %>
+		  	<tr valign="top" class="<%= cycle('list-line-odd', 'list-line-even') %>">
+				<td align="left" ><%= number_with_precision(month.year_month, 2)				%></td>		 
+			 	<td align="right"><%= number_with_precision(month.spcomposite.to_f, 1)		%></td>
+			 	<td align="right"><%= number_with_precision(month.dividends.to_f , 1)			%></td>
+			 	<td align="right"><%= number_with_precision(month.earnings.to_f, 1)	 		%></td>
+			 	<td align="right"><%= number_with_precision(month.cpi.to_f, 1)		 		%></td>	
+			 	<td align="right"><%= number_with_precision(month.ten_year_rate.to_f, 1)		%></td>	
+			 	<td align="right"><%= number_with_precision(month.price_real.to_f, 1)			%></td>		
+			 	<td align="right"><%= number_with_precision(month.dividends_real.to_f, 1)		%></td>	
+			 	<td align="right"><%= number_with_precision(month.earnings_real.to_f, 1)		%></td>
+			 	<td align="right"><%= number_with_precision(month.pe_tenyear.to_f, 1)			%></td>
+				<td align="right"><%= number_with_precision(month.monthly_return.to_f, 1)		%></td>							 
+				<!--<td></td>
+				<td></td> -->
+				<td align="right"><%= number_with_precision(month.equity_risk_yield.to_f, 1)	%></td>
+				<td align="right"><%= number_with_precision(month.dividend_yield.to_f, 1)		%></td>
+				<td align="right"><%= number_with_precision(month.earnings_yield.to_f, 1)		%></td>
+				<td align="right"><%= number_with_precision(month.inflation.to_f, 1)			%></td>																								
+			</tr>
+		<% end %>
+
+	</table>
+</div>

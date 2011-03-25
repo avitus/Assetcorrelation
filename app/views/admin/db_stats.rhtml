@@ -1,0 +1,83 @@
+<!-- Admin Stats Page -->
+
+<h1>Portfolio Database : Statistics </h1>
+
+<div id="period-table">
+	<table cellpadding="6" cellspacing="1" border="1">
+	  <tr> 
+		  <td><b>Period</b></td>
+		  <td><b>Days</b></td>		  
+		  <td><b>Count</b></td>		  
+	  </tr>
+	  <% for period in @valid_periods %>
+	  <tr>
+	    <td><%= days_to_words(period)%></td>
+	    <td><%= period %></td>		
+		<td><%= @stats[period]	%></td>		 
+	  </tr>
+	  <% end %>
+
+	  <tr>
+	    <td><b> Quantized		  </b></td>
+		<td></td>
+		<td><%= @quantized_ports%></td>		 
+	  </tr>	 
+	  
+	  <tr>
+	    <td><b> Non Quantized		</b></td>
+		<td></td>		
+		<td><%= @non_quantized_ports%></td>		 
+	  </tr>	 	  	
+
+	  
+	  <tr>
+	    <td><b> Total		  </b></td>
+		<td></td>		
+		<td><%= @allports.length%></td>		 
+	  </tr>	  
+
+	</table>
+</div>
+
+<div id="portsize-table">
+  <table cellpadding="6" cellspacing="1" border="1">
+	  <tr> 
+		  <td><b>Assets in Port</b></td>		  
+		  <td><b>Count</b></td>		  
+	  </tr>
+
+	  <% @port_size.keys.sort.each do |x| %>
+	  <tr>
+		  <td><%= x %></td>
+		  <td><%= @port_size[x] %></td>
+	  </tr>
+	  <% end %>
+
+  </table>
+</div>
+
+<div id="portsize-table">
+  <table cellpadding="6" cellspacing="1" border="1">
+	  <tr> 
+		  <td><b>Assets with Period</b></td>
+		  <td><b>Days</b></td>			  		  
+		  <td><b>Count</b></td>		  
+	  </tr>
+
+	  <% @asset_stats.keys.sort.each do |x| %>
+	  <tr>
+		  <td><%= days_to_words(x) %></td>
+		  <td><%=               x  %></td>		  
+		  <td><%= @asset_stats[x] %></td>
+	  </tr>
+	  <% end %>
+	  <tr>
+	    <td><b> Total     </b></td>
+		<td></td>
+		<td><%= @num_assets %></td>		 
+	  </tr>		  
+
+  </table>
+</div>
+
+

@@ -1,0 +1,49 @@
+<div id="investment-details">
+	
+	<table cellpadding="6" cellspacing="0">
+	  <tr><td><b>Company </b></td><td align="left">:</td><td><%= @investment.company    									%></td></tr>
+	  <tr><td><b>Partner </b></td><td align="left">:</td><td><%= @investment.partner    									%></td></tr>
+	  <tr><td><b>Cost    </b></td><td align="left">:</td><td><%= number_to_currency(@investment.investment, 0)%></td></tr> 
+	  <tr><td><b>Reserve </b></td><td align="left">:</td><td><%= number_to_currency(@investment.reserves, 0)%></td></tr> 	  
+	  <tr><td><b>Loss %  </b></td><td align="left">:</td><td><%= @investment.loss_prob   								%>%</td></tr>
+	  <tr><td><b>Multiple</b></td><td align="left">:</td><td><%= number_with_precision(@investment.multiple,  2) 		    %>x</td></tr>	  	  	  
+	</table>
+</div>
+
+<div id="investment-details">
+	
+	<h4>Return multiple: 10 possible outcomes</h4>
+	<table border="2" cellpadding="6" cellspacing="0">
+	 <tr>	
+		  <td align="center"> 1</td>
+		  <td align="center"> 2</td>
+		  <td align="center"> 3</td>
+		  <td align="center"> 4</td>
+		  <td align="center"> 5</td>
+		  <td align="center"> 6</td>
+		  <td align="center"> 7</td>
+		  <td align="center"> 8</td>
+		  <td align="center"> 9</td>		  		  		  		  		  		  		  		  		 		  
+		  <td align="center">10</td>
+		   
+	 </tr>	 
+	 <tr class="return-ok"> 
+		  <td <%=css_return(@investment.outcome_0+1) %>><%= @investment.outcome_0+1%>x</td>
+		  <td <%=css_return(@investment.outcome_1+1) %>><%= @investment.outcome_1+1%>x</td>
+		  <td <%=css_return(@investment.outcome_2+1) %>><%= @investment.outcome_2+1%>x</td>
+		  <td <%=css_return(@investment.outcome_3+1) %>><%= @investment.outcome_3+1%>x</td>
+		  <td <%=css_return(@investment.outcome_4+1) %>><%= @investment.outcome_4+1%>x</td>
+		  <td <%=css_return(@investment.outcome_5+1) %>><%= @investment.outcome_5+1%>x</td>
+		  <td <%=css_return(@investment.outcome_6+1) %>><%= @investment.outcome_6+1%>x</td>
+		  <td <%=css_return(@investment.outcome_7+1) %>><%= @investment.outcome_7+1%>x</td>
+		  <td <%=css_return(@investment.outcome_8+1) %>><%= @investment.outcome_8+1%>x</td>
+		  <td <%=css_return(@investment.outcome_9+1) %>><%= @investment.outcome_9+1%>x</td>		  		  		  		  		  		  		  		  		  
+	 </tr>		
+
+	</table>
+
+</div>
+
+<br>
+
+<%= link_to 'Back', :action => 'index' %>

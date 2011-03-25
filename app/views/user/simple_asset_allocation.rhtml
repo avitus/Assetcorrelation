@@ -1,0 +1,117 @@
+<div>
+
+<title>Asset Allocation in 30 Mins a Year</title>
+
+<h1>Asset Allocation in 30 Mins a Year</h1>
+
+<div id="skyscraper-ad-right">
+	<script type="text/javascript"><!--
+		google_ad_client = "pub-3231194436906765";
+		/* 160x600, Vertical Skyscraper */
+		google_ad_slot = "6105303331";
+		google_ad_width = 160;
+		google_ad_height = 600;
+		//-->
+	</script>
+	<script type="text/javascript"
+		src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+	</script>
+</div>
+
+<p>
+If you don't have any interest in spending the rest of your life following stock tickers and 
+listening to analyst conference calls, the following approach can be implemented extremely easily, is very 
+cost effective, and should take less than 30 minutes each year to maintain.</p>
+
+<p>This approach is suitable for people who a) have saved at least $5,000 and b) are aged 10-60. 
+If you are older than 60 you should probably adopt a more conservative approach or allocate the 
+stock portion of your portfolio to conservative stocks. If you have 
+less than $5,000 you should spread your investments over fewer funds otherwise trading fees will 
+dampen your returns considerably.</p>
+
+At the top level, you allocate your investments as follows:
+
+<blockquote>
+	<ol>
+		<li>60% stocks</li>
+		<li>20% real estate</li>
+		<li>10% bonds</li>
+		<li>10% commodities</li>
+	</ol>
+</blockquote>
+
+There's no real magic to this. It just depends on how much risk you want in your portfolio. 
+If you already own a house, we recommend halving or eliminating the real estate section and increasing the rest.
+Then break down the stock allocation as follows:
+
+<blockquote><ol>
+	<li>60% US stocks</li>
+	<li>40% International stocks</li>
+</ol></blockquote>
+
+That is a good mix given the increased participation in the global economy of countries outside the US 
+and helps guard against currency fluctuations of the dollar.The US stocks we recommend breaking down as follows:
+
+<blockquote><ol>
+	<li>33% Large cap stocks</li>
+	<li>33% Medium cap stocks</li>
+	<li>33% Small cap stocks</li>
+</ol></blockquote>
+
+The international equity allocation can be split between the emerging economies and the developed world:
+<blockquote><ol>
+	<li>50% Emerging markets (South Africa, China, India, Brazil, Russia etc.)</li>
+	<li>50% Developed markets (Europe, Japan, etc.)</li>
+</ol></blockquote>
+
+For the bond allocation, we recommend a broad-based bond index fund (a mix of long-term and short-term bonds). 
+For real estate you can only really invest in commercial real estate (office buildings, shopping centers, apartment complexes). 
+You then round out your portfolio with an allocation to commodities: oil, precious metals, agricultural products etc.
+
+Putting that all together works out to the following target portfolio (with ticker symbols and fees of 
+representative index funds in brackets):
+
+<blockquote><ol>
+	<li>12% Large cap US stocks [ VV, 0.07% ]</li>
+	<li>12% Medium cap US stocks [ VO, 0.13% ]</li>
+	<li>12% Small cap US stocks [ VB, 0.10% ]</li>
+	<li>12% International : Emerging market stocks [ VWO, 0.25% ]</li>
+	<li>12% International : Developed markets stocks [ EFA, 0.35% ]</li>
+	<li>20% Commercial real estate [ VNQ, 0.12% ]</li>
+	<li>10% Bonds [ AGG or VBMFX, 0.20% ]</li>
+	<li>10% Commodities [ IGE, 0.48% ]</li>
+</blockquote></ol>
+
+<p>It should be possible to create a portfolio with a blended fee of 0.14% or less. The table below shows the correlation between
+the various assets in this portfolio over the past <%=@period%> days:</p>
+
+<div>
+	<%= render(:partial=>"corr_matrix", :object => @corr_matrix) %>
+</div>
+
+<p>This portfolio has an intra-portfolio diversification of <%=number_with_precision(@corr_matrix.diversification_measure, 2)%></p>
+
+<p>The standard deviation for each asset is a measure of the degree of risk of that asset. The higher the standard 
+deviation, the more risky the stock, fund or bond.</p>
+
+<p>Always try to find the funds with the lowest fees. High management fees are a vastly underestimated 
+<a title="Management fees kill" href="http://simplelight.wordpress.com/2006/09/11/management-fees-kill/">destroyer of long term wealth</a>. 
+You will always pay higher fees for international stocks and the more esoteric funds. You should definitely 
+never pay more than 0.50% in annual fees. The highest fees are for emerging markets funds and specialty 
+funds which should be around 0.45%. The lowest cost funds, like standard S&P 500 index funds, 
+have fees below 0.1%. Fees tend to come down in the long run so keep reevaluating your choices.</p>
+ 
+<p>
+One slightly tricky part is balancing your asset allocation across your retirement/non-retirement/tax-deferred 
+accounts. Thanks to the complexities of the US tax code there is no way around having three or four investment 
+accounts. A good rule of thumb is to have the investments which pay dividends in the tax-sheltered accounts 
+and the high-risk, high growth assets in the taxable accounts.</p> 
+
+<p>Finally, once you have got your asset allocation set up, you need to rebalance it once a year. 
+Since the various funds grow at different rates, eventually your carefully assigned percentages will be 
+off target. One solution is to add your latest contributions to whichever fund is the furthest off 
+at the time. That way you end up investing new money in the funds which have performed poorly recently 
+(buying low). At the beginning of each year, you can spend 30 minutes rebalancing your portfolio to 
+make sure you remain on target.</p>
+
+</div>

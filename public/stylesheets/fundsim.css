@@ -1,0 +1,389 @@
+/* New Color Scheme
+
+White 	ff ff ff
+Black 	00 00 00
+Grey  	1f 1f 1f
+Green	Dark: 283000 Med: 586900 Light: A4C400 Lightest: D2FC00
+Yellow	B99500
+Orange	Med 7A2F00 
+*/
+
+/* Global styles */
+a:link {
+text-decoration: none;
+}
+a:visited {
+text-decoration: none; 
+}
+a:hover {
+text-decoration: underline;
+}
+
+a { 
+color: #000;
+text-decoration: none;
+}
+
+img {
+   border: 0;
+}
+
+/* START:notice */
+#notice {
+  border: 2px;
+  border-style: solid;  
+  border-color: #7A2F00;
+  padding: 1em;
+  margin-bottom: 2em;
+  background-color: #B99500;
+  font: bold smaller sans-serif;
+}
+
+
+/* Styles for admin/list */
+#investment-list .list-title {
+	color:        #244;
+	font-weight:  bold;
+	font-size:    medium;
+}
+
+#investment-list .list-image {
+  width:        60px;
+  height:       70px;
+}
+
+#investment-list .list-actions {
+  font-size:    x-small;
+  text-align:   right;
+  padding-left: 1em;
+}
+
+#investment-list .list-line-even {
+  background:   #586900;
+}
+
+#investment-list .list-line-odd {
+  background:   #B99500;
+}
+
+
+/* Classify returns red, yellow, green */
+#investment-details .return-neg {
+  background:   #7a2f00; /* red = bad */
+}
+
+#investment-details .return-ok {
+  background:   #b99500; /* yellow = ok */
+}
+
+#investment-details .return-great {
+  background:   #586900; /* green= good */
+}
+
+/* Classify correlations red, yellow, green */
+#investment-list .negative {
+  background:   #A4C400; /* light green = very good */
+}
+
+#investment-list .moderate {
+  background:   #b99500; /* yellow = ok */
+}
+
+#investment-list .mild-neg {
+  background:   #586900; /* green = good */
+}
+
+#investment-list .strongpos {
+  background:   #7a2f00; /* red = bad */
+}
+
+/* Classify correlations red, yellow, green */
+#correlation-table .negative {
+  background:   #A4C400; /* light green = very good */
+}
+
+#correlation-table .moderate {
+  background:   #b99500; /* yellow = ok */
+}
+
+#correlation-table .mild-neg {
+  background:   #586900; /* green = good */
+}
+
+#correlation-table .strongpos {
+  background:   #7a2f00; /* red = bad */
+}
+
+/* Classify price changes red, yellow, green */
+#quote-table .cashmoney {
+  background:   #A4C400; /* light green = very good */
+}
+
+#quote-table .unchanged {
+  background:   #b99500; /* yellow = ok */
+}
+
+#quote-table .up {
+  background:   #586900; /* green = good */
+}
+
+#quote-table .down {
+  background:   #B99500; /* red = bad */
+}
+
+/* Styles for widget embedded in iframe */
+#widget-main {
+  width: 1024px;
+  margin-left: .1em; /* Distance from left side of screen until start of main border */
+  padding-top: .1em;
+  padding-left: .1em;
+  background: white; 	
+}
+
+.widget {
+  width: 1024px; 
+}
+
+
+/* Styles for main page */
+#banner {
+  background: #283000; /* dark green */
+  padding-top: 0px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid;
+  font: small-caps 40px/66px "Times New Roman", serif;
+  color: #A4C400;  /* light green */
+  text-align: center;
+}
+
+#banner img {
+  float: left;
+}
+
+#columns {
+  background: #283000; /* dark green */
+}
+
+#main {
+  margin-left: 11.5em; /* Distance from left side of screen until start of main border */
+  padding-top: 1em;
+  padding-left: 2em;
+  background: white;
+}
+
+#side {
+  float: left;
+  padding-top: 1em;
+  padding-left: 1em;
+  padding-bottom: 1em;
+  width: 10.5em;
+  background: #283000; /* dark green */
+}
+
+#side h3 {
+  color: #B99500;  /* yellow */
+}
+
+#side ul, li {
+	border:0; 
+	padding:0; 
+	margin:0.1em; 
+	list-style:none;
+	}
+
+
+#side a {
+  color: #D2FC00; /* lightest green */
+  font-size: large;
+}
+
+#left-footer {
+  padding-top: 3em;
+  padding-left: 0em;
+  padding-bottom: 9em;
+  width: 10.5em;
+  background: #283000; /* dark green */
+  color: #D2FC00; /* lightest green */
+  clear: left;
+  list-style:none;    
+}
+
+
+#skyscraper-right {
+  float: right;
+  padding-top: 1em;
+  padding-left: 1em;
+  padding-bottom: 1em;
+}
+
+#skyscraper-ad-right {
+  float: right;
+  margin-left: 1em;
+  padding-left: 1em;
+  padding-bottom: 1em;
+}
+
+h1 {
+  font:  150% sans-serif;
+  color: #7A2F00; /* orange */
+  border-bottom: 3px;
+}
+
+#CompareButton{
+  position: absolute;
+  left: 650px;
+  padding-top: 18px;
+}
+
+/* Statistics page */
+#period-table{
+	float: left;
+	margin-right: 1em;
+}
+
+#portsize-table{
+	float: left;
+	margin-right: 1em;
+}
+
+/* An entry in the user catalog */
+
+#user  .entry {
+  border-bottom: 1px dotted #77d;
+}
+
+#user  .title {
+  font-size: 120%;
+  font-family: sans-serif;
+}
+
+#user .entry img {
+  width: 75px;
+  float: left;
+}
+
+
+#user .entry h3 {
+ margin-bottom: 2px;
+ color: #227;
+}
+
+#user .entry p {
+ margin-top: 0px; 
+ margin-bottom: 0.8em; 
+}
+
+#user .entry .price-line {
+}
+
+#user .entry .add-to-cart {
+  position: relative;
+}
+
+#user .entry  .price {
+  color: #44a;
+  font-weight: bold;
+  margin-right: 2em;
+}
+
+/* START:inline */
+#user .entry form, #user .entry form div {
+  display: inline;
+}
+/* END:inline */
+
+/* START:cart */
+/* Styles for the cart in the main page and the sidebar */
+
+.cart-title {
+  font: 120% bold; 
+}
+
+.item-price, .total-line {
+  text-align: right;	
+}
+
+.total-line .total-cell {
+  font-weight: bold;
+  border-top: 1px solid #595;
+}
+
+
+/* Styles for the cart in the sidebar */
+
+#cart, #cart table {
+  font-size: smaller;	
+  color:     white;
+}
+
+#cart table {
+  border-top:    1px dotted #595;
+  border-bottom: 1px dotted #595;
+  margin-bottom: 10px;
+}
+/* END:cart */
+
+
+/* Styles for investment form -- need to make colors match */
+.details-form fieldset {
+  background:#A4C400; /* light green */
+}
+
+.details-form legend {
+  background: #283000; /* dark green */
+  color: #D2FC00; /* lightest green */
+  font-family: sans-serif;
+  padding: 0.2em 1em;
+}
+
+.details-form label {
+  width: 8.5em;
+  float: left;
+  text-align: right;
+  margin-right: 0.5em;
+  display: block;
+}
+
+.details-form .submit {
+  margin-left: 7.5em;
+}
+
+
+
+/* The error box */
+
+.fieldWithErrors {
+  padding: 2px;
+  background-color: red;
+  display: table;
+}
+
+#errorExplanation {
+  width: 400px;
+  border: 2px solid red;
+  padding: 7px;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  background-color: #f0f0f0;
+}
+
+#errorExplanation h2 {
+  text-align: left;
+  font-weight: bold;
+  padding: 5px 5px 5px 15px;
+  font-size: 12px;
+  margin: -7px;
+  background-color: #c00;
+  color: #fff;
+}
+
+#errorExplanation p {
+  color: #333;
+  margin-bottom: 0;
+  padding: 5px;
+}
+
+#errorExplanation ul li {
+  font-size: 12px;
+  list-style: square;
+}

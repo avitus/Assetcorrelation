@@ -1,0 +1,148 @@
+<h1>S&P500 Price Earnings Ratio</h1>
+<h3>
+Today's Shiller 10 Yr P/E Ratio: <%= number_with_precision(@shiller_pe, 1) %>x
+</h3>
+
+<!--  Site: AssetCorrelation   Zone: My Site   Size: Leaderboard (728x90)  -->
+<script type="text/javascript"><!--
+	google_ad_client = "pub-3231194436906765";
+	/* AssetCorrelation 728x90 */
+	google_ad_slot = "6695247050";
+	google_ad_width = 728;
+	google_ad_height = 90;
+	//-->
+</script>
+<script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
+<!-- end Leaderboard ad -->
+
+<h1>Market Snapshot</h1>																
+
+<div id="investment-list">
+
+  <table cellpadding="6" cellspacing="1" border="1" id="quote-table">
+	<tr>
+		<td align="left"> </td>
+		<td align="center"><b>Close</b></td>
+	  	<td align="center" colspan="2"><b>Change</b></td>
+		<td align="center"><b>52 Wk Range</b></td>
+		<td align="center"><b>Last 90 Days</b></td>						
+	</tr>
+<!--
+ ! See below for available fields
+-->	
+	<tr>
+		<td>Nasdaq</td>
+		<td align="right"><%= @quotes['^IXIC'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['^IXIC'].changePercent)%>><%= @quotes['^IXIC'].changePoints%></td>
+	  	<td align="right" <%=quote_color(@quotes['^IXIC'].changePercent)%>><%= @quotes['^IXIC'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['^IXIC'].weeks52Range%></td>
+		<td align="center"><%= sparkline_tag [@nasdaq_yr] %></td> 	
+	</tr>												
+	<tr>
+		<td>Treasury Inflation Protected Securities </td>
+		<td align="right"><%= @quotes['TIP'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['TIP'].changePercent)%>><%= @quotes['TIP'].changePoints%></td>
+	  	<td align="right" <%=quote_color(@quotes['TIP'].changePercent)%>><%= @quotes['TIP'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['TIP'].weeks52Range%></td>	
+	</tr>
+	<tr>
+		<td>Lehman Aggregate Bond Fund</td>
+		<td align="right"><%= @quotes['AGG'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['AGG'].changePercent)%>><%= @quotes['AGG'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['AGG'].changePercent)%>><%= @quotes['AGG'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['AGG'].weeks52Range%></td>			
+	</tr>
+	<tr>
+		<td>Natural Resources Index</td>
+		<td align="right"><%= @quotes['IGE'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['IGE'].changePercent)%>><%= @quotes['IGE'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['IGE'].changePercent)%>><%= @quotes['IGE'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['IGE'].weeks52Range%></td>			
+	</tr>
+	<tr>
+		<td>Goldman Sachs Commodities Index</td>
+		<td align="right"><%= @quotes['GSG'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['GSG'].changePercent)%>><%= @quotes['GSG'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['GSG'].changePercent)%>><%= @quotes['GSG'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['GSG'].weeks52Range%></td>			
+	</tr>
+	<tr>
+		<td>Vanguard Real Estate Index</td>
+		<td align="right"><%= @quotes['VNQ'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['VNQ'].changePercent)%>><%= @quotes['VNQ'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['VNQ'].changePercent)%>><%= @quotes['VNQ'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['VNQ'].weeks52Range%></td>			
+	</tr>	 	
+
+	<tr>
+		<td>International Real Estate Index</td>
+		<td align="right"><%= @quotes['RWX'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['RWX'].changePercent)%>><%= @quotes['RWX'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['RWX'].changePercent)%>><%= @quotes['RWX'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['RWX'].weeks52Range%></td>			
+	</tr>		
+	
+	<tr>
+		<td>Emerging Markets</td>
+		<td align="right"><%= @quotes['EEM'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['EEM'].changePercent)%>><%= @quotes['EEM'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['EEM'].changePercent)%>><%= @quotes['EEM'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['EEM'].weeks52Range%></td>			
+	</tr>	
+	
+		<tr>
+		<td>Europe, Australasia, Far East Index</td>
+		<td align="right"><%= @quotes['EFA'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['EFA'].changePercent)%>><%= @quotes['EFA'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['EFA'].changePercent)%>><%= @quotes['EFA'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['EFA'].weeks52Range%></td>			
+	</tr>	
+	
+		<tr>
+		<td>Vanguard Small Cap Index</td>
+		<td align="right"><%= @quotes['VB'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['VB'].changePercent)%>><%= @quotes['VB'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['VB'].changePercent)%>><%= @quotes['VB'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['VB'].weeks52Range%></td>			
+	</tr>	
+	
+		<tr>
+		<td>Vanguard Large Cap Index</td>
+		<td align="right"><%= @quotes['VV'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['VV'].changePercent)%>><%= @quotes['VV'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['VV'].changePercent)%>><%= @quotes['VV'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['VV'].weeks52Range%></td>			
+	</tr>	
+	
+		<tr>
+		<td>Vanguard Mid Cap Index</td>
+		<td align="right"><%= @quotes['VO'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['VO'].changePercent)%>><%= @quotes['VO'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['VO'].changePercent)%>><%= @quotes['VO'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['VO'].weeks52Range%></td>			
+	</tr>	
+	
+		<tr>
+		<td>Vanguard European Stock Index</td>
+		<td align="right"><%= @quotes['VGK'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['VGK'].changePercent)%>><%= @quotes['VGK'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['VGK'].changePercent)%>><%= @quotes['VGK'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['VGK'].weeks52Range%></td>			
+	</tr>	
+	
+		<tr>
+		<td>Vanguard Pacific Index</td>
+		<td align="right"><%= @quotes['VPL'].lastTrade%></td>
+		<td align="right" <%=quote_color(@quotes['VPL'].changePercent)%>><%= @quotes['VPL'].changePoints%></td>	
+		<td align="right" <%=quote_color(@quotes['VPL'].changePercent)%>><%= @quotes['VPL'].changePercent%>%</td>
+	  	<td align="right"><%= @quotes_ext['VPL'].weeks52Range%></td>			
+	</tr>	
+
+	  	    
+  </table>				
+</div>
+
+<br>
+
+<%= link_to 'Back', :action => 'index' %>
+

@@ -1,0 +1,53 @@
+<div id="investment-details">
+	
+	<!-- <h1>Fund II</h1> -->
+	
+	<table cellpadding="6" cellspacing="0" border="1">
+	  <tr>
+	  	  <td>               <b><%= link_to 'Company', 	:action => 'outcome_matrix', :sort_order => 'company'%>   </b></td>
+		  <td align="center"><b><%= link_to 'Cost', 	:action => 'outcome_matrix', :sort_order => 'investment'%></b></td>		  
+		  <td align="center"><b>Multiple</b></td>
+		  <td align="center"><b> 1</b></td>
+		  <td align="center"><b> 2</b></td>
+		  <td align="center"><b> 3</b></td>
+		  <td align="center"><b> 4</b></td>
+		  <td align="center"><b> 5</b></td>
+		  <td align="center"><b> 6</b></td>
+		  <td align="center"><b> 7</b></td>
+		  <td align="center"><b> 8</b></td>
+		  <td align="center"><b> 9</b></td>
+		  <td align="center"><b>10</b></td>		  		  		  		  		  		  		  		  		  		  		  
+	  </tr>
+	<% for investment in @investments %>
+	
+	  <tr valign="top"> 
+		<td> 			  <%= investment.company %></td>		 
+	 	<td align="right"><%= number_to_currency(investment.investment, 0)%></td>	
+		<td align="center"><%= number_with_precision(investment.multiple, 1)%>x</td>
+		
+		<td <%=css_return(investment.outcome_0+1) %>><%= number_with_precision(investment.outcome_0+1, 1)%>x</td>
+		<td <%=css_return(investment.outcome_1+1) %>><%= number_with_precision(investment.outcome_1+1, 1)%>x</td>
+		<td <%=css_return(investment.outcome_2+1) %>><%= number_with_precision(investment.outcome_2+1, 1)%>x</td>
+		<td <%=css_return(investment.outcome_3+1) %>><%= number_with_precision(investment.outcome_3+1, 1)%>x</td>
+		<td <%=css_return(investment.outcome_4+1) %>><%= number_with_precision(investment.outcome_4+1, 1)%>x</td>
+		<td <%=css_return(investment.outcome_5+1) %>><%= number_with_precision(investment.outcome_5+1, 1)%>x</td>
+		<td <%=css_return(investment.outcome_6+1) %>><%= number_with_precision(investment.outcome_6+1, 1)%>x</td>
+		<td <%=css_return(investment.outcome_7+1) %>><%= number_with_precision(investment.outcome_7+1, 1)%>x</td>
+		<td <%=css_return(investment.outcome_8+1) %>><%= number_with_precision(investment.outcome_8+1, 1)%>x</td>
+		<td <%=css_return(investment.outcome_9+1) %>><%= number_with_precision(investment.outcome_9+1, 1)%>x</td>		
+
+	    <td><%= link_to 'Details', :action => 'show_details', :id => investment %></td>
+		<td><%= link_to 'Edit',    :action => 'edit_investment', :id => investment %></td>
+	  </tr>
+	<% end %>
+	  <tr valign="top" class="<%= cycle('list-line-odd', 'list-line-even') %>">
+	  	<td> <b> Total </b> </td>	
+		<td align="right"><b><%= number_to_currency(@investments.sum { |investment| investment.investment }, 0) %></b></td>								
+	  </tr>
+	</table>
+</div>
+
+<div>
+	<h3><%= link_to 'Run Simulation', :action => 'run_sim' %></h3>
+	<p><i>(This will run 10,000 simulations, includes reserves, and will take about 5 seconds)</i></p>	
+</div>

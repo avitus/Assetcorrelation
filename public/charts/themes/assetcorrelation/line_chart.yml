@@ -1,0 +1,140 @@
+<%= chart :line %>
+
+  <%=comp :axis_value %>
+    alpha:  100
+    size:    16
+    min:     -1
+    max:      1
+    decimals: 1   
+
+  <%=comp :axis_category %>
+    alpha:  100
+    size:    16
+    skip:   <%=options[:skip]%>    
+    
+
+  <%=comp :axis_ticks %>
+    value_ticks:     true
+    category_ticks:  true    
+
+  <%=comp :chart_border %>
+    top_thickness:     0
+    bottom_thickness:  0
+    left_thickness:    0
+    right_thickness:   0
+
+  <%=comp :chart_grid_h %>
+    thickness:          1
+#   color:    
+    alpha:              100
+    type:             dotted
+
+  <%=comp :chart_grid_v %>
+    alpha:           0
+    thickness:       0
+    color:      000000
+
+  <%=comp :chart_pref %>
+    fill_shape:      false
+    point_shape:      none
+    line_thickness:      2
+
+  <%=comp :chart_rect %>
+    x:                      55
+    y:                      80
+    height:                450
+    width:                 900
+    positive_color:  586900
+    negative_color:  283000
+    positive_alpha:     100
+    negative_alpha:     100
+
+  <%=comp :draw %>
+    components:
+      - <%= drawing :rect %>
+          x:                        0
+          delay:                    0
+          y:                       15
+          height:                 555
+          width:                 1200
+          fill_color:          B99500
+          bevel:                   bg
+          line_thickness:           0
+          transition:        dissolve
+          layer:           background
+          text:            '          '      
+
+  <%=comp :chart_transition %>
+    delay:         0
+    type:   dissolve
+
+  <%=comp :legend %>
+    fill_color: 283000
+    fill_alpha: 100
+    color:       d2fc00
+    size:        16
+
+  <%=comp :series_color %>
+    colors: d2fc00
+
+
+  <%=comp :chart_type %>
+                                                                          
+  <%=comp :filter %>
+    filters:
+      - <%= filter_type :shadow %>
+          blurY:       10
+          angle:       45
+          alpha:       35
+          id:        high
+          distance:     5
+          blurX:       10
+      - <%= filter_type :shadow %>
+          blurY:       5
+          angle:      45
+          alpha:      35
+          id:        low
+          distance:    2
+          blurX:       5
+      - <%= filter_type :bevel %>
+          blurY:              100
+          inner:             true
+          angle:               90
+          highlightAlpha:      10
+          shadowColor:     4c5e6f
+          id:                  bg
+          highlightColor:  ffffff
+          shadowAlpha:         20
+          blurX:                0
+          distance:            25
+      - <%= filter_type :bevel %>
+          blurY:               30
+          inner:             true
+          angle:              -80
+          highlightAlpha:      50
+          shadowColor:     000088
+          id:                blue
+          highlightColor:  ffffff
+          shadowAlpha:         25
+          blurX:                0
+          distance:            20
+      - <%= filter_type :bevel %>
+          blurY:               30
+          inner:             true
+          angle:              -80
+          highlightAlpha:      25
+          shadowColor:     000000
+          id:                gray
+          highlightColor:  ffffff
+          shadowAlpha:         20
+          blurX:                0
+          distance:            20
+
+
+
+    
+    
+
+
+          
+            

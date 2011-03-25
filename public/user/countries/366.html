@@ -1,0 +1,908 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+			
+<html xmlns="http://www.w3.org/1999/xhtml">
+	
+	<head>
+		<meta name="verify-v1" content="swkiVh2AG5XZ8mZC2g3L8h/Ib8TlWwdltzbVfZpd3ag=" />
+		<meta name="msvalidate.01" content="CF09FFE3B3A14B6EA670C040CB03B375" />
+		<meta name="y_key" content="50574df83a74bfd5" > 
+		  
+		<link rel="shortcut icon" href="/images/favicon.ico" >
+		<link rel="icon" 		  href="/images/favicon.ico" >
+		
+		<title>Asset Correlations: Country Index Funds</title>
+		
+		<link href="/stylesheets/fundsim.css?1255649908" media="all" rel="stylesheet" type="text/css" />
+		<script src="/javascripts/jquery.js?1255650886" type="text/javascript"></script>
+<script src="/javascripts/jquery-ui.js?1255650886" type="text/javascript"></script>
+<script src="/javascripts/jrails.js?1255650888" type="text/javascript"></script>
+<script src="/javascripts/application.js?1229674275" type="text/javascript"></script>
+	</head>
+	
+	
+	
+	<body id="user">
+	
+		
+		  <div id="banner">
+			    <img alt="Fundsim" src="/images/fundsim.gif?1230591288" />
+			    Asset Correlations: Country Index Funds
+		  </div> <!-- End of Banner -->
+		  
+		  <div id="columns">	  	
+		    <div id="side">	    	
+					<h3 class="toggler menusection">Asset Classes</h3>
+						<div class="element menusection">
+							<ul>
+								<li><a href="/">Home</a></li>
+								<li><a href="/user/correlations/90">Correlation Matrix</a></li>					
+								<li><a href="/user/quote_publics">Current Prices</a></li>
+								<li><a href="/user/primer">Primer</a></li>										
+								<li><a href="/user/faq">FAQ</a></li>																																																
+								<li><a href="/article">Articles</a></li>
+								<li><a href="/article/video_feed">Videos</a></li>																																																																																																								
+							</ul>
+						</div>
+						
+					<h3 class="toggler menusection">Sub-Classes</h3>
+						<div class="element menusection">
+							<ul>
+								<li><a href="/user/countries/90">Country Matrix</a></li>
+								<li><a href="/user/sectors/90">Sector Matrix</a></li>
+								<li><a href="/user/bonds/90">Bond Matrix</a></li>							
+							</ul>
+						</div>	
+					
+					<h3 class="toggler menusection">Your Portfolio</h3>
+						<div class="element menusection">
+							<ul>
+								<li><a href="/user/custom">Custom Portfolio</a></li>
+								<li><a href="/user/enter_custom_port"> - New</a></li>
+								<li><a href="/user/load_port"> - Load/Update</a></li>								
+								<li><a href="/user/efficient_frontier"> - Risk vs Return</a></li>									
+							</ul>
+						</div>
+						
+					<h3 class="toggler menusection">Correlation Over Time</h3>
+						<div class="element menusection">
+							<ul>
+								<li><a href="/user/enter_time_corr">Enter 2 Assets</a></li>
+							</ul>
+						</div>		
+						
+		  <div id="left-footer">
+			<ul>
+			    <li><a href="/user/contact">Contact</a></li>	
+			    <li>Andy Vitus</li>								
+			</ul>		  	
+		  </div> <!-- End of Left Footer -->										
+						  
+		    </div>	<!-- End of Left Side -->	
+		    <div id="main">
+			      	
+			      <head>
+	<title>Asset Correlations between Countries</title>
+</head>
+
+<!--  Site: AssetCorrelation   Zone: My Site   Size: Leaderboard (728x90)  -->
+<script type="text/javascript"><!--
+	google_ad_client = "pub-3231194436906765";
+	/* AssetCorrelation 728x90 */
+	google_ad_slot = "6695247050";
+	google_ad_width = 728;
+	google_ad_height = 90;
+	//-->
+</script>
+<script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
+<!-- end Leaderboard ad -->
+
+
+<div id="investment-list">
+
+<!--
+ ! Show Correlation Matrix
+-->	
+
+  <h1>Country Correlation Matrix</h1>
+  
+  <p> 
+  	The following table shows return correlations between various countries (as represented by
+  	exchange traded funds) over the past year.
+  </p>
+
+  <table cellpadding="6" cellspacing="1" border="1">
+
+    <tr>
+      <td></td>
+	  <td></td>
+      
+	    <td align="center">^GSPC</td>
+	  
+	    <td align="center">EZA</td>
+	  
+	    <td align="center">EWQ</td>
+	  
+	    <td align="center">EWG</td>
+	  
+	    <td align="center">EWC</td>
+	  
+	    <td align="center">EWD</td>
+	  
+	    <td align="center">EWU</td>
+	  
+	    <td align="center">EWA</td>
+	  
+	    <td align="center">EWJ</td>
+	  
+	    <td align="center">EWY</td>
+	  
+	    <td align="center">EWT</td>
+	  
+	    <td align="center">EWZ</td>
+	  
+	    <td align="center">ECH</td>
+	  
+	    <td align="center">EWW</td>
+	  
+	    <td align="center">EIS</td>
+	  
+	  <td align="center">Return</td>
+	  <td align="center">StdDev</td> 	  
+	</tr>
+	
+    <tr>
+      <td align="left">United States</td>
+	  <td align="center">^GSPC</td>
+      
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+	    <td></td>
+	  
+		<td align="center">10.5%</td>
+		<td align="center">1.1%</td>	  
+  	</tr>		
+
+	
+	<tr>
+		<td align="left">South Africa</td>
+		<td align="center">EZA</td>
+		
+	       <td align="center" class="strongpos">0.83</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">16.4%</td>
+		<td align="center">1.8%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">France</td>
+		<td align="center">EWQ</td>
+		
+	       <td align="center" class="strongpos">0.89</td>  			
+		
+	       <td align="center" class="strongpos">0.80</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">5.9%</td>
+		<td align="center">2.0%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Germany</td>
+		<td align="center">EWG</td>
+		
+	       <td align="center" class="strongpos">0.86</td>  			
+		
+	       <td align="center" class="strongpos">0.79</td>  			
+		
+	       <td align="center" class="strongpos">0.96</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">15.7%</td>
+		<td align="center">1.6%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Canada</td>
+		<td align="center">EWC</td>
+		
+	       <td align="center" class="strongpos">0.90</td>  			
+		
+	       <td align="center" class="strongpos">0.83</td>  			
+		
+	       <td align="center" class="strongpos">0.81</td>  			
+		
+	       <td align="center" class="strongpos">0.81</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">20.4%</td>
+		<td align="center">1.3%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Sweden</td>
+		<td align="center">EWD</td>
+		
+	       <td align="center" class="strongpos">0.87</td>  			
+		
+	       <td align="center" class="strongpos">0.80</td>  			
+		
+	       <td align="center" class="strongpos">0.90</td>  			
+		
+	       <td align="center" class="strongpos">0.89</td>  			
+		
+	       <td align="center" class="strongpos">0.81</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">22.3%</td>
+		<td align="center">2.1%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">United Kingdom</td>
+		<td align="center">EWU</td>
+		
+	       <td align="center" class="strongpos">0.90</td>  			
+		
+	       <td align="center" class="strongpos">0.84</td>  			
+		
+	       <td align="center" class="strongpos">0.92</td>  			
+		
+	       <td align="center" class="strongpos">0.90</td>  			
+		
+	       <td align="center" class="strongpos">0.85</td>  			
+		
+	       <td align="center" class="strongpos">0.86</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">11.1%</td>
+		<td align="center">1.5%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Australia</td>
+		<td align="center">EWA</td>
+		
+	       <td align="center" class="strongpos">0.89</td>  			
+		
+	       <td align="center" class="strongpos">0.83</td>  			
+		
+	       <td align="center" class="strongpos">0.84</td>  			
+		
+	       <td align="center" class="strongpos">0.81</td>  			
+		
+	       <td align="center" class="strongpos">0.87</td>  			
+		
+	       <td align="center" class="strongpos">0.82</td>  			
+		
+	       <td align="center" class="strongpos">0.86</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">6.3%</td>
+		<td align="center">1.9%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Japan</td>
+		<td align="center">EWJ</td>
+		
+	       <td align="center" class="moderate">0.68</td>  			
+		
+	       <td align="center" class="moderate">0.57</td>  			
+		
+	       <td align="center" class="moderate">0.69</td>  			
+		
+	       <td align="center" class="moderate">0.70</td>  			
+		
+	       <td align="center" class="moderate">0.65</td>  			
+		
+	       <td align="center" class="moderate">0.65</td>  			
+		
+	       <td align="center" class="moderate">0.68</td>  			
+		
+	       <td align="center" class="moderate">0.69</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">1.8%</td>
+		<td align="center">1.2%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">South Korea</td>
+		<td align="center">EWY</td>
+		
+	       <td align="center" class="strongpos">0.80</td>  			
+		
+	       <td align="center" class="strongpos">0.77</td>  			
+		
+	       <td align="center" class="strongpos">0.76</td>  			
+		
+	       <td align="center" class="strongpos">0.76</td>  			
+		
+	       <td align="center" class="strongpos">0.80</td>  			
+		
+	       <td align="center" class="moderate">0.74</td>  			
+		
+	       <td align="center" class="strongpos">0.80</td>  			
+		
+	       <td align="center" class="strongpos">0.84</td>  			
+		
+	       <td align="center" class="moderate">0.64</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">22.0%</td>
+		<td align="center">1.7%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Taiwan</td>
+		<td align="center">EWT</td>
+		
+	       <td align="center" class="strongpos">0.76</td>  			
+		
+	       <td align="center" class="moderate">0.74</td>  			
+		
+	       <td align="center" class="moderate">0.75</td>  			
+		
+	       <td align="center" class="moderate">0.74</td>  			
+		
+	       <td align="center" class="moderate">0.75</td>  			
+		
+	       <td align="center" class="moderate">0.74</td>  			
+		
+	       <td align="center" class="strongpos">0.76</td>  			
+		
+	       <td align="center" class="strongpos">0.81</td>  			
+		
+	       <td align="center" class="moderate">0.66</td>  			
+		
+	       <td align="center" class="strongpos">0.85</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">19.8%</td>
+		<td align="center">1.4%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Brazil</td>
+		<td align="center">EWZ</td>
+		
+	       <td align="center" class="strongpos">0.80</td>  			
+		
+	       <td align="center" class="strongpos">0.80</td>  			
+		
+	       <td align="center" class="strongpos">0.76</td>  			
+		
+	       <td align="center" class="moderate">0.73</td>  			
+		
+	       <td align="center" class="strongpos">0.82</td>  			
+		
+	       <td align="center" class="strongpos">0.77</td>  			
+		
+	       <td align="center" class="strongpos">0.80</td>  			
+		
+	       <td align="center" class="strongpos">0.84</td>  			
+		
+	       <td align="center" class="moderate">0.58</td>  			
+		
+	       <td align="center" class="strongpos">0.78</td>  			
+		
+	       <td align="center" class="moderate">0.72</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">6.8%</td>
+		<td align="center">1.8%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Chile</td>
+		<td align="center">ECH</td>
+		
+	       <td align="center" class="moderate">0.61</td>  			
+		
+	       <td align="center" class="moderate">0.63</td>  			
+		
+	       <td align="center" class="moderate">0.59</td>  			
+		
+	       <td align="center" class="moderate">0.58</td>  			
+		
+	       <td align="center" class="moderate">0.61</td>  			
+		
+	       <td align="center" class="moderate">0.59</td>  			
+		
+	       <td align="center" class="moderate">0.59</td>  			
+		
+	       <td align="center" class="moderate">0.63</td>  			
+		
+	       <td align="center" class="moderate">0.45</td>  			
+		
+	       <td align="center" class="moderate">0.59</td>  			
+		
+	       <td align="center" class="moderate">0.58</td>  			
+		
+	       <td align="center" class="moderate">0.63</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">28.3%</td>
+		<td align="center">1.2%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Mexico</td>
+		<td align="center">EWW</td>
+		
+	       <td align="center" class="strongpos">0.89</td>  			
+		
+	       <td align="center" class="strongpos">0.86</td>  			
+		
+	       <td align="center" class="strongpos">0.81</td>  			
+		
+	       <td align="center" class="strongpos">0.79</td>  			
+		
+	       <td align="center" class="strongpos">0.86</td>  			
+		
+	       <td align="center" class="strongpos">0.81</td>  			
+		
+	       <td align="center" class="strongpos">0.85</td>  			
+		
+	       <td align="center" class="strongpos">0.86</td>  			
+		
+	       <td align="center" class="moderate">0.61</td>  			
+		
+	       <td align="center" class="strongpos">0.82</td>  			
+		
+	       <td align="center" class="strongpos">0.77</td>  			
+		
+	       <td align="center" class="strongpos">0.86</td>  			
+		
+	       <td align="center" class="moderate">0.66</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		   <td align="center"></td>
+		
+		<td align="center">15.6%</td>
+		<td align="center">1.4%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Israel</td>
+		<td align="center">EIS</td>
+		
+	       <td align="center" class="strongpos">0.78</td>  			
+		
+	       <td align="center" class="moderate">0.70</td>  			
+		
+	       <td align="center" class="strongpos">0.76</td>  			
+		
+	       <td align="center" class="moderate">0.73</td>  			
+		
+	       <td align="center" class="moderate">0.72</td>  			
+		
+	       <td align="center" class="moderate">0.74</td>  			
+		
+	       <td align="center" class="moderate">0.74</td>  			
+		
+	       <td align="center" class="strongpos">0.76</td>  			
+		
+	       <td align="center" class="moderate">0.59</td>  			
+		
+	       <td align="center" class="moderate">0.68</td>  			
+		
+	       <td align="center" class="moderate">0.69</td>  			
+		
+	       <td align="center" class="moderate">0.68</td>  			
+		
+	       <td align="center" class="moderate">0.54</td>  			
+		
+	       <td align="center" class="moderate">0.73</td>  			
+		
+		
+		   <td align="center"></td>
+		
+		<td align="center">-0.8%</td>
+		<td align="center">1.4%</td>			
+	</tr>
+	
+	<tr>
+		<td align="left">Turkey</td>
+		<td align="center">TUR</td>
+		
+	       <td align="center" class="strongpos">0.78</td>  			
+		
+	       <td align="center" class="strongpos">0.76</td>  			
+		
+	       <td align="center" class="strongpos">0.78</td>  			
+		
+	       <td align="center" class="moderate">0.74</td>  			
+		
+	       <td align="center" class="moderate">0.71</td>  			
+		
+	       <td align="center" class="moderate">0.74</td>  			
+		
+	       <td align="center" class="strongpos">0.78</td>  			
+		
+	       <td align="center" class="moderate">0.73</td>  			
+		
+	       <td align="center" class="moderate">0.52</td>  			
+		
+	       <td align="center" class="moderate">0.71</td>  			
+		
+	       <td align="center" class="moderate">0.64</td>  			
+		
+	       <td align="center" class="moderate">0.74</td>  			
+		
+	       <td align="center" class="moderate">0.58</td>  			
+		
+	       <td align="center" class="strongpos">0.78</td>  			
+		
+	       <td align="center" class="moderate">0.70</td>  			
+		
+		
+		<td align="center">15.8%</td>
+		<td align="center">2.2%</td>			
+	</tr>
+	
+  </table>
+
+  <br>
+  
+  <table cellpadding="3" cellspacing="1" border="0">
+  	<tr>
+  		<td><em>Period:</em></td>
+  		<td><em><a href="/user/countries/31">[1 Mo]</a></em></td>		
+  		<td><em><a href="/user/countries/91">[3 Mo]</a></em></td>
+  		<td><em><a href="/user/countries/183">[6 Mo]</a></em></td>		
+  		<td><em><a href="/user/countries/366">[1 Yr]</a></em></td>	
+      <td><em><a href="/user/countries/731">[2 Yr]</a></em></td>         		
+	</tr>
+  </table>
+
+  <br>       
+  
+
+  <table cellpadding="6" cellspacing="1" border="0">
+  	<tr>
+  		<td>Intra-portfolio diversification</td>
+		<td>= 0.75</td>
+  	</tr>
+	<tr>
+		<td>Portfolio return</td>
+		<td>= 13.6%</td>
+	</tr>
+	<tr>
+		<td>Start Date</td>
+		<td>= 2010-03-23</td>
+	</tr>
+	<tr>
+		<td>End Date</td>
+		<td>= 2011-03-23</td>
+	</tr>	
+  </table>
+
+<br>
+
+<p>
+Each cell represents the correlation between the two corresponding assets. 
+</p>
+
+  <table cellpadding="6" cellspacing="1" border="1">
+
+    <tr>
+	  <td align="center"><b>Cell Color</b></td>
+	  <td align="left"><b>Description</b></td>
+	  <td align="left"><b>Diversification Benefit</b></td>
+	</tr>
+	
+	<tr>
+	  <td align="center" class="negative">-0.65</td>  			
+      <td align="left">Asset pair with negative correlation</td> 
+	  <td align="left">Excellent Diversification</td>
+	</tr>
+	
+	<tr>
+	  <td align="center" class="mild-neg">-0.15</td>  			
+      <td align="left">Asset pair with slight negative correlation</td> 
+	  <td align="left">Good Diversification</td>
+	</tr>
+	
+	<tr>
+	  <td align="center" class="moderate">0.2</td>  			
+      <td align="left">Asset pair with mild positive correlation</td> 
+	  <td align="left">Moderate Diversification</td>
+	</tr>
+	
+	<tr>
+	  <td align="center" class="strongpos">0.8</td>  			
+      <td align="left">Asset pair with strong positive correlation</td> 
+	  <td align="left">Poor Diversification</td>
+	</tr>			
+  </table>
+
+</div>
+
+<br>
+
+<a href="/">Back</a>
+
+		    </div>	<!-- End of Main (Right Side) -->	
+		  </div> <!-- End of Cols -->
+		  
+	
+	<!-- Google Analytics Tracking Code -->
+	<script type="text/javascript">
+		var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+		document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+	</script>
+	<script type="text/javascript">
+		try {
+		var pageTracker = _gat._getTracker("UA-4539114-1");
+		pageTracker._trackPageview();
+		} catch(err) {}
+	</script>	
+	<!-- End of GA Tracking Code -->
+	
+	
+	
+	<!-- SiteCatalyst code version: H.17.
+		Copyright 1997-2008 Omniture, Inc. More info available at
+		http://www.omniture.com -->
+		<script language="JavaScript" type="text/javascript" src="http://www.assetcorrelation.com/omniture/s_code.js"></script>
+		<script language="JavaScript" type="text/javascript"><!--
+		/* You may give each page an identifying name, server, and channel on
+		the next lines. */
+		s.pageName=""
+		s.server=""
+		s.channel=""
+		s.pageType=""
+		s.prop1=""
+		s.prop2=""
+		s.prop3=""
+		s.prop4=""
+		s.prop5=""
+		/************* DO NOT ALTER ANYTHING BELOW THIS LINE ! **************/
+		var s_code=s.t();if(s_code)document.write(s_code)//--></script>
+		<script language="JavaScript" type="text/javascript"><!--
+		if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+		//--></script><noscript><a href="http://www.omniture.com" title="Web Analytics"><img
+		src="http://assetcorrelation.122.2o7.net/b/ss/astcasset/1/H.17--NS/0"
+		height="1" width="1" border="0" alt="" /></a></noscript><!--/DO NOT REMOVE/-->
+	<!-- End SiteCatalyst code version: H.17. -->	  
+		  
+	</body>
+
+</html>
+
+

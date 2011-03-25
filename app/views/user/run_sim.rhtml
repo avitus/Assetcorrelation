@@ -1,0 +1,22 @@
+<div id="simulation-results">
+ 	<h1>AssetCorrelation.com</h1>																
+</div>
+
+<div>
+	<%= @swf.insert_chart(:data_source => url_for(:controller => "/chart"), :width => "1000", :height => "600") %>
+</div>
+
+<br />
+<div>
+	<table cellpadding="6" cellspacing="0">
+	  <tr><td><b>Top Quartile </b></td><td align="left">:</td><td><%=number_with_precision(@ret_histogram.top_quartile, 2)%>x</td></tr>
+	  <tr><td><b>Median </b></td><td align="left">:</td><td><%= number_with_precision(@ret_histogram.median, 1)%>x</td></tr>
+	  <tr><td><b>Bottom Quartile    </b></td><td align="left">:</td><td><%= number_with_precision(@ret_histogram.bottom_quartile, 2)%>x</td></tr> 
+	</table>	
+</div>
+
+<br />
+
+<div>
+	<%= link_to 'Back', :action => 'index' %>
+</div>

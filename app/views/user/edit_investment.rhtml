@@ -1,0 +1,74 @@
+<div class="details-form">
+
+<%= error_messages_for 'investment' %>
+
+<fieldset>
+	<legend> Enter <b>Net</b> Return Multiples </legend>
+	<% form_for :investment, :url => { :action => :update_investment, :id => @investment } do |form| %>
+	  <p>
+	  	<label for="investment_company">Company:</label>
+		<%= form.text_field :company, :size => 40 %>
+	  </p>
+	  <p>
+	  	<label for="investment_partner">Partner:</label>
+		<%= form.text_field :partner, :size => 5 %>
+	  </p>
+	  <p>
+	  	<label for="investment_investment">Investment:</label>
+		<%= form.text_field :investment, :size => 10 %>
+	  </p>
+	  <p>
+	  	<label for="investment_reserves">Reserve:</label>
+		<%= form.text_field :reserves, :size => 10 %>
+	  </p>	  
+	  <p>
+		<label for="investment_date_initial">Date:</label>
+		<%= form.text_field :date_initial, :size => 9 %>
+	  </p>
+	  <p>
+		<label for="investment_outcome_0">Outcome 1:</label>
+		<%= form.text_field :outcome_0, :size => 6 %>
+	  </p>	  
+      <p>
+		<label for="investment_outcome_1">Outcome  2:</label>
+		<%= form.text_field :outcome_1, :size => 6 %>
+	  </p>  
+	  <p>
+		<label for="investment_outcome_2">Outcome  3:</label>
+		<%= form.text_field :outcome_2, :size => 6 %>
+	  </p>
+	  <p>
+		<label for="investment_outcome_3">Outcome  4:</label>
+		<%= form.text_field :outcome_3, :size => 6 %>
+	  </p>
+	  <p>
+		<label for="investment_outcome_4">Outcome  5:</label>
+		<%= form.text_field :outcome_4, :size => 6 %>
+	  </p>
+	  <p>
+		<label for="investment_outcome_5">Outcome  6:</label>
+		<%= form.text_field :outcome_5, :size => 6 %>
+	  </p>
+	  <p>
+		<label for="investment_outcome_6">Outcome  7:</label>
+		<%= form.text_field :outcome_6, :size => 6 %>
+	  </p>
+	  <p>
+		<label for="investment_outcome_7">Outcome  8:</label>
+		<%= form.text_field :outcome_7, :size => 6 %>
+	  </p>
+	  <p>
+		<label for="investment_outcome_8">Outcome  9:</label>
+		<%= form.text_field :outcome_8, :size => 6 %>
+	  </p>	  
+	  <p>
+		<label for="investment_outcome_9">Outcome 10:</label>
+		<%= form.text_field :outcome_9, :size => 6 %>
+	  </p>  	  	  	  	  	  	  	  
+	  
+	  <%= submit_tag "Save Changes", :class => "submit" %>	  	  
+	<% end %>	  
+
+</fieldset>
+
+</div>

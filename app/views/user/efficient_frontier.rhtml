@@ -1,0 +1,38 @@
+<head>
+	<title>Risk vs Return : The Efficient Frontier</title>
+</head>
+
+<!--  Site: AssetCorrelation   Zone: My Site   Size: Leaderboard (728x90)  -->
+<script type="text/javascript"><!--
+	google_ad_client = "pub-3231194436906765";
+	/* AssetCorrelation 728x90 */
+	google_ad_slot = "6695247050";
+	google_ad_width = 728;
+	google_ad_height = 90;
+	//-->
+</script>
+<script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
+<!-- end Leaderboard ad -->
+
+<h1>Risk vs Return</h1>
+  
+<div>
+	<p> The efficient frontier represents those portfolios that have the maximum return for a given level of risk. As an investor,
+	you should target a point along the efficient frontier based on your attitude towards risk. Increasing your allocation to your 
+	<b><a href="http://www.lovemoney.com/savings/">savings accounts</a></b> will move your portfolio towards the bottom left of the chart, reducing
+	your risk and expected return. Increasing your exposure to emerging market equities will move it up and to the right.</p>
+	
+	<p> The chart below shows the risk and return for portfolios entered by other people over the past <%=days_to_words(@query)%>. 
+	If you have entered your own portfolio it is shown as an orange dot. Ideally, your portfolio will have a higher return 
+	than other portfolios with comparable risk.</p>
+</div>  
+  
+<div>
+  <%= ziya_chart load_ef_url, :size => "1200x800" -%>
+</div>
+
+
+
+
+
+
