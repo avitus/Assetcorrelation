@@ -48,12 +48,6 @@ class UserController < ApplicationController
   caches_page :index, :history, :correlations, :countries, :sectors, :primer, :history, :bonds, 
               :faq, :simple_asset_allocation
 
-  # ----------------------------------------------------------------------------------------------------------
-  # Cache Expiration - heavily poached from http://macdiggs.com/page/9/?id=20
-  # ---------------------------------------------------------------------------------------------------------- 
-  #def cache_expirer
-  #  
-  #end
 
   def index
   end
@@ -441,7 +435,6 @@ class UserController < ApplicationController
     
   # ----------------------------------------------------------------------------------------------------------
   # Correlation over Time
-  # 
   #
   # Inputs: 
   #   ["ticker1", "ticker2"]  - two tickers in a string (converted to an array in this function
