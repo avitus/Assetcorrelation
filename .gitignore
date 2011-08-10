@@ -57,6 +57,9 @@ tmp/*
 # Netbeans project directory
 /nbproject/
 
+# Aptana project file
+.project
+
 # Textmate project files
 /*.tmpproj
 
