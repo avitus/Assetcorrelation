@@ -10,7 +10,49 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20110811002108) do
+ActiveRecord::Schema.define(:version => 20110811161625) do
+
+  create_table "assets", :force => true do |t|
+    t.string   "name"
+    t.string   "ticker"
+    t.string   "asset_class"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "assets", ["asset_class"], :name => "index_assets_on_asset_class"
+  add_index "assets", ["name"], :name => "index_assets_on_name", :unique => true
+  add_index "assets", ["ticker"], :name => "index_assets_on_ticker", :unique => true
+
+  create_table "portfolios", :force => true do |t|
+    t.string   "name"
+    t.integer  "user_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "portfolios", ["name"], :name => "index_portfolios_on_name"
+  add_index "portfolios", ["user_id"], :name => "index_portfolios_on_user_id"
+
+  create_table "positions", :force => true do |t|
+    t.integer  "asset_id"
+    t.decimal  "holding_percentage"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "positions", ["asset_id"], :name => "index_positions_on_asset_id"
+
+  create_table "price_quotes", :force => true do |t|
+    t.integer  "asset_id"
+    t.date     "date"
+    t.decimal  "price"
+    t.decimal  "daily_return"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "price_quotes", ["asset_id"], :name => "index_price_quotes_on_asset_id"
 
   create_table "rails_admin_histories", :force => true do |t|
     t.string   "message"

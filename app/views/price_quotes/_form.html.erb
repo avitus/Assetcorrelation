@@ -1,0 +1,33 @@
+<%= form_for(@price_quote) do |f| %>
+  <% if @price_quote.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@price_quote.errors.count, "error") %> prohibited this price_quote from being saved:</h2>
+
+      <ul>
+      <% @price_quote.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :asset_id %><br />
+    <%= f.number_field :asset_id %>
+  </div>
+  <div class="field">
+    <%= f.label :date %><br />
+    <%= f.date_select :date %>
+  </div>
+  <div class="field">
+    <%= f.label :price %><br />
+    <%= f.text_field :price %>
+  </div>
+  <div class="field">
+    <%= f.label :daily_return %><br />
+    <%= f.text_field :daily_return %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

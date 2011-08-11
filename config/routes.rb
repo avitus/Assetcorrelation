@@ -1,4 +1,10 @@
 Assetcorrelation::Application.routes.draw do
+	
+  resources :positions
+  resources :price_quotes
+  resources :assets
+  resources :portfolios
+
   #get \"users\/show\"
 
   root :to => "home#index"

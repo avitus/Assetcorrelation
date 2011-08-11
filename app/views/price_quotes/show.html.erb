@@ -1,0 +1,25 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <b>Asset:</b>
+  <%= @price_quote.asset_id %>
+</p>
+
+<p>
+  <b>Date:</b>
+  <%= @price_quote.date %>
+</p>
+
+<p>
+  <b>Price:</b>
+  <%= @price_quote.price %>
+</p>
+
+<p>
+  <b>Daily return:</b>
+  <%= @price_quote.daily_return %>
+</p>
+
+
+<%= link_to 'Edit', edit_price_quote_path(@price_quote) %> |
+<%= link_to 'Back', price_quotes_path %>

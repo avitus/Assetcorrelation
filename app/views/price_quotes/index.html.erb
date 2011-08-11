@@ -1,0 +1,29 @@
+<h1>Listing price_quotes</h1>
+
+<table>
+  <tr>
+    <th>Asset</th>
+    <th>Date</th>
+    <th>Price</th>
+    <th>Daily return</th>
+    <th></th>
+    <th></th>
+    <th></th>
+  </tr>
+
+<% @price_quotes.each do |price_quote| %>
+  <tr>
+    <td><%= price_quote.asset_id %></td>
+    <td><%= price_quote.date %></td>
+    <td><%= price_quote.price %></td>
+    <td><%= price_quote.daily_return %></td>
+    <td><%= link_to 'Show', price_quote %></td>
+    <td><%= link_to 'Edit', edit_price_quote_path(price_quote) %></td>
+    <td><%= link_to 'Destroy', price_quote, confirm: 'Are you sure?', method: :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New Price quote', new_price_quote_path %>
