@@ -99,8 +99,11 @@
 		<div id="menu-tabs" class="menu">
 			<ul id="maintab" class="basictab">
 				<li <%= tab(@tab=="home"		) %> rel="homepage">	<%= link_to 'Home', 		root_path %> </li>	 
-				<li <%= tab(@tab=="deals"		) %> rel="deals">		<%= link_to 'Deals', 		root_path %> </li>	 
-				<li <%= tab(@tab=="metrics"		) %> rel="metrics">		<%= link_to 'Metrics', 		root_path %> </li>	 
+				<li <%= tab(@tab=="corr"		) %> rel="corr">		<%= link_to 'Correlations',	root_path %> </li>	 
+				<li <%= tab(@tab=="macro"		) %> rel="macro">		<%= link_to 'Macro', 		root_path %> </li>	 
+				<li <%= tab(@tab=="learn"		) %> rel="learn">		<%= link_to 'Learn', 		root_path %> </li>	 
+				<li <%= tab(@tab=="support"		) %> rel="support">		<%= link_to 'Support', 		root_path %> </li>	 
+				<li <%= tab(@tab=="account"		) %> rel="account">		<%= link_to 'My Account', 	root_path %> </li>	 
 				<li>&nbsp;</li>
 			</ul>
 
@@ -113,24 +116,39 @@
 							<li <%= sub(@sub=="manage"		)%>><%= link_to 'Dashboard',	root_path %></li>
 						</ul>	
 					</div>
-					<div id="deals" class="submenustyle">
+					<div id="corr" class="submenustyle">
 						<ul>							
-							<li <%= sub(@sub=="all"			)%>><%= link_to 'Show All',				root_path %></li>
-							<li <%= sub(@sub=="add"			)%>><%= link_to 'Add a Deal',			root_path %></li>
-							<li <%= sub(@sub=="cb_search"	)%>><%= link_to 'Search Crunchbase',	root_path %></li>
+							<li <%= sub(@sub=="all"			)%>><%= link_to 'Main',					root_path %></li>
+							<li <%= sub(@sub=="add"			)%>><%= link_to 'Bond',					root_path %></li>
+							<li <%= sub(@sub=="cb_search"	)%>><%= link_to 'S&P Sectors',			root_path %></li>
+							<li <%= sub(@sub=="cb_search"	)%>><%= link_to 'International',		root_path %></li>
 						</ul>	
 					</div>
-					<div id="metrics" class="submenustyle">
+					<div id="macro" class="submenustyle">
 						<ul>							
-							<li <%= sub(@sub=="list"		)%>><%= link_to 'List Metrics',	root_path %></li>
-							<li <%= sub(@sub=="add"			)%>><%= link_to 'Add Metric',	root_path %></li>
+							<li <%= sub(@sub=="list"		)%>><%= link_to 'Summary',				root_path %></li>
+							<li <%= sub(@sub=="add"			)%>><%= link_to 'Database',				root_path %></li>
 						</ul>	
 					</div>
-					<div id="profile" class="submenustyle">
+					<div id="learn" class="submenustyle">
 						<ul>
-							<li <%= sub(@sub=="dash"		)%>><%= link_to 'Account', 		root_path %></li>					
+							<li <%= sub(@sub=="dash"		)%>><%= link_to 'Primer',				root_path %></li>					
 						</ul>
 					</div>
+					
+					
+					<div id="support" class="submenustyle">
+						<ul>
+							<li <%= sub(@sub=="dash"		)%>><%= link_to 'FAQ',					root_path %></li>					
+						</ul>
+					</div>
+					
+					<div id="account" class="submenustyle">
+						<ul>
+							<li <%= sub(@sub=="dash"		)%>><%= link_to 'My Portfolios',		root_path %></li>					
+						</ul>
+					</div>
+															
 
 				</div><!--submenu-left end-->
 				<div class="submenu-icon submenustyle"><a href="#"><img src="/assets/new-icon.png" width="32" height="32" alt="" /></a></div>

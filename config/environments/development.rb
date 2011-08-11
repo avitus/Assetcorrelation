@@ -21,6 +21,8 @@ Assetcorrelation::Application.configure do
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.default :charset => "utf-8"
 
+  # Rotate logs every 5 MB, only keep 3 latest logs
+  config.logger = Logger.new(Rails.root.join("log",Rails.env + ".log"),3,5*1024*1024)
 
   # Print deprecation notices to the Rails logger
   config.active_support.deprecation = :log
