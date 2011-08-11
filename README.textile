@@ -1,6 +1,6 @@
 h1. Assetcorrelation
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Generated using the following template: https://github.com/RailsApps/rails3-devise-rspec-cucumber/wiki/Tutorial
 
 h2. More Information
 
