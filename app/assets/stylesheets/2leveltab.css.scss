@@ -1,0 +1,108 @@
+.menu
+{
+  height:90px;
+}
+
+.menu-main-only
+{
+  height:48px;
+}
+
+.menu ul
+{
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+
+.menu ul li
+{
+  background:url(nav-sepa.png) no-repeat left top;
+  float:left;
+  height:42px;
+  line-height:42px;
+  font-size:12px;
+  color:#FFF;
+  font-weight:normal;
+  text-transform:uppercase;
+}
+
+.menu ul li a
+{
+  color:#FFF;
+  text-decoration:none;
+  padding:0 15px;
+  display:block;
+}
+
+.menu ul li a:hover, ul li.selected a
+{
+  color:#99cc33;
+  text-decoration:none;
+}
+
+.submenu
+{
+  height:42px;
+}
+
+.submenu-left
+{
+  width:1040px;
+  height:42px;
+  float:left;
+}
+
+.submenu ul
+{
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+
+.submenu ul li
+{
+  float:left;
+  height:33px;
+  line-height:33px;
+  font-size:12px;
+  margin-top:5px;
+  color:#9c3;
+  font-weight:normal;
+  padding:0 0px;
+  background: none;
+  text-transform: none;
+}
+
+.submenu ul li.nopad
+{
+  padding-left:0;
+}
+
+.submenu ul li a
+{
+  color:#9c3;
+  text-decoration:none;
+  display:block;
+}
+
+.submenu ul li a:hover, .submenu ul li.active a
+{
+  color:#fc3;
+  text-decoration:none;
+}
+
+.submenu-icon
+{
+  width:32px;
+  height:32px;
+  float:right;
+  padding-top:3px;
+}
+
+/* Start with submenus hidden */
+.submenustyle {
+  display:none;
+  filter:alpha(opacity=0);
+  -moz-opacity:0;
+}
