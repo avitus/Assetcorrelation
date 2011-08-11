@@ -1,37 +1,186 @@
-<!doctype html>
-<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
-<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
-<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Assetcorrelation</title>
-  <meta name="description" content="">
-  <meta name="author" content="">
-  <%= stylesheet_link_tag    "application" %>
-  <%= javascript_include_tag "application" %>
-  <%= csrf_meta_tags %>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title><%= Assetcorrelation %></title>
+
+<meta name="distribution" content="all" />
+<meta name="robots" content="all" />	
+<meta name="resource-type" content="document" />
+<meta name="MSSmartTagsPreventParsing" content="true" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta name="description" content="A macro approach to investing" />	
+<meta name="keywords" content="diversification, asset correlation" />	
+
+<!-- Rails 3 XSS protection -->
+<%= csrf_meta_tags %>
+
+<!-- Main Stylesheet -->
+<%= stylesheet_link_tag    "application" %>
+
+<!-- Auxiliary stylesheets, etc -->
+<%= yield(:head) %>
+
+<!-- Javascript -->
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.6.min.js"></script>
+<script type="text/javascript" src="http://cdn.jquerytools.org/1.2.5/all/jquery.tools.min.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js"></script>
+
+<!-- 2leveltab 		: menus -->
+<%= javascript_include_tag 	'application', '2leveltab' %> 
+
+<!-- Shortcut Icons -->
+<link rel="shortcut icon" href="/images/favicon.ico" />
+<link rel="icon" 		  href="/images/favicon.ico" />	
+
+<!--[if IE 6]>
+<style type="text/css">
+	.learn-area
+	{
+		padding-top:16px;
+	}
+</style>
+<![endif]-->
+
+<style type="text/css">
+.left-widget
+{
+	-moz-border-radius:8px;
+	-webkit-border-radius:8px;
+	-o-border-radius:8px;
+	border-radius:8px;
+	behavior:url(PIE.htc);
+}
+
+.main-right
+{
+	-moz-border-radius:8px;
+	-webkit-border-radius:8px;
+	-o-border-radius:8px;
+	border-radius:8px;
+	behavior:url(PIE.htc);
+}
+</style>
+
 </head>
-<body class="<%= params[:controller] %>">
-  <div id="container" class="container">
-    <header>
-      <nav>
-        <ul>
-          <%= render 'devise/menu/registration_items' %>
-          <%= render 'devise/menu/login_items' %>
-        </ul>
-      </nav>
-      <%- flash.each do |name, msg| -%>
-        <%= content_tag :div, msg, :id => "flash_#{name}" if msg.is_a?(String) %>
-      <%- end -%>
-    </header>
-    <div id="main" role="main">
-      <%= yield %>
-    </div>
-    <footer>
-    </footer>
-  </div> <!--! end of #container -->
+
+<% if user_signed_in? %>
+<body id="inner1-body">
+<% else %>
+<body>
+<% end %>
+<div id="wrapper"><!--wrapper start-->
+	<div id="header"><!--header start-->
+		<div class="header-top"><!--header-top start-->
+			<% if user_signed_in? %>
+				<div class="inner-top-right"><!--inner-top-right start-->
+					<strong>Welcome:</strong> <%= current_user.email %> <strong><%= link_to "(Logout)", destroy_user_session_path %></strong>
+				</div><!--inner-top-right end-->
+			<% else %>
+				<div class="top-right"><!--top-right start-->        
+					<div class="resize">
+						<a class="fontblk" id="large" title="Increase Font Size"></a>
+						<a class="fontblk" id="small" title="Decrease Font Size"></a>
+					</div>
+
+					<div class="button">
+						<ul>
+							<li><%= link_to 'SIGN UP', new_user_registration_path %></li>
+							<li><%= link_to 'LOG IN', new_user_session_path %></li>
+						</ul>
+					</div>
+
+				</div><!--top-right end-->
+			<% end %>
+		</div><!--header-top end-->
+
+		<div id="menu-tabs" class="menu">
+			<ul id="maintab" class="basictab">
+				<li <%= tab(@tab=="home"		) %> rel="homepage">	<%= link_to 'Home', 		root_path %> </li>	 
+				<li <%= tab(@tab=="deals"		) %> rel="deals">		<%= link_to 'Deals', 		root_path %> </li>	 
+				<li <%= tab(@tab=="metrics"		) %> rel="metrics">		<%= link_to 'Metrics', 		root_path %> </li>	 
+				<li>&nbsp;</li>
+			</ul>
+
+			<div class="submenu"><!--submenu start-->
+
+				<div class="submenu-left">
+
+					<div id="homepage" class="submenustyle">
+						<ul>							
+							<li <%= sub(@sub=="manage"		)%>><%= link_to 'Dashboard',	root_path %></li>
+						</ul>	
+					</div>
+					<div id="deals" class="submenustyle">
+						<ul>							
+							<li <%= sub(@sub=="all"			)%>><%= link_to 'Show All',				root_path %></li>
+							<li <%= sub(@sub=="add"			)%>><%= link_to 'Add a Deal',			root_path %></li>
+							<li <%= sub(@sub=="cb_search"	)%>><%= link_to 'Search Crunchbase',	root_path %></li>
+						</ul>	
+					</div>
+					<div id="metrics" class="submenustyle">
+						<ul>							
+							<li <%= sub(@sub=="list"		)%>><%= link_to 'List Metrics',	root_path %></li>
+							<li <%= sub(@sub=="add"			)%>><%= link_to 'Add Metric',	root_path %></li>
+						</ul>	
+					</div>
+					<div id="profile" class="submenustyle">
+						<ul>
+							<li <%= sub(@sub=="dash"		)%>><%= link_to 'Account', 		root_path %></li>					
+						</ul>
+					</div>
+
+				</div><!--submenu-left end-->
+				<div class="submenu-icon submenustyle"><a href="#"><img src="/images/new-icon.png" width="32" height="32" alt="" /></a></div>
+	        	<div class="clr"></div>
+
+			</div><!--submenu end-->				
+		</div>  <!-- End of Menu Tabs -->
+		
+		<div class="breadcum-area"><!--breadcum start-->
+			<div class="breadcum-left">
+				<span class="home-icon"><a href="/"><img src="/images/home-icon.png" width="25" height="23" alt="" /></a></span>
+				<div class="breadcum-link">
+					/ <%= (render_breadcrumbs :separator => ' / ').html_safe %>
+				</div>
+			</div>
+			<% if user_signed_in? %>
+			<div class="breadcum-right">
+
+			</div>
+			<% end %>
+		</div><!--breadcum end-->
+
+		<%= flash_messages  %>
+		
+	</div> <!--header end-->
+
+	<!--Content Block -->
+	<div class="page-content">
+		<%= content_for?(:content) ? yield(:content) : yield %>
+	</div>
+
+	<div><img src="/images/trans.png" width="1" height="10" alt="" />&nbsp;</div>
+
+	<div class="clr"></div>
+
+	<div id="footer"><!--footer start-->
+		&copy; <%= Date.today.year %> Nostradamus |
+		<span>Web Design: avitus</span>
+	</div><!--footer end-->
+
+</div><!--wrapper end-->
+
+<!-- Start of Menu Tab Code  -->
+<% if user_signed_in? %>
+	<script type="text/javascript">
+		//initialize tab menu, by passing in ID of UL
+		initalizetab("maintab")
+	</script>	
+<% end %>
+
 </body>
 </html>
+
