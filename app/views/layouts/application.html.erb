@@ -177,7 +177,9 @@
 
 	<!--Content Block -->
 	<div class="page-content">
-		<%= content_for?(:content) ? yield(:content) : yield %>
+		<div class="white-box-with-margins">
+			<%= content_for?(:content) ? yield(:content) : yield %>
+		</div>
 	</div>
 
 	<div><img src="/assets/trans.png" width="1" height="10" alt="" />&nbsp;</div>
