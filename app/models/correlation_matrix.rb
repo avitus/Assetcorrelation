@@ -45,8 +45,7 @@ class CorrelationMatrix
   # Input: array of tickers, number of days
   # ----------------------------------------------------------------------------------------------------------  
   def add_many_stocks(tickers)
-
-    
+  
     if (tickers.size > @slots_open)
       # Not enough space to insert all tickers
       tickers = tickers[0..@slots_open]
@@ -54,7 +53,7 @@ class CorrelationMatrix
     
     # 1) Get price history from Yahoo
     yahoo_quotes, shortest_ticker, error_code  = yahoo_request(tickers, @period_req)
-    if (error_code==1) # too little history to add asset
+    if error_code == 1 # too little history to add asset
       return shortest_ticker
     end
 
@@ -63,17 +62,15 @@ class CorrelationMatrix
     stock_sequences             = price_to_returns(yahoo_quotes, num_companies)
 
     # 3) Build correlation matrix
-    for company in 0...stock_sequences.size
-      add_stock(tickers[company], stock_sequences[company])
-    end
+    stock_sequences.each { |c|
+      add_stock( tickers[c], stock_sequences[c] )
+    }
 
     # 4) Request a StandardQuote to get the full company names
     @stock_fullnames.concat( tickers_to_names(tickers) )
       
     return shortest_ticker
   end
-
-
 
   # ----------------------------------------------------------------------------------------------------------
   # Add a single stock to the correlation matrix
