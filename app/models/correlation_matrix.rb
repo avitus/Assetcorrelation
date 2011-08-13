@@ -4,7 +4,7 @@ class Array
   end
 end
 
-class CorrelationMatrix
+class Correlation_matrix
     
   # Constants
   MA                    = 20                                # maximum number of assets
@@ -62,7 +62,7 @@ class CorrelationMatrix
     stock_sequences             = price_to_returns(yahoo_quotes, num_companies)
 
     # 3) Build correlation matrix
-    stock_sequences.each { |c|
+    stock_sequences.each_index { |c|
       add_stock( tickers[c], stock_sequences[c] )
     }
 
@@ -98,8 +98,7 @@ class CorrelationMatrix
   # Inputs: ticker        - name of asset (ticker)
   # ----------------------------------------------------------------------------------------------------------  
   def remove_stock(ticker)
-    
-    
+ 
     # Get index for removal
     index = @stock_names.index(ticker)    
  

@@ -24,6 +24,11 @@ Assetcorrelation::Application.routes.draw do
   # Sample of named route:
   #   match 'products/:id/purchase' => 'catalog#purchase', :as => :purchase
   # This route can be invoked with purchase_url(:id => product.id)
+  match '/majors'				 	=> 'correlation#correlations',  :as => 'majors'
+  match '/bonds' 					=> 'correlation#bonds',   			:as => 'bonds'
+  match '/sectors' 				=> 'correlation#sectors',   		:as => 'sectors'
+  match '/international'	=> 'correlation#countries',   	:as => 'international'
+
 
   # Sample resource route (maps HTTP verbs to controller actions automatically):
   #   resources :products

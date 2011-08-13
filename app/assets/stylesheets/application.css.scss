@@ -26,3 +26,20 @@ header nav ul li {
   border: solid 1px #C66;
 }
 
+/* Classify correlations red, yellow, green */
+.negative {
+  background: #A4C400; /* light green = very good */
+}
+
+.moderate {
+  background: #b99500; /* yellow = ok */
+}
+
+.mild-neg {
+  background: #586900; /* green = good */
+}
+
+.strongpos {
+  background: #7a2f00; /* red = bad */
+}
+
