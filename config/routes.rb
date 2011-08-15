@@ -29,6 +29,7 @@ Assetcorrelation::Application.routes.draw do
   match '/sectors' 				=> 'correlation#sectors',   		:as => 'sectors'
   match '/international'	=> 'correlation#countries',   	:as => 'international'
 
+	match '/primer'					=> 'info#primer',								:as => 'primer'
 
   # Sample resource route (maps HTTP verbs to controller actions automatically):
   #   resources :products
