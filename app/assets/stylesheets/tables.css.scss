@@ -37,12 +37,6 @@ table.ac-standard thead th a
   color:#FFF;
 }
 
-table.ac-standard td {
-  border:thin solid #f2f1f1;
-  background-color:#f2f1f1; 
-  color:#232323;  
-  padding:3px;  
-}
 
 table.ac-standard tbody th {
     padding:15px;
@@ -66,6 +60,15 @@ table.ac-standard tbody th {
         );
 }
 
+table.ac-standard td {
+  border:thin solid #f2f1f1;
+  background-color:#f2f1f1; 
+  color:#232323;  
+  padding:3px;  
+}
+
+
+
 table.ac-standard td a
 {
   color:#232323;
@@ -78,4 +81,8 @@ table.ac-standard td a:hover
 
 table.ac-standard td.decimal {
   text-align:right;
+}
+
+table.ac-standard tr.in_range td {
+  background-color: darkgray;
 }

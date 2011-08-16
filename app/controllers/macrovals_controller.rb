@@ -105,24 +105,37 @@ class MacrovalsController < ApplicationController
     equity_risk_yield_ranges  = [-5, -2, 0, 2, 4, 6, 9, 16] # min = -4.38, max = 14.88
     pe_ten_year_ranges        = [4, 10, 15, 20, 25, 30, 35, 45] # min = 4.78, max = 44.2
     
-    # ===== Get today's S&P500 price ====
+    # ===== Calculate today's Shiller 10 Yr PE Ratio ====
 
+    @quote_type_a  = YahooFinance::StandardQuote
+    @quote_type_b  = YahooFinance::ExtendedQuote
+    @quote_type_c  = YahooFinance::RealTimeQuote
+
+    @quote_symbols = "^TNX,^GSPC"
     
+    # Get the quotes from Yahoo! Finance.  The get_quotes method call
+    # returns a Hash containing one quote object of type "quote_type" for
+    # each symbol in "quote_symbols".  If a block is given, it will be
+    # called with the quote object (as in the example below).
+    @quotes      = YahooFinance::get_quotes( @quote_type_a, @quote_symbols )
+        
+    # Calculate Shiller 10 Yr PE Ratio
+		@ten_yr_rate = @quotes['^TNX' ].lastTrade
+		@s_and_p		 = @quotes['^GSPC'].lastTrade
+    @shiller_pe  = @quotes['^GSPC'].lastTrade / Macroval.last.spcomposite.to_f * Macroval.last.pe_tenyear.to_f 
+		@ery				 = 1 / @shiller_pe * 100 - @ten_yr_rate
     
     # ===== Equity Risk Yield Table =====
     @equity_risk_yield_table = Array.new
-    @equity_risk_yield_headings = ['Range', 'Return', 'Months']
+    @equity_risk_yield_headings = ['Equity Risk', 'Return', 'Months']
     
     for i in 0...equity_risk_yield_ranges.size-1
       
       range_start = equity_risk_yield_ranges[i]
       range_end   = equity_risk_yield_ranges[i+1]
 
-      Rails.logger.debug("*** Querying database for equity risk yield values in range: #{range_start..range_end}")
       dataset     = Macroval.find_equity_risk_yield(range_start..range_end)
-      
-      Rails.logger.debug("*** Retrieved #{dataset.size} records")
-      
+            
       table_row             = Hash.new
       table_row[:range]     = range_start.to_s + " - " + range_end.to_s
       table_row[:mo_ret]    = 100 * (dataset.collect(&:monthly_return).collect(&:to_f).collect { |r| 1 + r/100 }.geometric_mean - 1)
@@ -134,7 +147,7 @@ class MacrovalsController < ApplicationController
     
     # ===== PE Table =====
     @pe_ten_year_table = Array.new
-    @pe_ten_year_headings = ['Range', 'Return', 'Months']
+    @pe_ten_year_headings = ['10 Yr P/E', 'Return', 'Months']
     
     for i in 0...pe_ten_year_ranges.size-1
       
@@ -197,7 +210,7 @@ class MacrovalsController < ApplicationController
   # Outputs:  
   # ----------------------------------------------------------------------------------------------------------  
   def add_latest_data
-    @db =  Macroval.find_year_month(2009..2020)
+    @db =  Macroval.find_year_month(2010..2020)
   end  
   
   # ----------------------------------------------------------------------------------------------------------

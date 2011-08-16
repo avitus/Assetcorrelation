@@ -1,6 +1,4 @@
-<!-- Macro Dashboard -->
-
-<h1>Macro Valuation Dashboard</h1>
+<h1>Expected S&P 500 Return Based on Historical P/E Ranges</h1>
 
 <div class="macro-buckets" id="left">
 	
@@ -17,7 +15,7 @@
 	
 			<tbody>
 				  <% for row in @pe_ten_year_table %>
-					  <tr>
+					  <tr <%= in_range( @shiller_pe, row[:range] ) %> >
 					    <td align="right"><%= row[:range]    %> x</td>
 					    <td align="right"><%= number_with_precision(row[:mo_ret], :precision => 1) %> %</td>		
 						<td align="right"><%= row[:mo_count] %></td>		 
@@ -33,6 +31,7 @@
 			<li>Expected return is calculated using annualized geometric mean of monthly returns</li>
 			<li>Return calculation includes dividends and is adjusted for inflation</li>		
 			<li>'Months' column is number of months that 10 Yr PE was in given range</li>
+			<li>Shiller ten year P/E as of today is <%= number_with_precision(@shiller_pe, :precision => 1) %></li>
 		</ol>
 	</div>
 </div>
@@ -49,7 +48,7 @@
 	
 			<tbody>
 				  <% for row in @equity_risk_yield_table %>
-					  <tr>
+					  <tr <%= in_range( @ery, row[:range] ) %> >
 					    <td align="right"><%= row[:range]    %> %</td>
 					    <td align="right"><%= number_with_precision(row[:mo_ret], :precision => 1) %> %</td>		
 						<td align="right"><%= row[:mo_count] %></td>		 
@@ -66,6 +65,8 @@
 			<li>Return calculation includes dividends and is adjusted for inflation</li>
 			<li>Equity risk yield is calculated as (1 / 10 Yr PE) - 10 Yr Treasury Rate</li>
 			<li>'Months' column is number of months that equity risk yield was in given range</li>
+			<li>10 Yr rate as of today is <%= number_with_precision(@ten_yr_rate, :precision => 1) %>%. The
+				equity risk yield is <%= number_with_precision(@ery, :precision => 1) %>%.</li>			
 		</ol>	
 	</div>
 	

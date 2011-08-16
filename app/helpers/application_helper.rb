@@ -78,6 +78,29 @@ module ApplicationHelper
   end
   
   # ----------------------------------------------------------------------------------------------------------
+  # Is value within range
+  # ----------------------------------------------------------------------------------------------------------
+  def in_range( x, range, include_class_text = true )
+  	
+  	a, b = range.split(' - ')
+  	a = a.to_i
+  	b = b.to_i
+  	
+    if x >= a and x <= b
+    	value = 'in_range'
+    else
+    	value = 'out_of_range'
+    end
+    
+    if include_class_text
+      'class=' << value
+    else
+      value
+    end
+  end  
+  
+  
+  # ----------------------------------------------------------------------------------------------------------
   # Convert days to meaningful english (intervals should match those in 'quantalign' above
   # ----------------------------------------------------------------------------------------------------------
   def days_to_words(days)
