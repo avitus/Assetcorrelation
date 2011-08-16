@@ -1,0 +1,75 @@
+<!-- Macro Dashboard -->
+
+<h1>Macro Valuation Dashboard</h1>
+
+<div class="macro-buckets" id="left">
+	
+	<div class='small-table'>
+		<h3>Expected Return by 10 Yr PE</h3>
+		<table class="ac-standard">
+			<thead>
+				<tr>
+				  <% for hdg in @pe_ten_year_headings %>
+				  		<th><%= hdg %></th>
+				  <% end %>
+		  		</tr>
+			</thead>
+	
+			<tbody>
+				  <% for row in @pe_ten_year_table %>
+					  <tr>
+					    <td align="right"><%= row[:range]    %> x</td>
+					    <td align="right"><%= number_with_precision(row[:mo_ret], :precision => 1) %> %</td>		
+						<td align="right"><%= row[:mo_count] %></td>		 
+					  </tr>
+				  <% end %>
+			</tbody>
+		</table>
+	</div>
+	
+	<div class="footnotes">	
+		<h4>Notes</h4>
+		<ol>
+			<li>Expected return is calculated using annualized geometric mean of monthly returns</li>
+			<li>Return calculation includes dividends and is adjusted for inflation</li>		
+			<li>'Months' column is number of months that 10 Yr PE was in given range</li>
+		</ol>
+	</div>
+</div>
+
+<div class="macro-buckets" id="right">
+	<div class='small-table'>	
+		<h3>Expected Return by Equity Risk Yield</h3>
+		<table class="ac-standard">
+			<thead><tr>
+			  <% for hdg in @equity_risk_yield_headings %>
+			  		<th><%= hdg %></th>
+			  <% end %>
+		  	</tr></thead>
+	
+			<tbody>
+				  <% for row in @equity_risk_yield_table %>
+					  <tr>
+					    <td align="right"><%= row[:range]    %> %</td>
+					    <td align="right"><%= number_with_precision(row[:mo_ret], :precision => 1) %> %</td>		
+						<td align="right"><%= row[:mo_count] %></td>		 
+					  </tr>
+				  <% end %>
+			</tbody>
+		</table>
+	</div>
+	
+	<div class="footnotes">
+		<h4>Notes</h4>
+		<ol>
+			<li>Expected return is calculated using annualized geometric mean of monthly returns</li>
+			<li>Return calculation includes dividends and is adjusted for inflation</li>
+			<li>Equity risk yield is calculated as (1 / 10 Yr PE) - 10 Yr Treasury Rate</li>
+			<li>'Months' column is number of months that equity risk yield was in given range</li>
+		</ol>	
+	</div>
+	
+</div>
+
+<div class="clr"></div>
+

@@ -1,0 +1,26 @@
+div.macro-buckets {
+  float:left;
+  width:40%;
+  padding-left: 3em;
+  padding-right: 2em;
+  
+  
+  div.small-table {
+    padding-left: 6em;
+  }
+  
+  div.footnotes {
+    padding-top: 1em;
+    padding-bottom: 1em;
+  }
+
+}
+
+
+#left {
+  border-right: solid 1px lightgray;
+}
+
+#right {
+  border-right: none;
+}

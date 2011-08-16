@@ -118,9 +118,10 @@ class MacrovalsController < ApplicationController
       range_start = equity_risk_yield_ranges[i]
       range_end   = equity_risk_yield_ranges[i+1]
 
-      logger.debug("*** Querying database for equity risk yield values in range: #{range_start..range_end}")
+      Rails.logger.debug("*** Querying database for equity risk yield values in range: #{range_start..range_end}")
       dataset     = Macroval.find_equity_risk_yield(range_start..range_end)
-      logger.debug("*** Retrieved #{dataset.size} records")
+      
+      Rails.logger.debug("*** Retrieved #{dataset.size} records")
       
       table_row             = Hash.new
       table_row[:range]     = range_start.to_s + " - " + range_end.to_s

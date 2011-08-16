@@ -1,55 +1,48 @@
-<h1>Listing macrovals</h1>
+<h1>Shiller Price Earning Data (1871 - Present)</h1>
 
-<table>
-  <tr>
-    <th>Year month</th>
-    <th>Spcomposite</th>
-    <th>Dividends</th>
-    <th>Earnings</th>
-    <th>Cpi</th>
-    <th>Date fraction</th>
-    <th>Ten year rate</th>
-    <th>Price real</th>
-    <th>Dividends real</th>
-    <th>Earnings real</th>
-    <th>Pe tenyear</th>
-    <th>Monthly return</th>
-    <th>One year return</th>
-    <th>Three year return</th>
-    <th>Equity risk yield</th>
-    <th>Dividend yield</th>
-    <th>Earnings yield</th>
-    <th>Inflation</th>
-    <th></th>
-    <th></th>
-    <th></th>
-  </tr>
+<table class='ac-standard'>
+	<thead>
+		<tr>
+			<th>Date</th>
+			<th>S&P</th>
+			<th>Div.</th>
+			<th>Earn.</th>
+			<th>Cpi</th>
+			<th>10 Yr Rate</th>
+			<th>Price (Real)</th>
+			<th>Div. (Real)</th>
+			<th>Earn. (Real)</th>
+			<th>10 Yr P/Er</th>
+			<th>Monthly Ret.</th>
+			<th>Equity Risk Yield</th>
+			<th>Div. Yield</th>
+			<th>Earn. Yield</th>
+			<th>Inflation</th>
+		</tr>
+	</thead>
 
-<% @macrovals.each do |macroval| %>
-  <tr>
-    <td><%= macroval.year_month %></td>
-    <td><%= macroval.spcomposite %></td>
-    <td><%= macroval.dividends %></td>
-    <td><%= macroval.earnings %></td>
-    <td><%= macroval.cpi %></td>
-    <td><%= macroval.date_fraction %></td>
-    <td><%= macroval.ten_year_rate %></td>
-    <td><%= macroval.price_real %></td>
-    <td><%= macroval.dividends_real %></td>
-    <td><%= macroval.earnings_real %></td>
-    <td><%= macroval.pe_tenyear %></td>
-    <td><%= macroval.monthly_return %></td>
-    <td><%= macroval.one_year_return %></td>
-    <td><%= macroval.three_year_return %></td>
-    <td><%= macroval.equity_risk_yield %></td>
-    <td><%= macroval.dividend_yield %></td>
-    <td><%= macroval.earnings_yield %></td>
-    <td><%= macroval.inflation %></td>
-    <td><%= link_to 'Show', macroval %></td>
-    <td><%= link_to 'Edit', edit_macroval_path(macroval) %></td>
-    <td><%= link_to 'Destroy', macroval, confirm: 'Are you sure?', method: :delete %></td>
-  </tr>
-<% end %>
+	<tbody>
+		<% @macrovals.each do |macroval| %>
+		  <tr>
+		    <td class="decimal"><%= number_with_precision( macroval.year_month,			:precision => 2	) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.spcomposite,		:precision => 2	) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.dividends,			:precision => 2	) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.earnings,			:precision => 2	) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.cpi,				:precision => 1	) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.ten_year_rate,		:precision => 2	) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.price_real,			:precision => 1	) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.dividends_real,		:precision => 1 ) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.earnings_real,		:precision => 1 ) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.pe_tenyear, 		:precision => 1 ) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.monthly_return, 	:precision => 1 ) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.equity_risk_yield,	:precision => 1	) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.dividend_yield,		:precision => 1	) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.earnings_yield,		:precision => 1	) %></td>
+		    <td class="decimal"><%= number_with_precision( macroval.inflation,			:precision => 1	) %></td>
+		  </tr>
+		<% end %>	
+	</tbody>
+
 </table>
 
 <br />
