@@ -1,0 +1,28 @@
+<%= simple_form_for(@macroval) do |f| %>
+  <%= f.error_notification %>
+
+  <div class="inputs">
+    <%= f.input :year_month %>
+    <%= f.input :spcomposite %>
+    <%= f.input :dividends %>
+    <%= f.input :earnings %>
+    <%= f.input :cpi %>
+    <%= f.input :date_fraction %>
+    <%= f.input :ten_year_rate %>
+    <%= f.input :price_real %>
+    <%= f.input :dividends_real %>
+    <%= f.input :earnings_real %>
+    <%= f.input :pe_tenyear %>
+    <%= f.input :monthly_return %>
+    <%= f.input :one_year_return %>
+    <%= f.input :three_year_return %>
+    <%= f.input :equity_risk_yield %>
+    <%= f.input :dividend_yield %>
+    <%= f.input :earnings_yield %>
+    <%= f.input :inflation %>
+  </div>
+
+  <div class="actions">
+    <%= f.button :submit %>
+  </div>
+<% end %>

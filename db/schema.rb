@@ -10,7 +10,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20110811161625) do
+ActiveRecord::Schema.define(:version => 20110815233812) do
 
   create_table "assets", :force => true do |t|
     t.string   "name"
@@ -23,6 +23,31 @@ ActiveRecord::Schema.define(:version => 20110811161625) do
   add_index "assets", ["asset_class"], :name => "index_assets_on_asset_class"
   add_index "assets", ["name"], :name => "index_assets_on_name", :unique => true
   add_index "assets", ["ticker"], :name => "index_assets_on_ticker", :unique => true
+
+  create_table "macrovals", :force => true do |t|
+    t.decimal  "year_month",        :precision => 10, :scale => 2, :null => false
+    t.decimal  "spcomposite",       :precision => 10, :scale => 2
+    t.decimal  "dividends",         :precision => 10, :scale => 2
+    t.decimal  "earnings",          :precision => 10, :scale => 2
+    t.decimal  "cpi",               :precision => 10, :scale => 2
+    t.decimal  "date_fraction",     :precision => 10, :scale => 2
+    t.decimal  "ten_year_rate",     :precision => 10, :scale => 2
+    t.decimal  "price_real",        :precision => 10, :scale => 2
+    t.decimal  "dividends_real",    :precision => 10, :scale => 2
+    t.decimal  "earnings_real",     :precision => 10, :scale => 2
+    t.decimal  "pe_tenyear",        :precision => 10, :scale => 2
+    t.decimal  "monthly_return",    :precision => 10, :scale => 2
+    t.decimal  "one_year_return",   :precision => 10, :scale => 2
+    t.decimal  "three_year_return", :precision => 10, :scale => 2
+    t.decimal  "equity_risk_yield", :precision => 10, :scale => 2
+    t.decimal  "dividend_yield",    :precision => 10, :scale => 2
+    t.decimal  "earnings_yield",    :precision => 10, :scale => 2
+    t.decimal  "inflation",         :precision => 10, :scale => 2
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "macrovals", ["year_month"], :name => "index_macrovals_on_year_month", :unique => true
 
   create_table "portfolios", :force => true do |t|
     t.string   "name"

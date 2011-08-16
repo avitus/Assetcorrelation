@@ -1,0 +1,57 @@
+<h1>Listing macrovals</h1>
+
+<table>
+  <tr>
+    <th>Year month</th>
+    <th>Spcomposite</th>
+    <th>Dividends</th>
+    <th>Earnings</th>
+    <th>Cpi</th>
+    <th>Date fraction</th>
+    <th>Ten year rate</th>
+    <th>Price real</th>
+    <th>Dividends real</th>
+    <th>Earnings real</th>
+    <th>Pe tenyear</th>
+    <th>Monthly return</th>
+    <th>One year return</th>
+    <th>Three year return</th>
+    <th>Equity risk yield</th>
+    <th>Dividend yield</th>
+    <th>Earnings yield</th>
+    <th>Inflation</th>
+    <th></th>
+    <th></th>
+    <th></th>
+  </tr>
+
+<% @macrovals.each do |macroval| %>
+  <tr>
+    <td><%= macroval.year_month %></td>
+    <td><%= macroval.spcomposite %></td>
+    <td><%= macroval.dividends %></td>
+    <td><%= macroval.earnings %></td>
+    <td><%= macroval.cpi %></td>
+    <td><%= macroval.date_fraction %></td>
+    <td><%= macroval.ten_year_rate %></td>
+    <td><%= macroval.price_real %></td>
+    <td><%= macroval.dividends_real %></td>
+    <td><%= macroval.earnings_real %></td>
+    <td><%= macroval.pe_tenyear %></td>
+    <td><%= macroval.monthly_return %></td>
+    <td><%= macroval.one_year_return %></td>
+    <td><%= macroval.three_year_return %></td>
+    <td><%= macroval.equity_risk_yield %></td>
+    <td><%= macroval.dividend_yield %></td>
+    <td><%= macroval.earnings_yield %></td>
+    <td><%= macroval.inflation %></td>
+    <td><%= link_to 'Show', macroval %></td>
+    <td><%= link_to 'Edit', edit_macroval_path(macroval) %></td>
+    <td><%= link_to 'Destroy', macroval, confirm: 'Are you sure?', method: :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New Macroval', new_macroval_path %>
