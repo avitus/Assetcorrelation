@@ -1,4 +1,10 @@
 GIT
+  remote: git://github.com/ryanb/nested_form.git
+  revision: 57f32788f1952bcd633057b4b56b69b51df17610
+  specs:
+    nested_form (0.1.1)
+
+GIT
   remote: git://github.com/sferik/rails_admin.git
   revision: 8f7ccd996bda7fa06eeaf85ae6da70fbcf588671
   specs:
@@ -213,6 +219,7 @@ DEPENDENCIES
   hirb
   jquery-rails
   launchy (>= 2.0.5)
+  nested_form!
   rails (= 3.1.0.rc5)
   rails-footnotes (>= 3.7)
   rails_admin!

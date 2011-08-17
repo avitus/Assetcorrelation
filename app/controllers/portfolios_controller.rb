@@ -1,8 +1,16 @@
 class PortfoliosController < ApplicationController
+	
+  before_filter :authenticate_user!
+		
+	
   # GET /portfolios
   # GET /portfolios.json
   def index
-    @portfolios = Portfolio.all
+  	
+    @tab = "account" 
+    @sub = "ports"   	
+  	
+    @portfolios = current_user.portfolios
 
     respond_to do |format|
       format.html # index.html.erb

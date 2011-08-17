@@ -26,5 +26,6 @@ gem "frontend-helpers"
 gem "rails-footnotes", ">= 3.7", :group => :development
 gem 'rails_admin', :git => 'git://github.com/sferik/rails_admin.git'    # Admin panel
 gem "breadcrumbs_on_rails", '>=2.0.0'                                   # For breadcrumb navigation bar
-gem "simple_form"																												# Easier forms with no opinion on styling
 gem "yahoofinance"
+gem 'nested_form', :git => 'git://github.com/ryanb/nested_form.git'			# For handling multiple models in a single form
+gem "simple_form"																												# Easier forms with no opinion on styling

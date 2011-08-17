@@ -85,7 +85,7 @@
 						<a class="fontblk" id="small" title="Decrease Font Size"></a>
 					</div>
 
-					<div class="button">
+					<div class="auth-button">
 						<ul>
 							<li><%= link_to 'SIGN UP', new_user_registration_path %></li>
 							<li><%= link_to 'LOG IN', new_user_session_path %></li>
@@ -145,7 +145,8 @@
 					
 					<div id="account" class="submenustyle">
 						<ul>
-							<li <%= sub(@sub=="dash"		)%>><%= link_to 'My Portfolios',		root_path %></li>					
+							<li <%= sub(@sub=="ports"		)%>><%= link_to 'My Portfolios',		portfolios_path %></li>					
+							<li <%= sub(@sub=="profile"		)%>><%= link_to 'My Profile',			user_path( :id => current_user || 1) %></li>					
 						</ul>
 					</div>
 															

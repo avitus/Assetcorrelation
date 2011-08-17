@@ -1,7 +1,6 @@
 Assetcorrelation::Application.routes.draw do
 	
   resources :macrovals
-
   resources :positions
   resources :price_quotes
   resources :assets

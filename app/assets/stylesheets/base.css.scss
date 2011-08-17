@@ -266,21 +266,21 @@ font-family:"museo-slab-1",Georgia,"Times New Roman",Times,serif;
 	margin-right:5px;
 }
 
-.button
+.auth-button
 {
 	width:195px;
 	float:left;
 	padding-top:20px;
 }
 
-.button ul
+.auth-button ul
 {
 	list-style:none;
 	padding:0;
 	margin:0;
 }
 
-.button ul li
+.auth-button ul li
 {
 	background:url(/assets/main-buttons.png) no-repeat 0 -225px;
 	width:79px;
@@ -294,7 +294,7 @@ font-family:"museo-slab-1",Georgia,"Times New Roman",Times,serif;
 	margin-right:6px;
 }
 
-.button ul li a
+.auth-button ul li a
 {
 	display:block;
 	width:79px;
@@ -303,7 +303,7 @@ font-family:"museo-slab-1",Georgia,"Times New Roman",Times,serif;
 	text-decoration:none;
 }
 
-.button ul li a:hover
+.auth-button ul li a:hover
 {
 	color:#b95c2e;
 	text-decoration:none;
