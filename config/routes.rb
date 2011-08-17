@@ -32,8 +32,10 @@ Assetcorrelation::Application.routes.draw do
   match '/international'	=> 'correlation#countries',   	:as => 'international'
 
 	match '/primer'					=> 'info#primer',								:as => 'primer'
+	match '/support'				=> 'info#support',							:as => 'support'
 	
 	match '/shiller_dash'		=> 'macrovals#dashboard',				:as => 'shiller_dash'
+	
 
   # Sample resource route (maps HTTP verbs to controller actions automatically):
   #   resources :products

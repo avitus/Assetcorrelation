@@ -81,7 +81,6 @@ class MacrovalsController < ApplicationController
     end
   end
   
-  
   #------------- ^^ Scaffolding above this lines ^^ --------------------------------------------------------
   
   
@@ -91,6 +90,10 @@ class MacrovalsController < ApplicationController
   # Outputs:  
   # ----------------------------------------------------------------------------------------------------------  
   def show_db
+  	
+    @tab = "macro" 
+    @sub = "db"   	
+  	
     @db = Macroval.all
   end
   
@@ -100,6 +103,9 @@ class MacrovalsController < ApplicationController
   # Outputs:  
   # ----------------------------------------------------------------------------------------------------------  
   def dashboard
+ 
+    @tab = "macro" 
+    @sub = "dash"   
     
     
     equity_risk_yield_ranges  = [-5, -2, 0, 2, 4, 6, 9, 16] # min = -4.38, max = 14.88

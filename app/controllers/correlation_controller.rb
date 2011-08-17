@@ -86,6 +86,10 @@ class CorrelationController < ApplicationController
   # ---------------------------------------------------------------------------------------------------------- 
 
   def correlations
+  	
+    @tab = "corr" 
+    @sub = "all"  	
+  	
     # 1) Locate list of tickers to create matrix
     if params[:id].nil? 
       @period=91
@@ -125,6 +129,10 @@ class CorrelationController < ApplicationController
   # Country Correlation
   # ----------------------------------------------------------------------------------------------------------    
   def countries
+
+    @tab = "corr" 
+    @sub = "countries"    	
+  	
     # 1) Locate list of tickers to create matrix
     if params[:id].nil? 
       @period=90 
@@ -167,6 +175,10 @@ class CorrelationController < ApplicationController
   # Correlation matrix for 9 S&P sectors
   # ----------------------------------------------------------------------------------------------------------    
   def sectors
+  	
+    @tab = "corr" 
+    @sub = "sectors"  
+      	
     # 1) Locate list of tickers to create matrix
     tickers   = %w{SPY XLY XLP XLE XLF XLV XLI XLB XLK XLU}
     if params[:id].nil? 
@@ -201,6 +213,10 @@ class CorrelationController < ApplicationController
   # Correlation matrix for bond sector
   # ----------------------------------------------------------------------------------------------------------    
   def bonds
+
+    @tab = "corr" 
+    @sub = "bonds"    	
+  	
     # 1) Locate list of tickers to create matrix
     tickers   = %w{SHV SHY IEI IEF TLH TLT LQD HYG MUB EMB MBB}
     if params[:id].nil? 
