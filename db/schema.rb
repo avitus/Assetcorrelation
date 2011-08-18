@@ -60,6 +60,7 @@ ActiveRecord::Schema.define(:version => 20110815233812) do
   add_index "portfolios", ["user_id"], :name => "index_portfolios_on_user_id"
 
   create_table "positions", :force => true do |t|
+    t.integer  "portfolio_id"
     t.integer  "asset_id"
     t.decimal  "holding_percentage"
     t.datetime "created_at"
@@ -67,6 +68,7 @@ ActiveRecord::Schema.define(:version => 20110815233812) do
   end
 
   add_index "positions", ["asset_id"], :name => "index_positions_on_asset_id"
+  add_index "positions", ["portfolio_id"], :name => "index_positions_on_portfolio_id"
 
   create_table "price_quotes", :force => true do |t|
     t.integer  "asset_id"

@@ -1,4 +1,15 @@
-<%= simple_form_for @portfolio  do |f| %>
-  <%= f.input :name %>
-  <%= f.button :submit %>
+<%= simple_nested_form_for @portfolio  do |f| %>
+	
+	<%= f.input :name %>
+  
+	<%= f.fields_for :positions do |position_form| %>
+	  <%= position_form.text_field :asset_id %>
+	  <%= position_form.text_field :holding_percentage %>
+	  <%= position_form.link_to_remove "Remove this position" %>
+	<% end %>
+	
+	<p><%= f.link_to_add "Add a Position", :positions %></p>  
+  
+  	<%= f.button :submit %>
+  	
 <% end %>
