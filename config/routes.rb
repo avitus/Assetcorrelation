@@ -35,6 +35,8 @@ Assetcorrelation::Application.routes.draw do
 	
 	match '/shiller_dash'		=> 'macrovals#dashboard',				:as => 'shiller_dash'
 	
+	match '/valid_asset'		=> 'assets#valid_asset',				:as => 'valid_asset'
+	
 
   # Sample resource route (maps HTTP verbs to controller actions automatically):
   #   resources :products

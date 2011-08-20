@@ -80,4 +80,43 @@ class AssetsController < ApplicationController
       format.json { head :ok }
     end
   end
+  
+  def valid_asset
+  	query = params[:query]
+  	asset = Asset.find_by_ticker( query.upcase )
+  		
+  	unless asset
+  		# Check with Yahoo
+  		Rails.logger.info("=== Querying Yahoo for asset: #{query}")
+  		ticker = query.upcase
+		  quote_type  = YahooFinance::StandardQuote
+		  quote       = YahooFinance::get_quotes( quote_type, ticker )
+		  # A valid return will result in quote[ticker].nil? and quote[ticker].blank? being false. 
+		  # However, even if the ticker does not exist, the call to YahooFinance will result in a 
+		  # valid quote but the date field will be "N/A"
+		  # 10/15/2008 -- Some money market funds return a valid date field but have no trading history  	
+		    
+		  if quote[ticker]
+		    # Check for 5 days of history and a valid date field
+		    has_history = YahooFinance::get_historical_quotes_days(ticker, 7).size > 0
+		    if (quote[ticker].date != "N/A") && has_history		    	
+		      # Create new asset in DB
+		      asset = Asset.create( :name => quote[ticker].name, :ticker => quote[ticker].symbol )
+		    else
+		    	asset = nil
+		    end 	
+		  else
+				asset = nil
+		  end		    
+		    		
+  	end
+  		
+    respond_to do |format|
+      format.html # new.html.erb
+      format.json { render json: asset }
+    end  		
+  		
+  end
+  
+  
 end

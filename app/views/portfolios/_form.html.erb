@@ -1,11 +1,16 @@
 <%= simple_nested_form_for @portfolio  do |f| %>
 	
-	<%= f.input :name %>
-  
+	<%= f.input :name, :placeholder => 'Your portfolio name' %>
+	<%= text_field_tag 'query', nil, :placeholder => 'Enter ticker symbol', :class => 'query' %>
+    
+    
 	<%= f.fields_for :positions do |position_form| %>
-	  <%= position_form.text_field :asset_id %>
-	  <%= position_form.text_field :holding_percentage %>
-	  <%= position_form.link_to_remove "Remove this position" %>
+		<%= text_field_tag 'query', nil, :placeholder => 'Enter ticker symbol', :class => 'query' %>
+		<%= image_tag "indicator2.gif", :class => "spinner", :style => "display:none" %>
+
+		<%= position_form.text_field :asset_id %>
+		<%= position_form.text_field :holding_percentage, :placeholder => 'Optional: percentage of portfolio' %>
+		<%= position_form.link_to_remove "Remove this position" %>
 	<% end %>
 	
 	<p><%= f.link_to_add "Add a Position", :positions %></p>  
@@ -13,3 +18,36 @@
   	<%= f.button :submit %>
   	
 <% end %>
+
+<script type="text/javascript">
+
+	$(document).ready(function(){
+	
+		$(".query").observe_field( 0.3, function() {
+			$.get("/valid_asset", { query: this.value }, 
+				function(data) {
+					alert(data.name);
+				}, "json" );
+		});
+		
+		$('.spinner')
+			.ajaxStart(function() {
+		        $(this).show();
+		    })
+			.ajaxStop(function() {
+		        $(this).hide();
+	    });
+
+	});
+	
+	
+	document.body.addEventListener("DOMNodeInserted", function(event){
+	    var $elementJustAdded = $(event.target);
+	    if ($elementJustAdded.hasClass('query')) {
+	        $elementJustAdded.observe_field();
+	    }
+	}, false);
+	
+	
+		
+</script>
