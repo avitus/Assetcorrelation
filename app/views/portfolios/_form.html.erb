@@ -1,23 +1,23 @@
-<%= simple_nested_form_for @portfolio  do |f| %>
+<%= nested_form_for @portfolio  do |f| %>
 	
-	<%= f.input :name, :placeholder => 'Your portfolio name' %>    
+	<%= f.text_field(:name, :placeholder => 'Your portfolio name') %>
     
 	<%= f.fields_for :positions do |position_form| %>
 		
 		<%= text_field 'asset-ticker', nil, :autocomplete => :off, :placeholder => 'Enter ticker symbol', :class => 'asset-ticker' %>
 				
-		<%= image_tag "indicator2.gif", :class => "spinner", :style => "display:none" %>
 		<span class="asset-name"></span>
 		
-		<%= position_form.text_field :holding_percentage, :autocomplete => :off, :placeholder => 'Optional: % of portfolio', :class => 'asset-perc' %>
-		<%= position_form.text_field :asset_id, :class => 'asset-num', :as => :hidden %>
+		<%= position_form.text_field :holding_percentage, :autocomplete => :off, :placeholder => 'Optional', :class => 'asset-perc' %>
+		<%= position_form.hidden_field :asset_id, :class => 'asset-num' %>
 		
 		<%= position_form.link_to_remove "Remove this position", :class => 'asset-rem-link' %>
+
 	<% end %>
 	
 	<p><%= f.link_to_add "Add a Position", :positions, :class => 'asset-add-link' %></p>  
   
-  	<%= f.button :submit %>
+  	<%= f.submit "Create Portfolio" %>
   	
 <% end %>
 
@@ -35,24 +35,14 @@
 					function(data) {
 						if(typeof(data) != 'undefined' && data != null) {
 							$assetRowSelector.siblings('.asset-name').html(data.name).removeClass("input-error");;
-							$assetRowSelector.siblings('.asset-num').html(data.id);							
+							$assetRowSelector.siblings('.asset-num').val(data.id);							
 						}
 						else {
 							$assetRowSelector.siblings('.asset-name').html('Invalid ticker').addClass("input-error");
-							$assetRowSelector.siblings('.asset-num').html('-');								
+							$assetRowSelector.siblings('.asset-num').val('-');								
 						}
 					}, "json" );
 				});
-			
-			
-			$('.spinner')
-				.ajaxStart(function() {
-			        $(this).show();
-			    })
-				.ajaxStop(function() {
-			        $(this).hide();
-		    	});
-			
 		});
 		
 	});
