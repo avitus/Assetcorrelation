@@ -1,19 +1,21 @@
 <%= simple_nested_form_for @portfolio  do |f| %>
 	
-	<%= f.input :name, :placeholder => 'Your portfolio name' %>
-	<%= text_field_tag 'query', nil, :placeholder => 'Enter ticker symbol', :class => 'query' %>
-    
+	<%= f.input :name, :placeholder => 'Your portfolio name' %>    
     
 	<%= f.fields_for :positions do |position_form| %>
-		<%= text_field_tag 'query', nil, :placeholder => 'Enter ticker symbol', :class => 'query' %>
+		
+		<%= text_field 'asset-ticker', nil, :autocomplete => :off, :placeholder => 'Enter ticker symbol', :class => 'asset-ticker' %>
+				
 		<%= image_tag "indicator2.gif", :class => "spinner", :style => "display:none" %>
-
-		<%= position_form.text_field :asset_id %>
-		<%= position_form.text_field :holding_percentage, :placeholder => 'Optional: percentage of portfolio' %>
-		<%= position_form.link_to_remove "Remove this position" %>
+		<span class="asset-name"></span>
+		
+		<%= position_form.text_field :holding_percentage, :autocomplete => :off, :placeholder => 'Optional: % of portfolio', :class => 'asset-perc' %>
+		<%= position_form.text_field :asset_id, :class => 'asset-num', :as => :hidden %>
+		
+		<%= position_form.link_to_remove "Remove this position", :class => 'asset-rem-link' %>
 	<% end %>
 	
-	<p><%= f.link_to_add "Add a Position", :positions %></p>  
+	<p><%= f.link_to_add "Add a Position", :positions, :class => 'asset-add-link' %></p>  
   
   	<%= f.button :submit %>
   	
@@ -23,31 +25,36 @@
 
 	$(document).ready(function(){
 	
-		$(".query").observe_field( 0.3, function() {
-			$.get("/valid_asset", { query: this.value }, 
-				function(data) {
-					alert(data.name);
-				}, "json" );
+		$('.asset-ticker').livequery(function() {
+		
+			$(this).observe_field( 0.5, function() {
+		  	
+			  	var $assetRowSelector = $(this);
+				
+				$.get('/valid_asset', { query: this.value }, 
+					function(data) {
+						if(typeof(data) != 'undefined' && data != null) {
+							$assetRowSelector.siblings('.asset-name').html(data.name).removeClass("input-error");;
+							$assetRowSelector.siblings('.asset-num').html(data.id);							
+						}
+						else {
+							$assetRowSelector.siblings('.asset-name').html('Invalid ticker').addClass("input-error");
+							$assetRowSelector.siblings('.asset-num').html('-');								
+						}
+					}, "json" );
+				});
+			
+			
+			$('.spinner')
+				.ajaxStart(function() {
+			        $(this).show();
+			    })
+				.ajaxStop(function() {
+			        $(this).hide();
+		    	});
+			
 		});
 		
-		$('.spinner')
-			.ajaxStart(function() {
-		        $(this).show();
-		    })
-			.ajaxStop(function() {
-		        $(this).hide();
-	    });
-
 	});
-	
-	
-	document.body.addEventListener("DOMNodeInserted", function(event){
-	    var $elementJustAdded = $(event.target);
-	    if ($elementJustAdded.hasClass('query')) {
-	        $elementJustAdded.observe_field();
-	    }
-	}, false);
-	
-	
 		
 </script>
