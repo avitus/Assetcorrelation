@@ -1,14 +1,29 @@
 <p id="notice"><%= notice %></p>
 
-<p>
-  <b>Name:</b>
-  <%= @portfolio.name %>
-</p>
+<h1><%= @portfolio.name %></h1>
 
-<p>
-  <b>User:</b>
-  <%= @portfolio.user_id %>
-</p>
+<table class="nostradamus-standard">
+	<thead>
+		<tr>
+			<th>Asset Name</th>
+			<th>Ticker</th>
+			<th>Shares</th>
+			<th>Price</th>
+			<th>% of Port</th>
+		</tr>
+	</thead>
+	<tbody>
+		<% for p in @portfolio.positions %>
+		<tr>
+			<td> <%= p.asset.name   %></td>
+			<td> <%= p.asset.ticker %></td>
+			<td>  </td>
+			<td>  </td>
+			<td align="right"> <%= p.holding_percentage %></td>				
+		</tr>
+		<% end %>
+	</tbody>
+</table>
 
 
 <%= link_to 'Edit', edit_portfolio_path(@portfolio) %> |

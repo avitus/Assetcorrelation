@@ -3,6 +3,8 @@ class CreatePositions < ActiveRecord::Migration
     create_table :positions do |t|
       t.integer :portfolio_id
       t.integer :asset_id
+      t.integer :shares
+      t.decimal :price
       t.decimal :holding_percentage
 
       t.timestamps
