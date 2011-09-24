@@ -63,6 +63,8 @@ ActiveRecord::Schema.define(:version => 20110815233812) do
   create_table "positions", :force => true do |t|
     t.integer  "portfolio_id"
     t.integer  "asset_id"
+    t.integer  "shares"
+    t.decimal  "price"
     t.decimal  "holding_percentage"
     t.datetime "created_at"
     t.datetime "updated_at"
