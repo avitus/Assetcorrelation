@@ -4,11 +4,11 @@
     
 	<%= f.fields_for :positions do |position_form| %>
 		
-		<%= text_field 'asset-ticker', nil, :autocomplete => :off, :placeholder => 'Enter ticker symbol', :class => 'asset-ticker' %>
+		<%= text_field 'asset-ticker', nil, :autocomplete => :off, :placeholder => 'Enter ticker symbol', :class => 'asset-ticker', :value => 'MSFT' %>
 				
 		<span class="asset-name"></span>
 		
-		<%= position_form.text_field :holding_percentage, :autocomplete => :off, :placeholder => 'Optional', :class => 'asset-perc' %>
+		<%= position_form.text_field :shares, :autocomplete => :off, :placeholder => 'Optional', :class => 'asset-shares' %>
 		<%= position_form.hidden_field :asset_id, :class => 'asset-num' %>
 		
 		<%= position_form.link_to_remove "Remove this position", :class => 'asset-rem-link' %>
@@ -17,7 +17,7 @@
 	
 	<p><%= f.link_to_add "Add a Position", :positions, :class => 'asset-add-link' %></p>  
   
-  	<%= f.submit "Create Portfolio" %>
+  	<%= f.submit "Update Portfolio" %>
   	
 <% end %>
 

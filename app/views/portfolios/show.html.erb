@@ -17,7 +17,7 @@
 		<tr>
 			<td> <%= p.asset.name   %></td>
 			<td> <%= p.asset.ticker %></td>
-			<td>  </td>
+			<td> <%= p.shares %> </td>
 			<td>  </td>
 			<td align="right"> <%= p.holding_percentage %></td>				
 		</tr>
@@ -25,6 +25,7 @@
 	</tbody>
 </table>
 
+<br/>
 
 <%= link_to 'Edit', edit_portfolio_path(@portfolio) %> |
 <%= link_to 'Back', portfolios_path %>

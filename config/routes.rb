@@ -28,12 +28,14 @@ Assetcorrelation::Application.routes.draw do
   match '/majors'				 	=> 'correlation#correlations',  :as => 'majors'
   match '/bonds' 					=> 'correlation#bonds',   			:as => 'bonds'
   match '/sectors' 				=> 'correlation#sectors',   		:as => 'sectors'
-  match '/international'	=> 'correlation#countries',   	:as => 'international'
+  match '/international'  => 'correlation#countries',     :as => 'international'
+  match '/custom'         => 'correlation#custom',        :as => 'custom'
 
 	match '/primer'					=> 'info#primer',								:as => 'primer'
 	match '/support'				=> 'info#support',							:as => 'support'
 	
-	match '/shiller_dash'		=> 'macrovals#dashboard',				:as => 'shiller_dash'
+  match '/shiller_dash'   => 'macrovals#dashboard',       :as => 'shiller_dash'
+  match '/calc_shiller'   => 'macrovals#calculate_cols',  :as => 'calc_shiller'
 	
 	match '/valid_asset'		=> 'assets#valid_asset',				:as => 'valid_asset'
 	

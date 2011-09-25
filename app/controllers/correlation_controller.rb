@@ -248,6 +248,20 @@ class CorrelationController < ApplicationController
     
   end  
 
+  # ----------------------------------------------------------------------------------------------------------
+  # Correlation matrix for a user portfolio
+  # ---------------------------------------------------------------------------------------------------------- 
+  def custom
+    @portfolio = Portfolio.find(params[:portfolio])
+    @period    = params[:period] || 90
+    
+    tickers    = @portfolio.assets.map { |asset| asset.ticker }
+    
+    # 2) Build correlation matrix
+    @corr_matrix = Correlation_matrix.new(@period.to_i)
+    @corr_matrix.add_many_stocks(tickers)     
+    
+  end
 
   # ----------------------------------------------------------------------------------------------------------
   # Scatter plot for efficient frontier
