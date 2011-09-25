@@ -76,8 +76,8 @@ class PositionsController < ApplicationController
     @position.destroy
 
     respond_to do |format|
+      format.json { render :json => {:msg => 'Position deleted' }, :status => :ok }
       format.html { redirect_to positions_url }
-      format.json { head :ok }
     end
   end
 end
