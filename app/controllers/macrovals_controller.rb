@@ -1,4 +1,7 @@
 class MacrovalsController < ApplicationController
+  
+  before_filter :authenticate_user!
+    
   # GET /macrovals
   # GET /macrovals.json
   def index

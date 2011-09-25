@@ -65,12 +65,12 @@
 	
   <table cellpadding="3" cellspacing="1" border="0">
   	<tr>
-  		<td><em>Period:</em></td>
-  		<td><em><%= link_to ' [1 Mo]', :action => 'custom', :period =>   31, :portfolio => @portfolio %></em></td>		
-  		<td><em><%= link_to ' [3 Mo]', :action => 'custom', :period =>   91, :portfolio => @portfolio %></em></td>
-  		<td><em><%= link_to ' [6 Mo]', :action => 'custom', :period =>  183, :portfolio => @portfolio %></em></td>
-  		<td><em><%= link_to ' [1 Yr]', :action => 'custom', :period =>  366, :portfolio => @portfolio %></em></td>
-        <td><em><%= link_to ' [2 Yr]', :action => 'custom', :period =>  731, :portfolio => @portfolio %></em></td>       
+  		<td>Select Period:</em></td>
+  		<td><%= link_to ' 1 Mo |', :action => 'custom', :period =>   31, :portfolio => @portfolio %></td>		
+  		<td><%= link_to ' 3 Mo |', :action => 'custom', :period =>   91, :portfolio => @portfolio %></td>
+  		<td><%= link_to ' 6 Mo |', :action => 'custom', :period =>  183, :portfolio => @portfolio %></td>
+  		<td><%= link_to ' 1 Yr |', :action => 'custom', :period =>  366, :portfolio => @portfolio %></td>
+        <td><%= link_to ' 2 Yr |', :action => 'custom', :period =>  731, :portfolio => @portfolio %></td>       
 	 </tr>
   </table>
 

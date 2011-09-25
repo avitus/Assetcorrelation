@@ -1,4 +1,7 @@
 class AssetsController < ApplicationController
+  
+  before_filter :authenticate_user!
+    
   # GET /assets
   # GET /assets.json
   def index

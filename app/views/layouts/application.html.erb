@@ -68,7 +68,7 @@
 <% if user_signed_in? %>
 <body id="inner1-body">
 <% else %>
-<body>
+<body id="inner1-body">
 <% end %>
 <div id="wrapper"><!--wrapper start-->
 	<div id="header"><!--header start-->
@@ -102,7 +102,7 @@
 				<li <%= tab(@tab=="macro"		) %> rel="macro">		<%= link_to 'Macro', 		shiller_dash_path %> </li>	 
 				<li <%= tab(@tab=="learn"		) %> rel="learn">		<%= link_to 'Learn', 		primer_path %> </li>	 
 				<li <%= tab(@tab=="support"		) %> rel="support">		<%= link_to 'Support', 		support_path %> </li>	 
-				<li <%= tab(@tab=="account"		) %> rel="account">		<%= link_to 'My Account', 	root_path %> </li>	 
+				<li <%= tab(@tab=="account"		) %> rel="account">		<%= link_to 'My Account', 	portfolios_path %> </li>	 
 				<li>&nbsp;</li>
 			</ul>
 
@@ -145,10 +145,9 @@
 					<div id="account" class="submenustyle">
 						<ul>
 							<li <%= sub(@sub=="ports"		)%>><%= link_to 'My Portfolios',		portfolios_path %></li>					
-							<li <%= sub(@sub=="profile"		)%>><%= link_to 'My Profile',			user_path( :id => current_user || 1) %></li>					
+							<li <%= sub(@sub=="profile"		)%>><%= link_to 'My Profile',			user_path( :id => current_user) %></li>					
 						</ul>
-					</div>
-															
+					</div>														
 
 				</div><!--submenu-left end-->
 				<div class="submenu-icon submenustyle"><a href="#"><img src="/assets/new-icon.png" width="32" height="32" alt="" /></a></div>
@@ -194,12 +193,10 @@
 </div><!--wrapper end-->
 
 <!-- Start of Menu Tab Code  -->
-<% if user_signed_in? %>
-	<script type="text/javascript">
-		//initialize tab menu, by passing in ID of UL
-		initalizetab("maintab")
-	</script>	
-<% end %>
+<script type="text/javascript">
+	//initialize tab menu, by passing in ID of UL
+	initalizetab("maintab")
+</script>	
 
 </body>
 

@@ -1,0 +1,11 @@
+
+
+<%= text_field 'asset-ticker', nil, :autocomplete => :off, :placeholder => 'Enter ticker symbol', :class => 'asset-ticker' %>
+<%= f.text_field :shares, :autocomplete => :off, :placeholder => 'Optional', :class => 'asset-shares' %>
+		
+<span class="asset-name"></span>
+
+<%= f.hidden_field :asset_id, :class => 'asset-num' %>
+
+<%= f.link_to_remove "Remove this position", :class => 'asset-rem-link' %>
+

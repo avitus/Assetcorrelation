@@ -2,22 +2,11 @@
 	
 	<%= f.text_field(:name, :placeholder => 'Your portfolio name') %>
     
-	<%= f.fields_for :positions do |position_form| %>
-		
-		<%= text_field 'asset-ticker', nil, :autocomplete => :off, :placeholder => 'Enter ticker symbol', :class => 'asset-ticker' %>
-				
-		<span class="asset-name"></span>
-		
-		<%= position_form.text_field :shares, :autocomplete => :off, :placeholder => 'Optional', :class => 'asset-shares' %>
-		<%= position_form.hidden_field :asset_id, :class => 'asset-num' %>
-		
-		<%= position_form.link_to_remove "Remove this position", :class => 'asset-rem-link' %>
-
-	<% end %>
+	<%= f.fields_for :positions %>
 	
 	<p><%= f.link_to_add "Add a Position", :positions, :class => 'asset-add-link' %></p>  
   
-  	<%= f.submit "Update Portfolio" %>
+  	<%= f.submit "Create Portfolio" %>
   	
 <% end %>
 
