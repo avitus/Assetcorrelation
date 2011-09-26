@@ -1,23 +1,21 @@
 <h1>Listing portfolios</h1>
 
-<table>
-  <tr>
-    <th>Name</th>
-    <th>User</th>
-    <th></th>
-    <th></th>
-    <th></th>
-  </tr>
+<table class="nostradamus-standard">
+	<thead>
+		<tr>
+			<th>Name</th>
+		</tr>
+	</thead>
 
-<% @portfolios.each do |portfolio| %>
-  <tr>
-    <td><%= portfolio.name %></td>
-    <td><%= portfolio.user_id %></td>
-    <td><%= link_to 'Show', portfolio %></td>
-    <td><%= link_to 'Edit', edit_portfolio_path(portfolio) %></td>
-    <td><%= link_to 'Destroy', portfolio, confirm: 'Are you sure?', method: :delete %></td>
-  </tr>
-<% end %>
+	<tbody>
+		<% @portfolios.each do |portfolio| %>
+			<tr>
+				<td><%= portfolio.name %></td>
+				<td><%= link_to 'Show', portfolio %></td>
+				<td><%= link_to 'Destroy', portfolio, confirm: 'Are you sure?', method: :delete %></td>
+			</tr>
+		<% end %>	
+	</tbody>
 </table>
 
 <br />

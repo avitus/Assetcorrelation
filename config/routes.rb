@@ -11,7 +11,7 @@ Assetcorrelation::Application.routes.draw do
 
 
   authenticated do
-    root      :to => 'dashboard#show'
+    root      :to => 'portfolios#index'
   end  
   root        :to => 'correlation#correlations'  
 

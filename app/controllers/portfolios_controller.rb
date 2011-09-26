@@ -32,12 +32,19 @@ class PortfoliosController < ApplicationController
   # GET /portfolios/new
   # GET /portfolios/new.json
   def new
-    @portfolio = Portfolio.new
-
-    respond_to do |format|
-      format.html # new.html.erb
-      format.json { render json: @portfolio }
+    
+    if current_user.portfolios.length >= 1
+      flash[:notice] = "You can only have one portfolio on the free plan. Additional portfolios require a subscription."
+      redirect_to portfolios_path
+    else
+      @portfolio = Portfolio.new
+  
+      respond_to do |format|
+        format.html # new.html.erb
+        format.json { render json: @portfolio }
+      end
     end
+    
   end
 
   # GET /portfolios/1/edit
