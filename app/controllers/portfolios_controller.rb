@@ -33,8 +33,8 @@ class PortfoliosController < ApplicationController
   # GET /portfolios/new.json
   def new
     
-    if current_user.portfolios.length >= 1
-      flash[:notice] = "You can only have two portfolios."
+    if current_user.portfolios.length >= 2
+      flash[:notice] = "You can only have two portfolios at this time."
       redirect_to portfolios_path
     else
       @portfolio = Portfolio.new
