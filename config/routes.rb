@@ -1,17 +1,19 @@
 Assetcorrelation::Application.routes.draw do
-	
+
+  devise_for :users
+  
+  resources :users	
   resources :macrovals
   resources :positions
   resources :price_quotes
   resources :assets
   resources :portfolios
 
-  #get \"users\/show\"
 
-  root :to => "home#index"
-
-  devise_for :users
-  resources :users
+  authenticated do
+    root      :to => 'dashboard#show'
+  end  
+  root        :to => 'correlation#correlations'  
 
 	mount RailsAdmin::Engine => '/admin', :as => 'rails_admin'
 
@@ -39,6 +41,7 @@ Assetcorrelation::Application.routes.draw do
 	
 	match '/valid_asset'		=> 'assets#valid_asset',				:as => 'valid_asset'
 	
+	match '/account'        => 'users#show',                :as => 'account'
 
   # Sample resource route (maps HTTP verbs to controller actions automatically):
   #   resources :products
