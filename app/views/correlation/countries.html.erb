@@ -36,8 +36,8 @@
       <% for index in 0...@corr_matrix.stock_names.length-1 %>
 	    <td align="center"><%=@corr_matrix.stock_names[index]%></td>
 	  <% end %>
-	  <td align="center">Return</td>
-	  <td align="center">StdDev</td> 	  
+	  <td align="center">Return<span class="superscript">1</span></td>
+	  <td align="center">StdDev<span class="superscript">2</span></td>    
 	</tr>
 	
     <tr>
@@ -139,6 +139,10 @@ Each cell represents the correlation between the two corresponding assets.
 	  <td align="left">Poor Diversification</td>
 	</tr>			
   </table>
-
+  
+	<h3>Notes</h3>
+	
+	<div><span class="superscript">1</span> Returns for periods greater than a year are annualized.</div>
+	<div><span class="superscript">2</span> Standard deviations are for daily returns.</div>  
 </div>
 

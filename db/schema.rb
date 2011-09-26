@@ -22,7 +22,7 @@ ActiveRecord::Schema.define(:version => 20110926032455) do
   end
 
   add_index "assets", ["asset_class"], :name => "index_assets_on_asset_class"
-  add_index "assets", ["name"], :name => "index_assets_on_name", :unique => true
+  add_index "assets", ["name"], :name => "index_assets_on_name"
   add_index "assets", ["ticker"], :name => "index_assets_on_ticker", :unique => true
 
   create_table "macrovals", :force => true do |t|

@@ -244,8 +244,12 @@ class Correlation_matrix
       # Should we rather use ln S1/S2 to calculate returns?
       @stock_open      << series_build.last
       @stock_close     << series_build.first
-      @stock_returns   << (((series_build.first / series_build.last) **  ( 1/num_years)) - 1) * 100
-
+      
+      if num_years >= 1.0
+        @stock_returns << (((series_build.first / series_build.last) **  ( 1/num_years)) - 1) * 100
+      else
+        @stock_returns << (series_build.first / series_build.last - 1) * 100
+      end
 
       # Convert to weekly data for longer periods  
       if @trading_days > 20000 # 50 years  
@@ -287,7 +291,11 @@ class Correlation_matrix
     if (num_stocks==0)
       return 0
     else
-      return (((final_val / num_stocks) ** ( 1 / num_years)) - 1) * 100
+      if num_years >= 1.0
+        return (((final_val / num_stocks) ** ( 1 / num_years)) - 1) * 100
+      else
+        return (final_val / num_stocks - 1 ) * 100
+      end
     end
   end  
   

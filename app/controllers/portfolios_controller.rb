@@ -34,7 +34,7 @@ class PortfoliosController < ApplicationController
   def new
     
     if current_user.portfolios.length >= 1
-      flash[:notice] = "You can only have one portfolio on the free plan. Additional portfolios require a subscription."
+      flash[:notice] = "You can only have two portfolios."
       redirect_to portfolios_path
     else
       @portfolio = Portfolio.new

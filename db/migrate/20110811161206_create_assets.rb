@@ -8,7 +8,7 @@ class CreateAssets < ActiveRecord::Migration
       t.timestamps
     end
     
-    add_index :assets, :name,       :unique => true
+    add_index :assets, :name
     add_index :assets, :ticker,     :unique => true
     add_index :assets, :asset_class
             

@@ -54,3 +54,5 @@ gem "breadcrumbs_on_rails", '>=2.0.0'                                   # For br
 gem "yahoofinance"
 gem "simple_form"                                                       # Easier forms with no opinion on styling
 gem 'nested_form', :git => 'git://github.com/ryanb/nested_form.git'     # For handling multiple models in a single form
+gem 'newrelic_rpm'                                                      # Performance monitoring -- add as low in list of gems as possible
+
