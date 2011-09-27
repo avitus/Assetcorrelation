@@ -38,13 +38,6 @@ table.nostradamus-standard thead th a
   color:#FFF;
 }
 
-table.nostradamus-standard td {
-  border:thin solid #f2f1f1;
-  background-color:#f2f1f1; 
-  color:#232323;  
-  padding:3px;  
-}
-
 table.nostradamus-standard tbody th {
     padding:15px;
     color:#fff;
@@ -67,6 +60,13 @@ table.nostradamus-standard tbody th {
         );
 }
 
+table.nostradamus-standard td {
+  border:thin solid #f2f1f1;
+  background-color:#f2f1f1; 
+  color:#232323;  
+  padding:3px;  
+}
+
 table.nostradamus-standard td a
 {
   color:#232323;
@@ -76,6 +76,18 @@ table.nostradamus-standard td a:hover
 {
   color:#000;
 }
+
+table.nostradamus-standard td.decimal {
+  text-align:right;
+}
+
+table.nostradamus-standard tr.in_range td {
+  background-color: darkgray;
+}
+
+
+
+
 
 /* tables */
 table.tablesorter {

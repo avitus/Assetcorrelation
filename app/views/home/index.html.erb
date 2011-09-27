@@ -1,4 +1,110 @@
-<h3>Home</h3>
-<% @users.each do |user| %>
-  <p>User: <%=link_to user.name, user %></p>
-<% end %>
+<%= content_for :bg, "none" %>
+
+<div><img src="/assets/trans.png" width="1" height="2" alt="" /></div>
+
+<div id="banner-bg"><!--banner-bg start-->
+	<div class="banner-top"><!--banner-top start-->
+		<div class="banner-img"><img src="/assets/banner-img.jpg" width="220" height="220" alt="" /></div>
+		<div class="banner-text">
+			<h1>Tools for Private Investors</h1>
+			<div class="text-left">
+				<ul>
+					<li>Portfolio Diversification</li>
+					<li>Correlation Analysis</li>
+					<li>Macro Valuations</li>
+				</ul>
+			</div>
+			<div class="text-right">
+				<ul>
+					<li>Shiller Ten Year PE</li>
+					<li>Portfolio Volatility</li>
+					<li class="free">... and more</li>
+				</ul>
+			</div>
+			<div class="clr"></div>
+		</div>
+	</div><!--banner-top end-->
+	<div class="banner-bottom"><!--banner-bottom start-->
+		<ul>
+			<li><%= link_to 'Correlations', majors_path %></li>
+			<li><%= link_to 'Macro Analysis', shiller_dash_path %></li>
+			<li><%= link_to 'Account', edit_user_registration_path %></li>
+			<li><%= link_to 'Register', new_user_registration_path, :class => 'active' %></li>
+		</ul>
+	</div><!--banner-bottom end-->
+</div><!--banner-bg end-->
+
+<div><img src="/assets/trans.png" width="1" height="10" alt="" /></div>
+
+<div id="content"><!--content start-->
+	<div class="content-box1"><!--box1 start-->
+	<div class="content-box1-bottom">
+	<div class="content-box1-top">
+		<h2>How it works</h2>
+		<div class="text-area1">
+			<div class="content-row">
+				<div class="content-icon"><img src="/assets/eggs-in-basket.png" width="48" height="48" alt="" /></div>
+				<div class="content-text">
+					<h3>Diversification</h3>
+					<p>Analyse your portfolio holdings for adequate diversification.</p>
+					<span class="learn-more"><%= link_to 'Learn More', primer_path %></span>
+				</div>
+				<div class="clr"></div>
+			</div>
+			<div class="content-row">
+				<div class="content-icon"><img src="/assets/icon5.png" width="48" height="41" alt="" /></div>
+				<div class="content-text">
+					<h3>Macro Valuation</h3>
+					<p>Keep your finger on the pulse of the total stock market valuation.</p>
+					<span class="learn-more"><%= link_to 'Learn More', shiller_dash_path %></span>
+				</div>
+				<div class="clr"></div>
+			</div>
+		</div>
+	</div>
+	</div>
+	</div><!--box1 end-->
+    
+    <%= render "info/news_box" %>
+    
+	<div class="content-box3-area"><!--box3-area start-->
+	<div class="content-box3"><!--box3 start-->
+	<div class="content-box3-bottom">
+	<div class="content-box3-top">
+		<a name="login"></a><h2 class="red">Sign In</h2>
+
+		<div class="sign-field">
+			<%= form_for :user, :url => user_session_path(@user) do |f| %>
+				<div>
+					<%= f.email_field :email, :class => "new-field", :placeholder => "Your email address" %>
+					<%= f.password_field :password, :class => "new-field", :placeholder => "Your password" %>
+				</div>
+				<div class="button-area">
+					<div class="forgot">
+						<%= f.check_box :remember_me %> <%= f.label :remember_me %>
+					</div>
+					<div class="right-button">
+						<%= submit_tag '', :class => "submit-button" %>
+					</div>
+				</div>
+			<% end 	%>
+		</div>
+
+	</div>
+	</div>
+	</div><!--box3 end-->
+	<div class="content-box3 nomar"><!--box3 start-->
+	<div class="content-box3-bottom">
+	<div class="content-box3-top2">
+		<h2 class="gray">Companies</h2>
+		<div class="volunteers">
+			<p>Currently tracking <span><a href="#"><%= Portfolio.count %></a></span> portfolios. Add your portfolio for free.</p>
+			<div class="learn-area"><%= link_to image_tag("learn-more.png", :width=>"179", :height=>"25", :alt=>"Volunteer"), primer_path %></div>
+		</div>
+	</div>
+	</div>
+	</div><!--box3 end-->
+	</div><!--box3-area end-->
+
+	<div class="clr"></div>
+</div><!--content end-->

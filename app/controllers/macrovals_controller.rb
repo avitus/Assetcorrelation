@@ -1,10 +1,15 @@
 class MacrovalsController < ApplicationController
   
   before_filter :authenticate_user!
+  before_filter :authorize, :except => [:dashboard, :index]
     
   # GET /macrovals
   # GET /macrovals.json
   def index
+ 
+    @tab = "macro" 
+    @sub = "db"   
+ 
     @macrovals = Macroval.all
 
     respond_to do |format|
@@ -84,7 +89,7 @@ class MacrovalsController < ApplicationController
     end
   end
   
-  #------------- ^^ Scaffolding above this lines ^^ --------------------------------------------------------
+  #------------- ^^ Scaffolding above this line ^^ --------------------------------------------------------
   
   
   # ----------------------------------------------------------------------------------------------------------

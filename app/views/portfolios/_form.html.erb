@@ -1,16 +1,22 @@
 <%= nested_form_for @portfolio  do |f| %>
 	
-	<%= f.text_field(:name, :placeholder => 'Your portfolio name') %>
-
-	<table class="nostradamus-standard">
-		<thead>
-			<tr>
-				<th>Ticker</th>
-				<th>Shares</th>
-				<th>Asset Name</th>
-			</tr>
-		</thead>
-	</table>
+	<div>
+		<%= f.text_field(:name, :placeholder => 'Your portfolio name') %>
+	</div>
+	
+	<br/>
+	
+	<div>
+		<table class="nostradamus-standard">
+			<thead>
+				<tr>
+					<th>Ticker</th>
+					<th>Shares</th>
+					<th>Asset Name</th>
+				</tr>
+			</thead>
+		</table>
+	</div>
     
 	<%= f.fields_for :positions %>
 	

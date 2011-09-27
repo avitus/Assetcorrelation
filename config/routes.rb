@@ -13,7 +13,7 @@ Assetcorrelation::Application.routes.draw do
   authenticated do
     root      :to => 'portfolios#index'
   end  
-  root        :to => 'correlation#correlations'  
+  root        :to => 'home#index'  
 
 	mount RailsAdmin::Engine => '/admin', :as => 'rails_admin'
 

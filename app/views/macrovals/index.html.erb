@@ -1,6 +1,6 @@
 <h1>Shiller Price Earning Data (1871 - Present)</h1>
 
-<table class='ac-standard'>
+<table class='nostradamus-standard'>
 	<thead>
 		<tr>
 			<th>Date</th>
@@ -47,4 +47,6 @@
 
 <br />
 
-<%= link_to 'New Macroval', new_macroval_path %>
+<% if current_user && current_user.admin? %>
+	<%= link_to 'New Macroval', new_macroval_path %>
+<% end %>

@@ -70,6 +70,7 @@
 <% else %>
 <body id="inner1-body">
 <% end %>
+
 <div id="wrapper"><!--wrapper start-->
 	<div id="header"><!--header start-->
 		<div class="header-top"><!--header-top start-->
@@ -156,6 +157,7 @@
 			</div><!--submenu end-->				
 		</div>  <!-- End of Menu Tabs -->
 		
+		<% if user_signed_in? %>
 		<div class="breadcum-area"><!--breadcum start-->
 			<div class="breadcum-left">
 				<span class="home-icon"><a href="/"><img src="/assets/home-icon.png" width="25" height="23" alt="" /></a></span>
@@ -163,12 +165,12 @@
 					/ <%= (render_breadcrumbs :separator => ' / ').html_safe %>
 				</div>
 			</div>
-			<% if user_signed_in? %>
 			<div class="breadcum-right">
 
 			</div>
-			<% end %>
 		</div><!--breadcum end-->
+		<% end %>
+
 
 		<%= flash_messages  %>
 		
@@ -176,7 +178,7 @@
 
 	<!--Content Block -->
 	<div class="page-content">
-		<div class="white-box-with-margins">
+		<div class=<%= content_for?(:bg) ? yield(:bg) : "white-box-with-margins" %> >
 			<%= content_for?(:content) ? yield(:content) : yield %>
 		</div>
 	</div>
