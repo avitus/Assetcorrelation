@@ -52,7 +52,7 @@ class Correlation_matrix
     end
     
     # 1) Get price history from Yahoo
-    yahoo_quotes, shortest_ticker, error_code  = yahoo_request(tickers, @period_req)
+    yahoo_quotes, shortest_ticker, error_code  = quote_request(tickers, @period_req)
     if error_code == 1 # too little history to add asset
       return shortest_ticker
     end
@@ -79,8 +79,8 @@ class Correlation_matrix
   # ----------------------------------------------------------------------------------------------------------  
   def add_stock(name, new_series)
     # add stock to list of series
-    @stock_histories << new_series  # series of *returns*
     @stock_names     << name
+    @stock_histories << new_series  # series of *returns*
     @stock_stddevs   << standard_deviation(new_series) * 100
 
 
@@ -124,11 +124,11 @@ class Correlation_matrix
 
 
   # ----------------------------------------------------------------------------------------------------------
-  # Get price history from Yahoo
+  # Get price history
   # Inputs:   number of days of price history, list of ticker symbols in string format
   # Outputs:  historical_quotes -- a matrix of price histories in Yahoo structure
   # ----------------------------------------------------------------------------------------------------------  
-  def yahoo_request(tickers, period_req)    # period = number of days of history (including non-trading days)  
+  def quote_request(tickers, period_req)    # period = number of days of history (including non-trading days)  
 
     historical_quotes  = Array.new     # Array of price histories...
     history_lengths    = Array.new     # ...corresponding length of price history
@@ -142,8 +142,7 @@ class Correlation_matrix
       shortest_ticker    = tickers[shortest_history]
       historical_quotes.collect! { |a| a[0...history_lengths.min] }
     end
-    
-    
+      
     if (@trading_days>0) # that is, we're adding stocks to an existing portfolio
       
       # If the stocks we're adding have more history than the existing portfolio, we need to truncate
@@ -163,16 +162,16 @@ class Correlation_matrix
     
     # This next line of code often generates an error while evaluating nil.[] (1 occurence to date)
     # Possibly add check for .nil? -- not sure why this occurs
-    @start_date = historical_quotes[shortest_history].last[0]
-    @end_date   = historical_quotes[shortest_history].first[0]
+    @start_date = historical_quotes[shortest_history].last.date
+    @end_date   = historical_quotes[shortest_history].first.date
     
-    startdate   = Date.parse(@start_date)
-    enddate     = Date.parse(@end_date)    
+    # startdate   = Date.parse(@start_date)
+    # enddate     = Date.parse(@end_date)    
     
     # 12/08/08 No longer adding one to period_actual calculation
     # 12/10/08 Changed back to adding one 
     # 12/16/08 Taking it out again 
-    @period_actual  = (enddate - startdate).to_i   
+    @period_actual  = (@end_date - @start_date).to_i   
     
     return historical_quotes, shortest_ticker, 0
   end
@@ -182,6 +181,7 @@ class Correlation_matrix
   # Get price history from Yahoo
   # Inputs:   number of days of price history, list of ticker symbols (already checked for invalid tickers)
   # Outputs:  historical_quotes -- a matrix of price histories in Yahoo structure
+  # TODO: This method should be moved somewhere else
   # ----------------------------------------------------------------------------------------------------------   
   def ping_yahoo(tickers, period_req)
 
@@ -192,9 +192,10 @@ class Correlation_matrix
     # Request an historical quote from Yahoo server
     # Yahoo returns only trading days of data
     tickers.each { |t|
-      h = YahooFinance::get_historical_quotes_days(t.upcase, period_req)
+      # h = YahooFinance::get_historical_quotes_days(t.upcase, period_req) 
+      h = Asset.find_by_ticker(t).price_history(period_req)
       historical_quotes << h
-      history_lengths   << h.size      
+      history_lengths   << h.size    
     }
         
     # Around 6pm (PDT) Yahoo will return historical quotes for some companies as of today and other companies
@@ -237,7 +238,7 @@ class Correlation_matrix
       daily_returns = Array.new  # could be weekly in the case of longer periods
       
       for day in 0...@trading_days
-        series_build << yahoo_history[company][day][6].to_f
+        series_build << yahoo_history[company][day].price.to_f
       end
       
       # Set the opening/closing prices and period return while we're here
