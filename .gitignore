@@ -9,8 +9,8 @@
 #----------------------------------------------------------------------------
 
 # bundler state
-/.bundle
-/vendor/bundle/
+# /.bundle
+# /vendor/bundle/
 
 # minimal Rails specific artifacts
 db/*.sqlite3
