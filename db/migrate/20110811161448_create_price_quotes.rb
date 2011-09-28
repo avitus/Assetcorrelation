@@ -10,6 +10,7 @@ class CreatePriceQuotes < ActiveRecord::Migration
     end
     
     add_index :price_quotes, :asset_id    
+    add_index :price_quotes, :date
     
   end
 end
