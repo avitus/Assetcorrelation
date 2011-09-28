@@ -66,7 +66,9 @@ set :default_stage, "production"
 ##############################################################
 ##  Hooks
 ##############################################################
-after "deploy:update_code", "deploy:symlink_db" #, "deploy:set_rails_env"
+# after "deploy:update_code", "deploy:symlink_db" #, "deploy:set_rails_env"
+before "deploy:assets:precompile", "deploy:link_db"
+
 
 ##############################################################
 ##  Database config and restart
@@ -74,7 +76,7 @@ after "deploy:update_code", "deploy:symlink_db" #, "deploy:set_rails_env"
 namespace :deploy do  
   desc "Symlinks the database.yml"                            # Link in the database config
   task :symlink_db, :roles => :app do
-    run "ln -nfs #{deploy_to}/shared/config/database.yml #{release_path}/config/database.yml"
+    run "ln -nfs #{deploy_to}/shared/config/database.yml #{latest_release}/config/database.yml"
   end
 
   desc "Restarting mod_rails with restart.txt"                # Restart passenger on deploy
