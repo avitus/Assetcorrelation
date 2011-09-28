@@ -1,5 +1,5 @@
 require 'bundler/capistrano'
-# load 'deploy/assets'                                            # Precompile assets
+load 'deploy/assets'                                            # Precompile assets
 
 ##############################################################
 ##  RVM Integration
