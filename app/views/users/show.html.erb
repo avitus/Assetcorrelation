@@ -2,3 +2,5 @@
 
 <p>User: <%= @user.name %></p>
 <p>Email: <%= @user.email if @user.email %></p>
+
+<%= link_to 'Update Profile', edit_user_registration_path(current_user) %>

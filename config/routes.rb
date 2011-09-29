@@ -2,7 +2,7 @@ Assetcorrelation::Application.routes.draw do
 
   devise_for :users
   
-  resources :users	
+  resources :users, :only => :show
   resources :macrovals
   resources :positions
   resources :price_quotes
