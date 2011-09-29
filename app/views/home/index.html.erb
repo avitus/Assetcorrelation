@@ -1,6 +1,6 @@
 <%= content_for :bg, "none" %>
 
-<div><img src="/assets/trans.png" width="1" height="2" alt="" /></div>
+<div><%= image_tag("trans.png", :size => "1x2", :alt => "") %></div>
 
 <div id="banner-bg"><!--banner-bg start-->
 	<div class="banner-top"><!--banner-top start-->
@@ -34,7 +34,7 @@
 	</div><!--banner-bottom end-->
 </div><!--banner-bg end-->
 
-<div><img src="/assets/trans.png" width="1" height="10" alt="" /></div>
+<div><%= image_tag("trans.png", :size => "1x10", :alt => "") %></div>
 
 <div id="content"><!--content start-->
 	<div class="content-box1"><!--box1 start-->
@@ -43,7 +43,7 @@
 		<h2>How it works</h2>
 		<div class="text-area1">
 			<div class="content-row">
-				<div class="content-icon"><img src="/assets/eggs-in-basket.png" width="48" height="48" alt="" /></div>
+				<div class="content-icon"><%= image_tag("eggs-in-basket.png", :size => "48x48", :alt => "Eggs in One Basket") %></div>
 				<div class="content-text">
 					<h3>Diversification</h3>
 					<p>Analyse your portfolio holdings for adequate diversification.</p>
@@ -52,7 +52,7 @@
 				<div class="clr"></div>
 			</div>
 			<div class="content-row">
-				<div class="content-icon"><img src="/assets/icon5.png" width="48" height="41" alt="" /></div>
+				<div class="content-icon"><%= image_tag("icon5.png", :size => "48x41", :alt => "") %></div>
 				<div class="content-text">
 					<h3>Macro Valuation</h3>
 					<p>Keep your finger on the pulse of the total stock market valuation.</p>
