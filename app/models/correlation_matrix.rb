@@ -326,7 +326,7 @@ class Correlation_matrix
     port_stdev += @stock_stddevs[num_assets] * @stock_stddevs[num_assets]
     
     if port_stdev<0
-      logger.info("*!*!*!* Yikes: Port stdev is negative when it shouldn't be: #{port_stdev}")
+      Rails.logger.info("*!*!*!* Yikes: Port stdev is negative when it shouldn't be: #{port_stdev}")
       return 0 # Error condition
     else
       return Math.sqrt( port_stdev / (num_assets+1)**2 )
@@ -398,9 +398,9 @@ class Correlation_matrix
     corr = 0
     # check that a and b are the same length
     if a.size != b.size
-      logger.error 'Error - stock series are different lengths.'
-      logger.error("A #{a.size}")
-      logger.error("B #{b.size} -- new asset")      
+      Rails.logger.error 'Error - stock series are different lengths.'
+      Rails.logger.error("A #{a.size}")
+      Rails.logger.error("B #{b.size} -- new asset")      
       return -2 # This is an error condition
     else
       # calculate correlation coefficient
@@ -508,7 +508,7 @@ class Correlation_matrix
         if asset.length < required_trading_days
           # If asset doesn't include date then we need to add data by copying previous day
           if !asset.flatten.include?(date)    # ie. missing data
-            logger.info("** Found missing data on #{date}. Nothing is being done about it yet")
+            Rails.logger.info("** Found missing data on #{date}. Nothing is being done about it yet")
           end         
         end
  

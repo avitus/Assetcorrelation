@@ -289,8 +289,8 @@ class CorrelationController < ApplicationController
     if query < 30 then query = 31 end
     
     @portfolios = Portfolio.find(:all, :conditions => ["period = ?", query])    
-    logger.info("== Querying database for portfolios with period  : #{query}")
-    logger.info("== Number of portfolios found that match criteria: #{@portfolios.length}")
+    Rails.logger.info("== Querying database for portfolios with period  : #{query}")
+    Rails.logger.info("== Number of portfolios found that match criteria: #{@portfolios.length}")
   
     # Strip out risk and correlation and remove portfolios with too few assets
     @portfolios.each { |x|
