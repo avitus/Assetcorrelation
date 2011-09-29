@@ -130,3 +130,6 @@ Dir[File.join(File.dirname(__FILE__), '..', 'vendor', 'gems', 'hoptoad_notifier-
 end
 
 # require 'hoptoad_notifier/capistrano'
+
+        require './config/boot'
+        require 'airbrake/capistrano'
