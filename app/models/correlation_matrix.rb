@@ -454,8 +454,8 @@ class Correlation_matrix
     start_dates = Array.new
     
     quote_array.each do |x| 
-      final_dates << x.first[0] # should be today or yesterday
-      start_dates << x.last[0]
+      final_dates << x.first.date # should be today or yesterday
+      start_dates << x.last.date
     end
     
     if (final_dates.min == final_dates.max) and (start_dates.min == start_dates.max)
@@ -465,12 +465,12 @@ class Correlation_matrix
       start_date = start_dates.max
       
       quote_array.each do |x|
-        if x.first[0] > final_date
+        if x.first.date > final_date
           x.shift
         end
         
         # Does this mess up the case where one stock has a much shorter history?
-        if x.last[0] < start_date
+        if x.last.date < start_date
           x.pop
         end     
       end
@@ -496,7 +496,7 @@ class Correlation_matrix
     Rails.logger.info("== Compiling date array")
     quote_array.each do |asset|
       asset.each do |quote|
-        @trading_dates << quote[0] # add date to array
+        @trading_dates << quote.date # add date to array
       end
     end
     @trading_dates.uniq! # remove redundant dates
@@ -508,7 +508,7 @@ class Correlation_matrix
         if asset.length < required_trading_days
           # If asset doesn't include date then we need to add data by copying previous day
           if !asset.flatten.include?(date)    # ie. missing data
-            Rails.logger.info("** Found missing data on #{date}. Nothing is being done about it yet")
+            Rails.logger.info("** Found missing data for on #{date}. Nothing is being done about it yet")
           end         
         end
  
