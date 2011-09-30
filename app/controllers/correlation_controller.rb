@@ -257,9 +257,14 @@ class CorrelationController < ApplicationController
     
     tickers    = @portfolio.assets.map { |asset| asset.ticker }
     
+    if tickers.length > 16
+      flash.notice = 'Maximum number of assets for which we can calculate a correlation matrix is 16.'
+      tickers
+    end
+    
     # 2) Build correlation matrix
     @corr_matrix = Correlation_matrix.new(@period.to_i)
-    @corr_matrix.add_many_stocks(tickers)     
+    @corr_matrix.add_many_stocks(tickers[0..15])     
     
   end
 
