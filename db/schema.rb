@@ -22,7 +22,7 @@ ActiveRecord::Schema.define(:version => 20110926032455) do
   end
 
   add_index "assets", ["asset_class"], :name => "index_assets_on_asset_class"
-  add_index "assets", ["name"], :name => "index_assets_on_name", :unique => true
+  add_index "assets", ["name"], :name => "index_assets_on_name"
   add_index "assets", ["ticker"], :name => "index_assets_on_ticker", :unique => true
 
   create_table "macrovals", :force => true do |t|
@@ -64,8 +64,8 @@ ActiveRecord::Schema.define(:version => 20110926032455) do
     t.integer  "portfolio_id"
     t.integer  "asset_id"
     t.integer  "shares"
-    t.decimal  "price"
-    t.decimal  "holding_percentage"
+    t.decimal  "price",              :precision => 10, :scale => 2
+    t.decimal  "holding_percentage", :precision => 10, :scale => 2
     t.datetime "created_at"
     t.datetime "updated_at"
   end
@@ -76,13 +76,14 @@ ActiveRecord::Schema.define(:version => 20110926032455) do
   create_table "price_quotes", :force => true do |t|
     t.integer  "asset_id"
     t.date     "date"
-    t.decimal  "price"
-    t.decimal  "daily_return"
+    t.decimal  "price",        :precision => 10, :scale => 2
+    t.decimal  "daily_return", :precision => 10, :scale => 2
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
   add_index "price_quotes", ["asset_id"], :name => "index_price_quotes_on_asset_id"
+  add_index "price_quotes", ["date"], :name => "index_price_quotes_on_date"
 
   create_table "rails_admin_histories", :force => true do |t|
     t.string   "message"
