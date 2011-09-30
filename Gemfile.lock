@@ -248,7 +248,7 @@ DEPENDENCIES
   rails-footnotes (>= 3.7)
   rails_admin!
   rspec-rails (>= 2.6.1)
-  sass-rails (~> 3.1.0)
+  sass-rails (~> 3.1.2)
   simple_form
   sqlite3
   therubyracer (>= 0.8.2)
