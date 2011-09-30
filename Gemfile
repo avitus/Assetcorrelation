@@ -3,7 +3,7 @@ HOST_OS = Config::CONFIG['host_os']
 
 source 'http://rubygems.org'
 
-gem 'rails', '3.1.0'
+gem 'rails', '3.1.1rc2'
 
 group :development do
   gem 'sqlite3'
