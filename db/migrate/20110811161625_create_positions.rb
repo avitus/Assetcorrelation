@@ -4,8 +4,8 @@ class CreatePositions < ActiveRecord::Migration
       t.integer :portfolio_id
       t.integer :asset_id
       t.integer :shares
-      t.decimal :price
-      t.decimal :holding_percentage
+      t.decimal :price, :precision => 10, :scale => 2
+      t.decimal :holding_percentage, :precision => 10, :scale => 2
 
       t.timestamps
     end
