@@ -18,7 +18,6 @@ end
 
 # Gems used only for assets and not required in production environments by default.
 group :assets do
-  gem 'sass-rails', "  ~> 3.1.2"
   gem 'coffee-rails', "~> 3.1.0"
   gem 'uglifier'
 end
@@ -51,6 +50,7 @@ gem 'jquery-rails'
 gem "rspec-rails", ">= 2.6.1", :group => [:development, :test]
 gem "devise", ">= 1.4.4"
 gem "frontend-helpers"
+gem 'sass-rails', "  ~> 3.1.2"
 gem 'rails_admin', :git => 'git://github.com/sferik/rails_admin.git'    # Admin panel
 gem "breadcrumbs_on_rails", '>=2.0.0'                                   # For breadcrumb navigation bar
 gem "yahoofinance"
