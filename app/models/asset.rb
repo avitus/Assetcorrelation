@@ -37,7 +37,7 @@ class Asset < ActiveRecord::Base
       if self.price_quotes.exists?(:date => yahoo_date)
         # Skip
       else
-        self.price_quotes.create(:date => yahoo_date, :price => yahoo_quote[6])
+        self.price_quotes.create(:date => yahoo_date, :price => yahoo_quote[6].to_f)
       end
     }   	  
 	    
