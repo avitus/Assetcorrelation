@@ -27,21 +27,21 @@ Assetcorrelation::Application.routes.draw do
   # Sample of named route:
   #   match 'products/:id/purchase' => 'catalog#purchase', :as => :purchase
   # This route can be invoked with purchase_url(:id => product.id)
-  match '/majors'				 	=> 'correlation#correlations',  :as => 'majors'
-  match '/bonds' 					=> 'correlation#bonds',   			:as => 'bonds'
-  match '/sectors' 				=> 'correlation#sectors',   		:as => 'sectors'
-  match '/international'  => 'correlation#countries',     :as => 'international'
-  match '/custom'         => 'correlation#custom',        :as => 'custom'
+  match '/majors/(:id)'        => 'correlation#correlations',  :as => 'majors'
+  match '/bonds/(:id)'			   => 'correlation#bonds',   			:as => 'bonds'
+  match '/sectors/(:id)' 			 => 'correlation#sectors',   		:as => 'sectors'
+  match '/international/(:id)' => 'correlation#countries',     :as => 'international'
+  match '/custom'              => 'correlation#custom',        :as => 'custom'
 
-	match '/primer'					=> 'info#primer',								:as => 'primer'
-	match '/support'				=> 'info#support',							:as => 'support'
+	match '/primer'              => 'info#primer',								:as => 'primer'
+	match '/support'				     => 'info#support',							:as => 'support'
 	
-  match '/shiller_dash'   => 'macrovals#dashboard',       :as => 'shiller_dash'
-  match '/calc_shiller'   => 'macrovals#calculate_cols',  :as => 'calc_shiller'
+  match '/shiller_dash'        => 'macrovals#dashboard',       :as => 'shiller_dash'
+  match '/calc_shiller'        => 'macrovals#calculate_cols',  :as => 'calc_shiller'
 	
-	match '/valid_asset'		=> 'assets#valid_asset',				:as => 'valid_asset'
+	match '/valid_asset'		     => 'assets#valid_asset',				:as => 'valid_asset'
 	
-	match '/account'        => 'users#show',                :as => 'account'
+	match '/account'             => 'users#show',                :as => 'account'
 
   # Sample resource route (maps HTTP verbs to controller actions automatically):
   #   resources :products

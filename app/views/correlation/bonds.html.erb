@@ -70,11 +70,11 @@
   <table cellpadding="3" cellspacing="1" border="0">
   	<tr>
   		<td>Select Period:</em></td>
-  		<td><%= link_to '1 Mo |', :action => 'bonds', :id =>   31 %></td>		
-  		<td><%= link_to '3 Mo |', :action => 'bonds', :id =>   91 %></td>
-  		<td><%= link_to '6 Mo |', :action => 'bonds', :id =>  183 %></td>
-  		<td><%= link_to '1 Yr |', :action => 'bonds', :id =>  366 %></td>
-		<td><%= link_to '2 Yr  ', :action => 'bonds', :id =>  731 %></td>       
+  		<td><%= link_to '1 Mo |', bonds_url(:id =>   31) %></td>		
+  		<td><%= link_to '3 Mo |', bonds_url(:id =>   91) %></td>
+  		<td><%= link_to '6 Mo |', bonds_url(:id =>  183) %></td>
+  		<td><%= link_to '1 Yr |', bonds_url(:id =>  366) %></td>
+		<td><%= link_to '2 Yr  ', bonds_url(:id =>  731) %></td>       
 	</tr>
   </table>
 

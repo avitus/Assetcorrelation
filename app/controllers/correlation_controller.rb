@@ -94,7 +94,7 @@ class CorrelationController < ApplicationController
     if params[:id].nil? 
       @period=91
     else 
-      @period=params[:id].to_i 
+      @period=[params[:id].to_i, 731].min 
     end
     tickers   =  %w{TIP GLD AGG EMB USO GSG VNQ RWX EEM EFA VB VV VO}
     @page_title = "Asset Correlations: Major Asset Classes"    

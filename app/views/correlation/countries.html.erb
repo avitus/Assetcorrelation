@@ -71,11 +71,11 @@
   <table cellpadding="3" cellspacing="1" border="0">
   	<tr>
   		<td>Select Period:</em></td>
-  		<td><%= link_to '1 Mo |', :action => 'countries', :id =>   31 %></td>		
-  		<td><%= link_to '3 Mo |', :action => 'countries', :id =>   91 %></td>
-  		<td><%= link_to '6 Mo |', :action => 'countries', :id =>  183 %></td>
-  		<td><%= link_to '1 Yr |', :action => 'countries', :id =>  366 %></td>
-		<td><%= link_to '2 Yr  ', :action => 'countries', :id =>  731 %></td>        		
+  		<td><%= link_to '1 Mo |', international_url(:id =>   31) %></td>		
+  		<td><%= link_to '3 Mo |', international_url(:id =>   91) %></td>
+  		<td><%= link_to '6 Mo |', international_url(:id =>  183) %></td>
+  		<td><%= link_to '1 Yr |', international_url(:id =>  366) %></td>
+		<td><%= link_to '2 Yr  ', international_url(:id =>  731) %></td>         		
 	</tr>
   </table>
 

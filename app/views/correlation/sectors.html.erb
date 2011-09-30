@@ -65,13 +65,13 @@
   <table cellpadding="3" cellspacing="1" border="0">
   	<tr>
   		<td>Select Period:</em></td>
-  		<td><%= link_to ' 1 Mo |', :action => 'sectors', :id =>   31 %></td>		
-  		<td><%= link_to ' 3 Mo |', :action => 'sectors', :id =>   91 %></td>
-  		<td><%= link_to ' 6 Mo |', :action => 'sectors', :id =>  183 %></td>
-  		<td><%= link_to ' 1 Yr |', :action => 'sectors', :id =>  366 %></td>
-		<td><%= link_to ' 2 Yr |', :action => 'sectors', :id =>  731 %></td> 
-		<td><%= link_to ' 5 Yr |', :action => 'sectors', :id => 1826 %></td> 
-		<td><%= link_to '10 Yr  ', :action => 'sectors', :id => 3652 %></td> 					
+  		<td><%= link_to ' 1 Mo |', sectors_url(:id =>   31) %></td>		
+  		<td><%= link_to ' 3 Mo |', sectors_url(:id =>   91) %></td>
+  		<td><%= link_to ' 6 Mo |', sectors_url(:id =>  183) %></td>
+  		<td><%= link_to ' 1 Yr |', sectors_url(:id =>  366) %></td>
+		<td><%= link_to ' 2 Yr |', sectors_url(:id =>  731) %></td>  
+		<td><%= link_to ' 5 Yr |', sectors_url(:id => 1826) %></td>  
+		<td><%= link_to '10 Yr  ', sectors_url(:id => 3652) %></td>  					
 	</tr>
   </table>
 
