@@ -268,6 +268,81 @@ class CorrelationController < ApplicationController
     
   end
 
+
+  # ----------------------------------------------------------------------------------------------------------
+  # Correlation over Time
+  #
+  # Inputs:
+  # ["ticker1", "ticker2"] - two tickers in a string (converted to an array in this function
+  # period - length of time eg. 5 years
+  # interval - number of days over which to calculate rolling correlation eg. 90 days
+  # Output: A cool graph
+  # ----------------------------------------------------------------------------------------------------------   
+  def time
+    
+    if params[:tickers].nil?
+      render(:template=>'user/enter_time_corr.rhtml')
+      return
+    else
+      @tickers = params[:tickers].upcase.gsub(',',' ').split
+      period = params[:period].to_i
+      interval = 63 # 3 month interval = 252 / 4 = 63
+    end
+
+
+    if (@tickers.size != 2)
+      flash[:notice] = "You must enter two ticker symbols eg: CSCO MSFT"
+      render(:template=>'user/enter_time_corr.rhtml')
+      return
+    end
+   
+    if (invalid_tickers(@tickers.join(" ")) != -1)
+      flash[:notice] = invalid_tickers(@tickers.join(" ")) + " is not a valid ticker symbol"
+      render(:template=>'user/enter_time_corr.rhtml')
+      return
+    end
+    
+    
+    @company_names = Array.new
+    @company_names = tickers_to_names(@tickers)
+   
+    @x = Correlation_time.new(@tickers, period, interval)
+    corr_series = @x.get_correlation_over_time
+    
+    if (corr_series.length<5)
+      flash[:notice] = "Those two assets do not have a long enough trading history for meaningful comparison"
+      render(:template=>'user/enter_time_corr.rhtml')
+      return
+    end
+    
+    
+    # Build Chart
+    chart_data = Array.new
+    x_data = Array.new
+    
+    # Create X-axis labels
+    sd = ParseDate::parsedate(@x.start_date)
+    start_date = Date.new(sd[0], sd[1], sd[2])
+    @period = (Date.today - start_date).to_i
+
+    step_size = (Date.today - start_date)/corr_series.length
+    for i in 0...corr_series.length
+       x_data << (start_date + i * step_size).to_s[0..6]
+    end
+
+    # Build up chart data object to pass to Ziya
+    chart_data << corr_series
+    chart_data << x_data
+    chart_data << @tickers
+
+    
+    # Put chart data into session
+    session[:ziyadata] = chart_data
+    
+  end
+
+
+
   # ----------------------------------------------------------------------------------------------------------
   # Scatter plot for efficient frontier
   # ----------------------------------------------------------------------------------------------------------    
