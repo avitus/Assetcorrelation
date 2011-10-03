@@ -47,7 +47,7 @@
 
 	<% for row in 0...@corr_matrix.stock_names.length-1 %>
 	<tr>
-		<td align="left"><%=@portfolio.positions[row+1].asset.name%></td>
+		<td align="left"><%=@portfolio.positions[row+1].asset.name unless !@portfolio.positions[row+1].asset %></td>
 		<td align="center"><%=@corr_matrix.stock_names[row+1]%></td>
 		<% for col in 0..row %>
 	       <td align="center" <%=css_correlation(@corr_matrix[row,col])%>><%=number_with_precision(@corr_matrix[row,col], :precision => 2) %></td>  			

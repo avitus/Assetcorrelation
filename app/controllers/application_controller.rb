@@ -19,6 +19,21 @@ class ApplicationController < ActionController::Base
   end   
   
   
+  # ----------------------------------------------------------------------------------------------------------
+  # Check for valid ticker
+  # ----------------------------------------------------------------------------------------------------------  
+  def valid_ticker?(ticker_string)
+     
+     if ( ticker_string.nil? || ticker_string.empty? )
+       return nil
+     end
+
+     # Match string against regular expression     
+     return ticker_string !~ /\s|\,|\;/
+
+  end   
+  
+  
 end
 
 class Array
