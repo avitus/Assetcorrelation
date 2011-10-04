@@ -160,10 +160,13 @@ class Correlation_matrix
       Rails.logger.debug("** Setting number of trading days to #{@trading_days}")
     end
     
-    # This next line of code often generates an error while evaluating nil.[] (1 occurence to date)
-    # Possibly add check for .nil? -- not sure why this occurs
-    @start_date = historical_quotes[shortest_history].last.date
-    @end_date   = historical_quotes[shortest_history].first.date
+    if shortest_history
+      @start_date = historical_quotes[shortest_history].last.date
+      @end_date   = historical_quotes[shortest_history].first.date      
+    else
+      Rails.logger.warn("Error: couldn't find asset with shortest history while adding #{tickers}")
+    end
+
     
     # startdate   = Date.parse(@start_date)
     # enddate     = Date.parse(@end_date)    
