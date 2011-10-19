@@ -280,49 +280,49 @@ class CorrelationController < ApplicationController
   # ----------------------------------------------------------------------------------------------------------   
   def time
     
-    if params[:tickers].nil?
-      render(:template=>'user/enter_time_corr.rhtml')
-      return
-    else
-      @tickers = params[:tickers].upcase.gsub(',',' ').split
-      period = params[:period].to_i
-      interval = 63 # 3 month interval = 252 / 4 = 63
-    end
+    # if params[:tickers].nil?
+      # render(:template=>'user/enter_time_corr.rhtml')
+      # return
+    # else
+      # @tickers = params[:tickers].upcase.gsub(',',' ').split
+      # period = params[:period].to_i
+      # interval = 63 # 3 month interval = 252 / 4 = 63
+    # end
 
-
-    if (@tickers.size != 2)
-      flash[:notice] = "You must enter two ticker symbols eg: CSCO MSFT"
-      render(:template=>'user/enter_time_corr.rhtml')
-      return
-    end
+    # if (@tickers.size != 2)
+      # flash[:notice] = "You must enter two ticker symbols eg: CSCO MSFT"
+      # render(:template=>'user/enter_time_corr.rhtml')
+      # return
+    # end
    
-    if (invalid_tickers(@tickers.join(" ")) != -1)
-      flash[:notice] = invalid_tickers(@tickers.join(" ")) + " is not a valid ticker symbol"
-      render(:template=>'user/enter_time_corr.rhtml')
-      return
-    end
-    
-    
-    @company_names = Array.new
-    @company_names = tickers_to_names(@tickers)
+    # if (invalid_tickers(@tickers.join(" ")) != -1)
+      # flash[:notice] = invalid_tickers(@tickers.join(" ")) + " is not a valid ticker symbol"
+      # render(:template=>'user/enter_time_corr.rhtml')
+      # return
+    # end
+
+    @tickers = ["EEM", "EFA"]
+    period   = 365
+    interval =  63
+   
+    # @company_names = Array.new
+    # @company_names = tickers_to_names(@tickers)
    
     @x = Correlation_time.new(@tickers, period, interval)
     corr_series = @x.get_correlation_over_time
-    
+     
     if (corr_series.length<5)
       flash[:notice] = "Those two assets do not have a long enough trading history for meaningful comparison"
       render(:template=>'user/enter_time_corr.rhtml')
       return
     end
     
-    
     # Build Chart
     chart_data = Array.new
     x_data = Array.new
-    
+     
     # Create X-axis labels
-    sd = ParseDate::parsedate(@x.start_date)
-    start_date = Date.new(sd[0], sd[1], sd[2])
+    start_date = @x.start_date
     @period = (Date.today - start_date).to_i
 
     step_size = (Date.today - start_date)/corr_series.length
@@ -334,11 +334,11 @@ class CorrelationController < ApplicationController
     chart_data << corr_series
     chart_data << x_data
     chart_data << @tickers
-
     
-    # Put chart data into session
-    session[:ziyadata] = chart_data
-    
+    respond_to do |format|
+      format.html # show.html.erb
+      format.json { render json: chart_data }
+    end    
   end
 
 

@@ -32,6 +32,7 @@ Assetcorrelation::Application.routes.draw do
   match '/sectors/(:id)' 			 => 'correlation#sectors',   		 :as => 'sectors'
   match '/international/(:id)' => 'correlation#countries',     :as => 'international'
   match '/custom'              => 'correlation#custom',        :as => 'custom'
+  match '/time'                => 'correlation#time',          :as => 'time'
 
 	match '/primer'              => 'info#primer',							 :as => 'primer'
 	match '/support'				     => 'info#support',							 :as => 'support'
