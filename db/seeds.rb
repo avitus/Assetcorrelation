@@ -60,7 +60,7 @@ puts 'ADDING ASSETS'
   ["HYG",   "iShares iBoxx $ HY Corp Bond Fund"],
   ["MUB",   "iShares S&P National AMT-Free Muni Bd"],
   ["MBB",   "iShares Barclays MBS Bond"] ].each do |a|
-    Asset.find_or_create_by_ticker(:ticker => a[0], :name => a[1])
+    Security.find_or_create_by_ticker(:ticker => a[0], :name => a[1])
     end
 
 

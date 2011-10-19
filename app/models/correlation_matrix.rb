@@ -196,7 +196,7 @@ class Correlation_matrix
     # Yahoo returns only trading days of data
     tickers.each { |t|
       # h = YahooFinance::get_historical_quotes_days(t.upcase, period_req) 
-      h = Asset.find_by_ticker(t).price_history(period_req)
+      h = Security.find_by_ticker(t).price_history(period_req)
       historical_quotes << h
       history_lengths   << h.size    
     }

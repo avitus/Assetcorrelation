@@ -11,19 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20110926032455) do
-
-  create_table "assets", :force => true do |t|
-    t.string   "name"
-    t.string   "ticker"
-    t.string   "asset_class"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  add_index "assets", ["asset_class"], :name => "index_assets_on_asset_class"
-  add_index "assets", ["name"], :name => "index_assets_on_name"
-  add_index "assets", ["ticker"], :name => "index_assets_on_ticker", :unique => true
+ActiveRecord::Schema.define(:version => 20111019204048) do
 
   create_table "macrovals", :force => true do |t|
     t.decimal  "year_month",        :precision => 10, :scale => 2, :null => false
@@ -62,28 +50,27 @@ ActiveRecord::Schema.define(:version => 20110926032455) do
 
   create_table "positions", :force => true do |t|
     t.integer  "portfolio_id"
-    t.integer  "asset_id"
+    t.integer  "security_id"
     t.integer  "shares"
-    t.decimal  "price",              :precision => 10, :scale => 2
-    t.decimal  "holding_percentage", :precision => 10, :scale => 2
+    t.decimal  "price"
+    t.decimal  "holding_percentage"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
-  add_index "positions", ["asset_id"], :name => "index_positions_on_asset_id"
   add_index "positions", ["portfolio_id"], :name => "index_positions_on_portfolio_id"
+  add_index "positions", ["security_id"], :name => "index_positions_on_asset_id"
 
   create_table "price_quotes", :force => true do |t|
-    t.integer  "asset_id"
+    t.integer  "security_id"
     t.date     "date"
-    t.decimal  "price",        :precision => 10, :scale => 2
-    t.decimal  "daily_return", :precision => 10, :scale => 2
+    t.decimal  "price"
+    t.decimal  "daily_return"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
-  add_index "price_quotes", ["asset_id"], :name => "index_price_quotes_on_asset_id"
-  add_index "price_quotes", ["date"], :name => "index_price_quotes_on_date"
+  add_index "price_quotes", ["security_id"], :name => "index_price_quotes_on_asset_id"
 
   create_table "rails_admin_histories", :force => true do |t|
     t.string   "message"
@@ -97,6 +84,18 @@ ActiveRecord::Schema.define(:version => 20110926032455) do
   end
 
   add_index "rails_admin_histories", ["item", "table", "month", "year"], :name => "index_rails_admin_histories"
+
+  create_table "securities", :force => true do |t|
+    t.string   "name"
+    t.string   "ticker"
+    t.string   "asset_class"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "securities", ["asset_class"], :name => "index_assets_on_asset_class"
+  add_index "securities", ["name"], :name => "index_assets_on_name", :unique => true
+  add_index "securities", ["ticker"], :name => "index_assets_on_ticker", :unique => true
 
   create_table "users", :force => true do |t|
     t.string   "email",                                 :default => "",    :null => false

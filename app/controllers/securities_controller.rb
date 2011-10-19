@@ -1,57 +1,57 @@
-class AssetsController < ApplicationController
+class SecuritiesController < ApplicationController
   
   before_filter :authenticate_user!
     
   # GET /assets
   # GET /assets.json
   def index
-    @assets = Asset.all
+    @securities = Security.all
 
     respond_to do |format|
       format.html # index.html.erb
-      format.json { render json: @assets }
+      format.json { render json: @securities }
     end
   end
 
   # GET /assets/1
   # GET /assets/1.json
   def show
-    @asset = Asset.find(params[:id])
+    @security = Security.find(params[:id])
 
     respond_to do |format|
       format.html # show.html.erb
-      format.json { render json: @asset }
+      format.json { render json: @security }
     end
   end
 
   # GET /assets/new
   # GET /assets/new.json
   def new
-    @asset = Asset.new
+    @security = Security.new
 
     respond_to do |format|
       format.html # new.html.erb
-      format.json { render json: @asset }
+      format.json { render json: @security }
     end
   end
 
   # GET /assets/1/edit
   def edit
-    @asset = Asset.find(params[:id])
+    @security = Security.find(params[:id])
   end
 
   # POST /assets
   # POST /assets.json
   def create
-    @asset = Asset.new(params[:asset])
+    @security = Security.new(params[:security])
 
     respond_to do |format|
-      if @asset.save
-        format.html { redirect_to @asset, notice: 'Asset was successfully created.' }
-        format.json { render json: @asset, status: :created, location: @asset }
+      if @security.save
+        format.html { redirect_to @security, notice: 'Security was successfully created.' }
+        format.json { render json: @security, status: :created, location: @security }
       else
         format.html { render action: "new" }
-        format.json { render json: @asset.errors, status: :unprocessable_entity }
+        format.json { render json: @security.errors, status: :unprocessable_entity }
       end
     end
   end
@@ -59,15 +59,15 @@ class AssetsController < ApplicationController
   # PUT /assets/1
   # PUT /assets/1.json
   def update
-    @asset = Asset.find(params[:id])
+    @security = Security.find(params[:id])
 
     respond_to do |format|
-      if @asset.update_attributes(params[:asset])
-        format.html { redirect_to @asset, notice: 'Asset was successfully updated.' }
+      if @security.update_attributes(params[:security])
+        format.html { redirect_to @security, notice: 'Security was successfully updated.' }
         format.json { head :ok }
       else
         format.html { render action: "edit" }
-        format.json { render json: @asset.errors, status: :unprocessable_entity }
+        format.json { render json: @security.errors, status: :unprocessable_entity }
       end
     end
   end
@@ -75,25 +75,25 @@ class AssetsController < ApplicationController
   # DELETE /assets/1
   # DELETE /assets/1.json
   def destroy
-    @asset = Asset.find(params[:id])
-    @asset.destroy
+    @security = Security.find(params[:id])
+    @security.destroy
 
     respond_to do |format|
-      format.html { redirect_to assets_url }
+      format.html { redirect_to securities_url }
       format.json { head :ok }
     end
   end
   
-  def valid_asset
+  def valid_security
   	query = params[:query]
   	
   	if valid_ticker?(query)
   	  
-    	asset = Asset.find_by_ticker( query.upcase )
+    	asset = Security.find_by_ticker( query.upcase )
     		
     	unless asset
     		# Check with Yahoo
-    		Rails.logger.info("=== Querying Yahoo for asset: #{query}")
+    		Rails.logger.info("=== Querying Yahoo for security: #{query}")
     		ticker = query.upcase
   		  quote_type  = YahooFinance::StandardQuote
   		  quote       = YahooFinance::get_quotes( quote_type, ticker )
@@ -107,7 +107,7 @@ class AssetsController < ApplicationController
   		    has_history = YahooFinance::get_historical_quotes_days(ticker, 7).size > 0
   		    if (quote[ticker].date != "N/A") && has_history		    	
   		      # Create new asset in DB
-  		      asset = Asset.create( :name => quote[ticker].name, :ticker => quote[ticker].symbol )
+  		      asset = Security.create( :name => quote[ticker].name, :ticker => quote[ticker].symbol )
   		    else
   		    	asset = nil
   		    end 	

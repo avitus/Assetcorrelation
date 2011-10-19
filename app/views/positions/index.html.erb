@@ -11,7 +11,7 @@
 
 <% @positions.each do |position| %>
   <tr>
-    <td><%= position.asset_id %></td>
+    <td><%= position.security_id %></td>
     <td><%= position.holding_percentage %></td>
     <td><%= link_to 'Show', position %></td>
     <td><%= link_to 'Edit', edit_position_path(position) %></td>

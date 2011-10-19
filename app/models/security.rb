@@ -1,4 +1,4 @@
-class Asset < ActiveRecord::Base
+class Security < ActiveRecord::Base
 	
 	has_many	:price_quotes, :dependent => :destroy
 	

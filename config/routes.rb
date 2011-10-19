@@ -6,7 +6,7 @@ Assetcorrelation::Application.routes.draw do
   resources :macrovals
   resources :positions
   resources :price_quotes
-  resources :assets
+  resources :securities
   resources :portfolios
 
 
@@ -28,18 +28,18 @@ Assetcorrelation::Application.routes.draw do
   #   match 'products/:id/purchase' => 'catalog#purchase', :as => :purchase
   # This route can be invoked with purchase_url(:id => product.id)
   match '/majors/(:id)'        => 'correlation#correlations',  :as => 'majors'
-  match '/bonds/(:id)'			   => 'correlation#bonds',   			:as => 'bonds'
-  match '/sectors/(:id)' 			 => 'correlation#sectors',   		:as => 'sectors'
+  match '/bonds/(:id)'			   => 'correlation#bonds',   			 :as => 'bonds'
+  match '/sectors/(:id)' 			 => 'correlation#sectors',   		 :as => 'sectors'
   match '/international/(:id)' => 'correlation#countries',     :as => 'international'
   match '/custom'              => 'correlation#custom',        :as => 'custom'
 
-	match '/primer'              => 'info#primer',								:as => 'primer'
-	match '/support'				     => 'info#support',							:as => 'support'
+	match '/primer'              => 'info#primer',							 :as => 'primer'
+	match '/support'				     => 'info#support',							 :as => 'support'
 	
   match '/shiller_dash'        => 'macrovals#dashboard',       :as => 'shiller_dash'
   match '/calc_shiller'        => 'macrovals#calculate_cols',  :as => 'calc_shiller'
 	
-	match '/valid_asset'		     => 'assets#valid_asset',				:as => 'valid_asset'
+	match '/valid_security'		   => 'securities#valid_security', :as => 'valid_security'
 	
 	match '/account'             => 'users#show',                :as => 'account'
 

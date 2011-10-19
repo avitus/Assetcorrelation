@@ -255,7 +255,7 @@ class CorrelationController < ApplicationController
     @portfolio = Portfolio.find(params[:portfolio])
     @period    = params[:period] || 90
     
-    tickers    = @portfolio.assets.map { |asset| asset.ticker }
+    tickers    = @portfolio.securities.map { |security| security.ticker }
     
     if tickers.length > 16
       flash.notice = 'Maximum number of assets for which we can calculate a correlation matrix is 16.'

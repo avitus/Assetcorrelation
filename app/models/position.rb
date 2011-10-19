@@ -1,6 +1,6 @@
 class Position < ActiveRecord::Base
-	belongs_to :asset
+	belongs_to :security
 		
-	attr_accessible :asset_id, :shares, :holding_percentage
+	attr_accessible :security_id, :shares, :holding_percentage
 	
 end

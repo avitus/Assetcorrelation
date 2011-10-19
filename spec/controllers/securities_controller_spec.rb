@@ -18,7 +18,7 @@ require 'spec_helper'
 # Message expectations are only used when there is no simpler way to specify
 # that an instance is receiving a specific message.
 
-describe AssetsController do
+describe SecuritiesController do
 
   # This should return the minimal set of attributes required to create a valid
   # Asset. As you add validations to Asset, be sure to
@@ -28,33 +28,33 @@ describe AssetsController do
   end
 
   describe "GET index" do
-    it "assigns all assets as @assets" do
-      asset = Asset.create! valid_attributes
+    it "assigns all assets as @securities" do
+      asset = Security.create! valid_attributes
       get :index
-      assigns(:assets).should eq([asset])
+      assigns(:securities).should eq([asset])
     end
   end
 
   describe "GET show" do
-    it "assigns the requested asset as @asset" do
-      asset = Asset.create! valid_attributes
+    it "assigns the requested asset as @security" do
+      asset = Security.create! valid_attributes
       get :show, :id => asset.id.to_s
-      assigns(:asset).should eq(asset)
+      assigns(:security).should eq(asset)
     end
   end
 
   describe "GET new" do
-    it "assigns a new asset as @asset" do
+    it "assigns a new asset as @security" do
       get :new
-      assigns(:asset).should be_a_new(Asset)
+      assigns(:security).should be_a_new(Asset)
     end
   end
 
   describe "GET edit" do
-    it "assigns the requested asset as @asset" do
-      asset = Asset.create! valid_attributes
+    it "assigns the requested asset as @security" do
+      asset = Security.create! valid_attributes
       get :edit, :id => asset.id.to_s
-      assigns(:asset).should eq(asset)
+      assigns(:security).should eq(asset)
     end
   end
 
@@ -62,34 +62,34 @@ describe AssetsController do
     describe "with valid params" do
       it "creates a new Asset" do
         expect {
-          post :create, :asset => valid_attributes
+          post :create, :security => valid_attributes
         }.to change(Asset, :count).by(1)
       end
 
-      it "assigns a newly created asset as @asset" do
-        post :create, :asset => valid_attributes
-        assigns(:asset).should be_a(Asset)
-        assigns(:asset).should be_persisted
+      it "assigns a newly created asset as @security" do
+        post :create, :security => valid_attributes
+        assigns(:security).should be_a(Asset)
+        assigns(:security).should be_persisted
       end
 
       it "redirects to the created asset" do
-        post :create, :asset => valid_attributes
+        post :create, :security => valid_attributes
         response.should redirect_to(Asset.last)
       end
     end
 
     describe "with invalid params" do
-      it "assigns a newly created but unsaved asset as @asset" do
+      it "assigns a newly created but unsaved asset as @security" do
         # Trigger the behavior that occurs when invalid params are submitted
         Asset.any_instance.stub(:save).and_return(false)
-        post :create, :asset => {}
-        assigns(:asset).should be_a_new(Asset)
+        post :create, :security => {}
+        assigns(:security).should be_a_new(Asset)
       end
 
       it "re-renders the 'new' template" do
         # Trigger the behavior that occurs when invalid params are submitted
         Asset.any_instance.stub(:save).and_return(false)
-        post :create, :asset => {}
+        post :create, :security => {}
         response.should render_template("new")
       end
     end
@@ -98,42 +98,42 @@ describe AssetsController do
   describe "PUT update" do
     describe "with valid params" do
       it "updates the requested asset" do
-        asset = Asset.create! valid_attributes
+        asset = Security.create! valid_attributes
         # Assuming there are no other assets in the database, this
         # specifies that the Asset created on the previous line
         # receives the :update_attributes message with whatever params are
         # submitted in the request.
         Asset.any_instance.should_receive(:update_attributes).with({'these' => 'params'})
-        put :update, :id => asset.id, :asset => {'these' => 'params'}
+        put :update, :id => asset.id, :security => {'these' => 'params'}
       end
 
-      it "assigns the requested asset as @asset" do
-        asset = Asset.create! valid_attributes
-        put :update, :id => asset.id, :asset => valid_attributes
-        assigns(:asset).should eq(asset)
+      it "assigns the requested asset as @security" do
+        asset = Security.create! valid_attributes
+        put :update, :id => asset.id, :security => valid_attributes
+        assigns(:security).should eq(asset)
       end
 
       it "redirects to the asset" do
-        asset = Asset.create! valid_attributes
-        put :update, :id => asset.id, :asset => valid_attributes
+        asset = Security.create! valid_attributes
+        put :update, :id => asset.id, :security => valid_attributes
         response.should redirect_to(asset)
       end
     end
 
     describe "with invalid params" do
-      it "assigns the asset as @asset" do
-        asset = Asset.create! valid_attributes
+      it "assigns the asset as @security" do
+        asset = Security.create! valid_attributes
         # Trigger the behavior that occurs when invalid params are submitted
         Asset.any_instance.stub(:save).and_return(false)
-        put :update, :id => asset.id.to_s, :asset => {}
-        assigns(:asset).should eq(asset)
+        put :update, :id => asset.id.to_s, :security => {}
+        assigns(:security).should eq(asset)
       end
 
       it "re-renders the 'edit' template" do
-        asset = Asset.create! valid_attributes
+        asset = Security.create! valid_attributes
         # Trigger the behavior that occurs when invalid params are submitted
         Asset.any_instance.stub(:save).and_return(false)
-        put :update, :id => asset.id.to_s, :asset => {}
+        put :update, :id => asset.id.to_s, :security => {}
         response.should render_template("edit")
       end
     end
@@ -141,16 +141,16 @@ describe AssetsController do
 
   describe "DELETE destroy" do
     it "destroys the requested asset" do
-      asset = Asset.create! valid_attributes
+      asset = Security.create! valid_attributes
       expect {
         delete :destroy, :id => asset.id.to_s
       }.to change(Asset, :count).by(-1)
     end
 
     it "redirects to the assets list" do
-      asset = Asset.create! valid_attributes
+      asset = Security.create! valid_attributes
       delete :destroy, :id => asset.id.to_s
-      response.should redirect_to(assets_url)
+      response.should redirect_to(securities_url)
     end
   end
 
