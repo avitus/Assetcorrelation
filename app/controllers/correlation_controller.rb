@@ -268,6 +268,9 @@ class CorrelationController < ApplicationController
     
   end
 
+  def time
+    
+  end
 
   # ----------------------------------------------------------------------------------------------------------
   # Correlation over Time
@@ -278,7 +281,7 @@ class CorrelationController < ApplicationController
   # interval - number of days over which to calculate rolling correlation eg. 90 days
   # Output: A cool graph
   # ----------------------------------------------------------------------------------------------------------   
-  def time
+  def corr_over_time
     
     # if params[:tickers].nil?
       # render(:template=>'user/enter_time_corr.rhtml')
@@ -301,9 +304,9 @@ class CorrelationController < ApplicationController
       # return
     # end
 
-    @tickers = ["EEM", "EFA"]
-    period   = 365
-    interval =  63
+    @tickers = ["EEM", "TIP"]
+    period   =  120
+    interval =   30
    
     # @company_names = Array.new
     # @company_names = tickers_to_names(@tickers)
@@ -318,7 +321,7 @@ class CorrelationController < ApplicationController
     end
     
     # Build Chart
-    chart_data = Array.new
+    chart_data = Hash.new
     x_data = Array.new
      
     # Create X-axis labels
@@ -331,12 +334,13 @@ class CorrelationController < ApplicationController
     end
 
     # Build up chart data object to pass to Ziya
-    chart_data << corr_series
-    chart_data << x_data
-    chart_data << @tickers
+    chart_data['series']    = corr_series
+    chart_data['xdata']     = x_data
+    chart_data['start']     = start_date.to_s[0..6]
+    chart_data['timestep']  = step_size
+    chart_data['tickers']   = @tickers
     
     respond_to do |format|
-      format.html # show.html.erb
       format.json { render json: chart_data }
     end    
   end

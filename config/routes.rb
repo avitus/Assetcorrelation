@@ -27,22 +27,23 @@ Assetcorrelation::Application.routes.draw do
   # Sample of named route:
   #   match 'products/:id/purchase' => 'catalog#purchase', :as => :purchase
   # This route can be invoked with purchase_url(:id => product.id)
-  match '/majors/(:id)'        => 'correlation#correlations',  :as => 'majors'
-  match '/bonds/(:id)'			   => 'correlation#bonds',   			 :as => 'bonds'
-  match '/sectors/(:id)' 			 => 'correlation#sectors',   		 :as => 'sectors'
-  match '/international/(:id)' => 'correlation#countries',     :as => 'international'
-  match '/custom'              => 'correlation#custom',        :as => 'custom'
-  match '/time'                => 'correlation#time',          :as => 'time'
+  match '/majors/(:id)'        => 'correlation#correlations',   :as => 'majors'
+  match '/bonds/(:id)'			   => 'correlation#bonds',   			  :as => 'bonds'
+  match '/sectors/(:id)' 			 => 'correlation#sectors',   		  :as => 'sectors'
+  match '/international/(:id)' => 'correlation#countries',      :as => 'international'
+  match '/custom'              => 'correlation#custom',         :as => 'custom'
+  match '/time'                => 'correlation#time',           :as => 'time'
+  match '/corr_over_time'      => 'correlation#corr_over_time', :as => 'corr_over_time'
 
-	match '/primer'              => 'info#primer',							 :as => 'primer'
-	match '/support'				     => 'info#support',							 :as => 'support'
+	match '/primer'              => 'info#primer',							  :as => 'primer'
+	match '/support'				     => 'info#support',							  :as => 'support'
 	
-  match '/shiller_dash'        => 'macrovals#dashboard',       :as => 'shiller_dash'
-  match '/calc_shiller'        => 'macrovals#calculate_cols',  :as => 'calc_shiller'
+  match '/shiller_dash'        => 'macrovals#dashboard',        :as => 'shiller_dash'
+  match '/calc_shiller'        => 'macrovals#calculate_cols',   :as => 'calc_shiller'
 	
-	match '/valid_security'		   => 'securities#valid_security', :as => 'valid_security'
+	match '/valid_security'		   => 'securities#valid_security',  :as => 'valid_security'
 	
-	match '/account'             => 'users#show',                :as => 'account'
+	match '/account'             => 'users#show',                 :as => 'account'
 
   # Sample resource route (maps HTTP verbs to controller actions automatically):
   #   resources :products

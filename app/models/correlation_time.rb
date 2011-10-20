@@ -24,8 +24,6 @@ class Correlation_time
     # 1. Get the stock history for each ticker
     historical_quotes, days_history, shortest_ticker = quote_request(@tickers, @period)
 
-    Rails.logger.debug("Quote request returned #{days_history} days of data.")
-
     # 2. Convert series from price to return
     return_sequences = price_to_returns(historical_quotes, 2, days_history)
 
@@ -141,7 +139,7 @@ class Correlation_time
       series_build = Array.new
       daily_returns = Array.new
       for day in 0...days_of_history
-        series_build << yahoo_history[company][day][6].to_f
+        series_build << yahoo_history[company][day].price.to_f
       end
 
       for day in 1...days_of_history
