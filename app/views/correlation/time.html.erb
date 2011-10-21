@@ -1,3 +1,19 @@
+<div class="ticker-entry">
+    
+    <h2> Enter two tickers</h2>
+    
+    <p>
+		<%= text_field_tag( :ticker1,  params[:search_param],  :size =>  10, :class => 'asset-ticker', :placeholder => "Ticker" )%>
+	    <%= text_field_tag( :ticker2,  params[:search_param],  :size =>  10, :class => 'asset-ticker', :placeholder => "Ticker" )%>
+	    <%= select_tag :period, options_for_select([['3 Months',  90],
+	    											['6 Months', 183],
+	    											['1 Year',   365],
+	    											['2 Years',  730]]) %>
+	    <button id="go">Go</button>
+    </p>	                      
+  
+</div>  
+
 <div id="container" style="width: 100%; height: 500px"></div>
 
 <script type="text/javascript">
@@ -5,6 +21,10 @@
 var chart; // globally available
 
 $(document).ready(function() {
+	
+	Highcharts.setOptions({
+	    colors: ['#6b9620', '#50B432', '#ED561B', '#DDDF00', '#24CBE5', '#64E572', '#FF9655', '#FFF263', '#6AF9C4']
+	});	
 	
 	var options = {
 	    credits: {
@@ -15,8 +35,13 @@ $(document).ready(function() {
 			renderTo: 'container',
 			defaultSeriesType: 'area'
 		},
+		
 		title: {
-			text: 'Correlation Over Time'
+			text: 'Correlation Over Time',
+	        style: {
+	            color: '#333333',
+	            fontWeight: 'bold'
+	        }			
 		},
 		xAxis: {
 			type: 'datetime',
@@ -26,21 +51,32 @@ $(document).ready(function() {
 		},
 		yAxis: {
 			title: {
-				text: 'Correlation'
+				text: 'Correlation',
+		        style: {
+		            color: '#333333',
+		            fontWeight: 'bold'
+		        }				
 			},
 			max:  1.0,
 			min: -1.0
 		},
+	    legend: {
+	        itemStyle: {
+	            color: '#333333',
+	            fontWeight: 'bold'
+	        }
+	    },		
 		plotOptions: {
 		   area: {
 		      fillColor: {
 		         linearGradient: [0, 0, 0, 300],
 		         stops: [
-		            [0, Highcharts.getOptions().colors[0]],
+		            [0, '#6b9620'],
 		            [1, 'rgba(2,0,0,0)']
 		         ]
 		      },
 		      lineWidth: 1,
+		      lineColor: '#6b9620',
 		      marker: {
 		         enabled: false,
 		         states: {
@@ -61,20 +97,47 @@ $(document).ready(function() {
 		series: []
 	};	
 	
+	$('#go').click( function() { 
+				
+		if(typeof chart!='undefined') {
+		   chart.destroy();
+		}
 	
-	$.get('/corr_over_time', function(data) {
-		
-		var corr = { data: [] };
-                			 
-		corr.data          = data[0];
-		corr.pointStart    = Date.parse(data[1][0]);
- 		corr.pointEnd      = Date();
-		corr.name          = data[2];
-		
-		options.series.push(corr);
+		$.get('/corr_over_time', { ticker1: $("#ticker1").val(), ticker2: $("#ticker2").val(), period: $("#period").val() }, function(data) {
 			
-		var chart = new Highcharts.Chart(options);
+			var corr = { data: [] };
+	                			 
+			corr.data          = data[0];
+			corr.pointStart    = Date.parse(data[1][0]);
+			corr.pointInterval = 24 * 3600 * 1000 * 7 / 5;
+			corr.name          = data[2];
+			
+			options.series.length = 0;
+			options.series.push(corr);
+						
+			var chart = new Highcharts.Chart(options);
+		});
 	});
+	
+	
+	$('.asset-ticker').livequery(function() {
+	
+		$(this).observe_field( 0.5, function() {
+	  	
+		  	var $assetRowSelector = $(this);
+			
+			$.get('/valid_security', { query: this.value }, 
+				function(data) {
+									
+					if(typeof(data) != 'undefined' && data != null) {
+						$assetRowSelector.css({ borderColor: '#4C586E', backgroundColor: '#AFAEAE' });						
+					}
+					else {
+						$assetRowSelector.removeAttr("style");							
+					}					
+				}, "json" );
+			});
+	});	
 		
 });
 

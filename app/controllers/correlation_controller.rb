@@ -283,33 +283,26 @@ class CorrelationController < ApplicationController
   # ----------------------------------------------------------------------------------------------------------   
   def corr_over_time
     
-    # if params[:tickers].nil?
-      # render(:template=>'user/enter_time_corr.rhtml')
-      # return
-    # else
-      # @tickers = params[:tickers].upcase.gsub(',',' ').split
-      # period = params[:period].to_i
-      # interval = 63 # 3 month interval = 252 / 4 = 63
-    # end
-
-    # if (@tickers.size != 2)
-      # flash[:notice] = "You must enter two ticker symbols eg: CSCO MSFT"
-      # render(:template=>'user/enter_time_corr.rhtml')
-      # return
-    # end
+    if params[:ticker1] and params[:ticker2]
+      ticker1 = params[:ticker1].upcase
+      ticker2 = params[:ticker2].upcase
+      @tickers = Array.[]( ticker1, ticker2 )
+      period = params[:period].to_i
+      interval = 21 # 3 month interval = 252 / 4 = 63      
+    else
+      return
+    end
    
     # if (invalid_tickers(@tickers.join(" ")) != -1)
       # flash[:notice] = invalid_tickers(@tickers.join(" ")) + " is not a valid ticker symbol"
-      # render(:template=>'user/enter_time_corr.rhtml')
       # return
     # end
-
-    @tickers = ["EEM", "TIP"]
-    period   = 365
-    interval =  30
    
     # @company_names = Array.new
     # @company_names = tickers_to_names(@tickers)
+   
+   
+    Rails.logger.debug("Calling time correlation with tickers: #{@tickers}, interval: #{interval}, period: #{period}")
    
     @x = Correlation_time.new(@tickers, period, interval)
     corr_series = @x.get_correlation_over_time
