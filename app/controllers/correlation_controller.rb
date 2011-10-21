@@ -305,8 +305,8 @@ class CorrelationController < ApplicationController
     # end
 
     @tickers = ["EEM", "TIP"]
-    period   =  120
-    interval =   30
+    period   = 365
+    interval =  30
    
     # @company_names = Array.new
     # @company_names = tickers_to_names(@tickers)
@@ -321,24 +321,24 @@ class CorrelationController < ApplicationController
     end
     
     # Build Chart
-    chart_data = Hash.new
+    chart_data = Array.new
     x_data = Array.new
      
     # Create X-axis labels
     start_date = @x.start_date
+    end_date   = Date.today()
+    
     @period = (Date.today - start_date).to_i
 
     step_size = (Date.today - start_date)/corr_series.length
     for i in 0...corr_series.length
-       x_data << (start_date + i * step_size).to_s[0..6]
+       x_data << (start_date + i * step_size).to_s
     end
 
     # Build up chart data object to pass to Ziya
-    chart_data['series']    = corr_series
-    chart_data['xdata']     = x_data
-    chart_data['start']     = start_date.to_s[0..6]
-    chart_data['timestep']  = step_size
-    chart_data['tickers']   = @tickers
+    chart_data << corr_series
+    chart_data << x_data
+    chart_data << @tickers
     
     respond_to do |format|
       format.json { render json: chart_data }
