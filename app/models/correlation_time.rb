@@ -345,24 +345,25 @@ class Correlation_time
   
   def quote_insertion(quote_array, required_trading_days )
     
+    trading_dates = Array.new
     Rails.logger.info("== Setting all histories to length: #{required_trading_days}")
     # For each company - check whether there are any dates missing from golden date array and add them
     Rails.logger.info("== Compiling date array")
     quote_array.each do |asset|
       asset.each do |quote|
-        @trading_dates << quote.date # add date to array
+        trading_dates << quote.date # add date to array
       end
     end
-    @trading_dates.uniq! # remove redundant dates
+    trading_dates.uniq! # remove redundant dates
     
     Rails.logger.info("== Checking for missing dates")
     # For each company - insert missing data
-    @trading_dates.each do |date|
+    trading_dates.each do |date|
       quote_array.each do |asset|
         if asset.length < required_trading_days
           # If asset doesn't include date then we need to add data by copying previous day
           if !asset.flatten.include?(date)    # ie. missing data
-            Rails.logger.info("** Found missing data for on #{date}. Nothing is being done about it yet")
+            Rails.logger.info("** Found missing data on #{date}. Nothing is being done about it yet")
           end         
         end
  
