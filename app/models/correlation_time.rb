@@ -362,6 +362,8 @@ class Correlation_time
       quote_array.each do |asset|
         if asset.length < required_trading_days
           # If asset doesn't include date then we need to add data by copying previous day
+          # However, there are two cases -- one where a stock traded on a public holiday e.g. DIA on 2010-01-18
+          # The other is where a stock didn't traded on a day it should have.
           if !asset.flatten.include?(date)    # ie. missing data
             Rails.logger.info("** Found missing data on #{date}. Nothing is being done about it yet")
           end         
