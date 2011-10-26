@@ -4,15 +4,18 @@
 	<thead>
 		<tr>
 			<th>Name</th>
+			<th>Assets</th>
 		</tr>
 	</thead>
 
 	<tbody>
 		<% @portfolios.each do |portfolio| %>
 			<tr>
-				<td><%= portfolio.name %></td>
-				<td><%= link_to 'Show', portfolio %></td>
-				<td><%= link_to 'Destroy', portfolio, confirm: 'Are you sure?', method: :delete %></td>
+				<td					><%= link_to portfolio.name, portfolio %></td>
+				<td align="right"	><%= portfolio.positions.length %></td>
+				<td					><%= link_to 'Edit', portfolio %></td>
+				<td					><%= link_to 'Matrix', custom_path(:period =>  91, :portfolio => portfolio) %></td>
+				<td					><%= link_to '[x]', portfolio, confirm: 'Are you sure?', method: :delete %></td>
 			</tr>
 		<% end %>	
 	</tbody>
