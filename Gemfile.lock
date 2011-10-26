@@ -129,6 +129,7 @@ GEM
       i18n (>= 0.4.0)
       mime-types (~> 1.16)
       treetop (~> 1.4.8)
+    memcache-client (1.8.5)
     mime-types (1.16)
     multi_json (1.0.3)
     mysql2 (0.3.7)
@@ -242,6 +243,7 @@ DEPENDENCIES
   hirb
   jquery-rails
   launchy (>= 2.0.5)
+  memcache-client
   mysql2 (>= 0.3)
   nested_form!
   newrelic_rpm
