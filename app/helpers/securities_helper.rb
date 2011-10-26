@@ -1,4 +1,5 @@
 module SecuritiesHelper
+  
   # ----------------------------------------------------------------------------------------------------------
   # Get names from tickers
   # Input: ["MSFT", "CSCO"]                 -- an array of upcased ticker symbols
@@ -19,8 +20,10 @@ module SecuritiesHelper
         name_array << quote[t.upcase].name.titleize
       end
     end
-    
+      
     return name_array
-
-  end     
+    
+  end  
+       
 end
+

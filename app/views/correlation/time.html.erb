@@ -106,16 +106,22 @@ $(document).ready(function() {
 		$.get('/corr_over_time', { ticker1: $("#ticker1").val(), ticker2: $("#ticker2").val(), period: $("#period").val() }, function(data) {
 			
 			var corr = { data: [] };
-	                			 
-			corr.data          = data[0];
-			corr.pointStart    = Date.parse(data[1][0]);
-			corr.pointInterval = 24 * 3600 * 1000 * 7 / 5;
-			corr.name          = data[2];
-			
-			options.series.length = 0;
-			options.series.push(corr);
-						
-			var chart = new Highcharts.Chart(options);
+	        	        
+	        if (data.error == "Invalid ticker") {
+	        	alert("One or more of the tickers you entered is invalid.");
+	        }
+	        else {
+	        	corr.data          = data[0];
+				corr.pointStart    = Date.parse(data[1][0]);
+				corr.pointInterval = 24 * 3600 * 1000 * 7 / 5;
+				corr.name          = data[2];
+				
+				options.series.length = 0;
+				options.series.push(corr);
+							
+				var chart = new Highcharts.Chart(options);	
+	        }
+	                			 			 
 		});
 	});
 	

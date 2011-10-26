@@ -39,7 +39,7 @@
 # 10/12/09 Feature: Added macro valuation analysis
 
 class CorrelationController < ApplicationController
-
+  include SecuritiesHelper
 	require 'yahoofinance'
 
   caches_page :correlations, :countries, :sectors, :bonds, :simple_asset_allocation
@@ -293,52 +293,40 @@ class CorrelationController < ApplicationController
       return
     end
    
-    # if (invalid_tickers(@tickers.join(" ")) != -1)
-      # flash[:notice] = invalid_tickers(@tickers.join(" ")) + " is not a valid ticker symbol"
-      # return
-    # end
-   
-    # @company_names = Array.new
-    # @company_names = tickers_to_names(@tickers)
-   
-   
-    Rails.logger.debug("Calling time correlation with tickers: #{@tickers}, interval: #{interval}, period: #{period}")
-   
-    @x = Correlation_time.new(@tickers, period, interval)
-    corr_series = @x.get_correlation_over_time
-     
-    if (corr_series.length<5)
-      flash[:notice] = "Those two assets do not have a long enough trading history for meaningful comparison"
-      render(:template=>'user/enter_time_corr.rhtml')
-      return
+    if @tickers.ticker_check == true
+      logger.debug "Building graph with tickers #{@tickers}"
+      @x = Correlation_time.new(@tickers, period, interval)
+      corr_series = @x.get_correlation_over_time
+      
+      # Build Chart
+      chart_data = Array.new
+      x_data = Array.new
+       
+      # Create X-axis labels
+      start_date = @x.start_date
+      end_date   = Date.today()
+      
+      @period = (Date.today - start_date).to_i
+  
+      step_size = (Date.today - start_date)/corr_series.length
+      for i in 0...corr_series.length
+         x_data << (start_date + i * step_size).to_s
+      end
+  
+      # Build up chart data object to pass to Ziya
+      chart_data << corr_series
+      chart_data << x_data
+      chart_data << @tickers
+      
+      respond_to do |format|
+        format.json { render json: chart_data }
+      end 
+    else 
+      respond_to do |format|
+        format.json { render json: {error: "Invalid ticker"}.to_json }
+      end          
     end
-    
-    # Build Chart
-    chart_data = Array.new
-    x_data = Array.new
-     
-    # Create X-axis labels
-    start_date = @x.start_date
-    end_date   = Date.today()
-    
-    @period = (Date.today - start_date).to_i
-
-    step_size = (Date.today - start_date)/corr_series.length
-    for i in 0...corr_series.length
-       x_data << (start_date + i * step_size).to_s
-    end
-
-    # Build up chart data object to pass to Ziya
-    chart_data << corr_series
-    chart_data << x_data
-    chart_data << @tickers
-    
-    respond_to do |format|
-      format.json { render json: chart_data }
-    end    
   end
-
-
 
   # ----------------------------------------------------------------------------------------------------------
   # Scatter plot for efficient frontier
