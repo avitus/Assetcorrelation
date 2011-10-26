@@ -194,7 +194,7 @@ class CorrelationController < ApplicationController
     
     # 3) Request a StandardQuote to get the company names
     quote_type = YahooFinance::StandardQuote
-    @quotes     = YahooFinance::get_quotes( quote_type, tickers )
+    @quotes    = YahooFinance::get_quotes( quote_type, tickers )
     
     @quotes['SPY'  ].name = "S&P 500"
     @quotes['XLY'  ].name = "Consumer Discretionary"
