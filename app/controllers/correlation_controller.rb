@@ -195,6 +195,8 @@ class CorrelationController < ApplicationController
     
     if tickers.length > 16
       flash.notice = 'Maximum number of assets for which we can calculate a correlation matrix is 16.'
+      @correlation_matrix = Correlation_matrix.new(@period.to_i)
+      @correlation_matrix.add_many_stocks(tickers[0..15]) 
     elsif tickers.empty?
       flash.notice = 'You have to add assets to your portfolio before we can calculate a correlation matrix'
       redirect_to portfolios_path

@@ -8,7 +8,7 @@ class Correlation_matrix
   include SecuritiesHelper
   
   # Constants
-  MA                    = 20                                # maximum number of assets
+  MA                    = 16                                # maximum number of assets
     
   def initialize(period)
     @period_req         = period                            # number of days in period request
