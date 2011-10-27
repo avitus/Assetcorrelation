@@ -1,0 +1,38 @@
+<table cellpadding="6" cellspacing="1" border="1">
+
+	<tr>
+		<td></td>
+		<td></td>
+		<% for index in 0...@correlation_matrix.stock_names.length-1 %>
+			<td align="center"><%=@correlation_matrix.stock_names[index]%></td>
+		<% end %>
+		<td align="center">Return<span class="superscript">1</span></td>
+		<td align="center">StdDev<span class="superscript">2</span></td> 
+	</tr>
+	
+	<tr>
+	<td align="left"><%=@correlation_matrix.stock_fullnames[0]%></td>
+	<td align="center"><%=@correlation_matrix.stock_names[0]%></td>
+	<% for index in 0...@correlation_matrix.stock_names.length-1 %>
+		<td></td>
+	<% end %>
+	<td align="center"><%=number_with_precision(@correlation_matrix.stock_returns[0], :precision => 1)%>%</td>
+	<td align="center"><%=number_with_precision(@correlation_matrix.stock_stddevs[0], :precision => 1)%>%</td>  
+	</tr>	
+	
+	<% for row in 0...@correlation_matrix.stock_names.length-1 %>
+	<tr>
+		<td align="left"><%=@correlation_matrix.stock_fullnames[row+1]%></td>
+		<td align="center"><%=@correlation_matrix.stock_names[row+1]%></td>
+		<% for col in 0..row %>
+	       <td align="center" <%=css_correlation(@correlation_matrix[row,col])%>><%=number_with_precision(@correlation_matrix[row,col], :precision => 2) %></td>  			
+		<% end %>
+		<% for blanks in row+1...@correlation_matrix.stock_names.length-1 %>
+		   <td align="center"></td>
+		<% end %>
+		<td align="center"><%=number_with_precision(@correlation_matrix.stock_returns[row+1], :precision => 1)%>%</td>
+		<td align="center"><%=number_with_precision(@correlation_matrix.stock_stddevs[row+1], :precision => 1)%>%</td>
+	</tr>
+	<% end %>
+	
+</table>

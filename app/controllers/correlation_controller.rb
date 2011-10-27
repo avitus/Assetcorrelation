@@ -101,8 +101,8 @@ class CorrelationController < ApplicationController
     
         
     # 2) Build correlation matrix
-    @corr_matrix = Correlation_matrix.new(@period)
-    @corr_matrix.add_many_stocks(tickers) 
+    @correlation_matrix = Correlation_matrix.new(@period)
+    @correlation_matrix.add_many_stocks(tickers) 
     
     # EMB fund is most recent:Launched Dec 19th, 2007
         
@@ -128,8 +128,8 @@ class CorrelationController < ApplicationController
     
         
     # 2) Build correlation matrix
-    @corr_matrix = Correlation_matrix.new(@period)
-    @corr_matrix.add_many_stocks(tickers) 
+    @correlation_matrix = Correlation_matrix.new(@period)
+    @correlation_matrix.add_many_stocks(tickers) 
     
     # TUR fund is most recent - launched April 1st 2008 
     
@@ -154,8 +154,8 @@ class CorrelationController < ApplicationController
     @page_title = "Asset Correlations: S&P Sectors"    
         
     # 2) Build correlation matrix
-    @corr_matrix = Correlation_matrix.new(@period)
-    @corr_matrix.add_many_stocks(tickers) 
+    @correlation_matrix = Correlation_matrix.new(@period)
+    @correlation_matrix.add_many_stocks(tickers) 
       
   end   
 
@@ -177,8 +177,8 @@ class CorrelationController < ApplicationController
     @page_title = "Asset Correlations: Bond Sector"
         
     # 2) Build correlation matrix
-    @corr_matrix = Correlation_matrix.new(@period)
-    @corr_matrix.add_many_stocks(tickers) 
+    @correlation_matrix = Correlation_matrix.new(@period)
+    @correlation_matrix.add_many_stocks(tickers) 
     
     # EMB Launched Dec 19th, 2007 
     
@@ -199,8 +199,8 @@ class CorrelationController < ApplicationController
       flash.notice = 'You have to add assets to your portfolio before we can calculate a correlation matrix'
       redirect_to portfolios_path
     else
-      @corr_matrix = Correlation_matrix.new(@period.to_i)
-      @corr_matrix.add_many_stocks(tickers[0..15])     
+      @correlation_matrix = Correlation_matrix.new(@period.to_i)
+      @correlation_matrix.add_many_stocks(tickers[0..15])     
     end
   end
 

@@ -24,43 +24,7 @@
   	exchange traded funds) over the past <%=days_to_words(@period)%>.
   </p>
 
-  <table cellpadding="6" cellspacing="1" border="1">
-
-    <tr>
-      <td></td>
-	  <td></td>
-      <% for index in 0...@corr_matrix.stock_names.length-1 %>
-	    <td align="center"><%=@corr_matrix.stock_names[index]%></td>
-	  <% end %>
-	  <td align="center">Return<span class="superscript">1</span></td>
-	  <td align="center">StdDev<span class="superscript">2</span></td> 
-	</tr>
-	
-    <tr>
-      <td align="left"><%=@corr_matrix.stock_fullnames[0]%></td>
-	  <td align="center"><%=@corr_matrix.stock_names[0]%></td>
-      <% for index in 0...@corr_matrix.stock_names.length-1 %>
-	    <td></td>
-	  <% end %>
-		<td align="center"><%=number_with_precision(@corr_matrix.stock_returns[0], :precision => 1)%>%</td>
-		<td align="center"><%=number_with_precision(@corr_matrix.stock_stddevs[0], :precision => 1)%>%</td>  
-  	</tr>	
-
-	<% for row in 0...@corr_matrix.stock_names.length-1 %>
-	<tr>
-		<td align="left"><%=@corr_matrix.stock_fullnames[row+1]%></td>
-		<td align="center"><%=@corr_matrix.stock_names[row+1]%></td>
-		<% for col in 0..row %>
-	       <td align="center" <%=css_correlation(@corr_matrix[row,col])%>><%=number_with_precision(@corr_matrix[row,col], :precision => 2) %></td>  			
-		<% end %>
-		<% for blanks in row+1...@corr_matrix.stock_names.length-1 %>
-		   <td align="center"></td>
-		<% end %>
-		<td align="center"><%=number_with_precision(@corr_matrix.stock_returns[row+1], :precision => 1)%>%</td>
-		<td align="center"><%=number_with_precision(@corr_matrix.stock_stddevs[row+1], :precision => 1)%>%</td>
-	</tr>
-	<% end %>
-  </table>
+  <%= render "correlation_matrix" %>
 
   <br>
 	
@@ -80,19 +44,19 @@
   <table cellpadding="4" cellspacing="1" border="0">
   	<tr>
   		<td>Intra-portfolio diversification</td>
-		<td>= <%=number_with_precision(@corr_matrix.diversification_measure, :precision => 1)%></td>
+		<td>= <%=number_with_precision(@correlation_matrix.diversification_measure, :precision => 1)%></td>
   	</tr>
 	<tr>
 		<td>Portfolio return</td>
-		<td>= <%=number_with_precision(@corr_matrix.portfolio_return, :precision => 1)%>%</td>
+		<td>= <%=number_with_precision(@correlation_matrix.portfolio_return, :precision => 1)%>%</td>
 	</tr>
 	<tr>
 		<td>Start Date</td>
-		<td>= <%=@corr_matrix.start_date%></td>
+		<td>= <%=@correlation_matrix.start_date%></td>
 	</tr>
 	<tr>
 		<td>End Date</td>
-		<td>= <%=@corr_matrix.end_date%></td>
+		<td>= <%=@correlation_matrix.end_date%></td>
 	</tr>	
   </table>
 
