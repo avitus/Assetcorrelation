@@ -42,7 +42,7 @@ class CorrelationController < ApplicationController
   include SecuritiesHelper
 	require 'yahoofinance'
 
-  caches_action :correlations, :countries, :sectors, :bonds, :simple_asset_allocation, :expires_in => 4.hours
+  caches_action :correlations, :countries, :sectors, :bonds, :simple_asset_allocation, :expires_in => 4.hours, :layout => false
   
   # ----------------------------------------------------------------------------------------------------------
   # Stock quotes
