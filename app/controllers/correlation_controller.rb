@@ -42,7 +42,7 @@ class CorrelationController < ApplicationController
   include SecuritiesHelper
 	require 'yahoofinance'
 
-  caches_page :correlations, :countries, :sectors, :bonds, :simple_asset_allocation
+  caches_action :correlations, :countries, :sectors, :bonds, :simple_asset_allocation, :expires_in => 4.hours
   
   # ----------------------------------------------------------------------------------------------------------
   # Stock quotes
@@ -193,16 +193,16 @@ class CorrelationController < ApplicationController
     
     tickers    = @portfolio.securities.map { |security| security.ticker }
     
-    if tickers.length > 16
-      flash.notice = 'Maximum number of assets for which we can calculate a correlation matrix is 16.'
-      @correlation_matrix = Correlation_matrix.new(@period.to_i)
-      @correlation_matrix.add_many_stocks(tickers[0..15]) 
-    elsif tickers.empty?
+    if tickers.empty?
       flash.notice = 'You have to add assets to your portfolio before we can calculate a correlation matrix'
-      redirect_to portfolios_path
+      redirect_to portfolios_path      
     else
       @correlation_matrix = Correlation_matrix.new(@period.to_i)
-      @correlation_matrix.add_many_stocks(tickers[0..15])     
+      @correlation_matrix.add_many_stocks(tickers[0..15])
+    end    
+    
+    if tickers.length > 16
+      flash.notice = 'Maximum number of assets for which we can calculate a correlation matrix is 16.'   
     end
   end
 
