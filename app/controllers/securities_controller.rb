@@ -1,6 +1,6 @@
 class SecuritiesController < ApplicationController
   
-  before_filter :authenticate_user!
+  before_filter :authenticate_user!, :except => :valid_security
     
   # GET /assets
   # GET /assets.json
@@ -83,7 +83,10 @@ class SecuritiesController < ApplicationController
       format.json { head :ok }
     end
   end
-  
+
+  # ----------------------------------------------------------------------------------------------------------
+  # Check whether ticker represents valid security
+  # ----------------------------------------------------------------------------------------------------------   
   def valid_security
   	query = params[:query]
   	
@@ -106,8 +109,14 @@ class SecuritiesController < ApplicationController
   		    # Check for 5 days of history and a valid date field
   		    has_history = YahooFinance::get_historical_quotes_days(ticker, 7).size > 0
   		    if (quote[ticker].date != "N/A") && has_history		    	
-  		      # Create new asset in DB
-  		      asset = Security.create( :name => quote[ticker].name, :ticker => quote[ticker].symbol )
+  		      if Security.exists?( :name => quote[ticker].name)
+  		        # Create asset with unique name
+  		        uniq_name = quote[ticker].name + " DUPLICATE-NAME" + " " + Time.now.to_s
+              asset = Security.create( :name => uniq_name, :ticker => quote[ticker].symbol )               		        
+  		      else
+              # Create new asset in DB
+              asset = Security.create( :name => quote[ticker].name, :ticker => quote[ticker].symbol )  		        
+  		      end
   		    else
   		    	asset = nil
   		    end 	

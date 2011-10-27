@@ -104,24 +104,8 @@ class CorrelationController < ApplicationController
     @corr_matrix = Correlation_matrix.new(@period)
     @corr_matrix.add_many_stocks(tickers) 
     
-    # 3) Request a StandardQuote to get the company names
-    quote_type = YahooFinance::StandardQuote
-    @quotes     = YahooFinance::get_quotes( quote_type, tickers ) 
-    
-    @quotes['TIP'  ].name = "Inflation-protected Treasuries"
-    @quotes['GLD'  ].name = "Gold" 
-    @quotes['AGG'  ].name = "US Bonds"
-    @quotes['EMB'  ].name = "Emerging Market Bonds"  # This fund is most recent:Launched Dec 19th, 2007     
-    @quotes['USO'  ].name = "Oil"
-    @quotes['GSG'  ].name = "Commodities Index"
-    @quotes['VNQ'  ].name = "US Real Estate"
-    @quotes['RWX'  ].name = "International Real Estate"  # launched March 2nd 2007
-    @quotes['EEM'  ].name = "Emerging Markets"
-    @quotes['EFA'  ].name = "Europe, Australasia, Far East"
-    @quotes['VB'   ].name = "US Small Cap Stocks"
-    @quotes['VV'   ].name = "US Large Cap Stocks"   
-    @quotes['VO'   ].name = "US Mid Cap Stocks"   
-    
+    # EMB fund is most recent:Launched Dec 19th, 2007
+        
   end
 
  
@@ -147,26 +131,7 @@ class CorrelationController < ApplicationController
     @corr_matrix = Correlation_matrix.new(@period)
     @corr_matrix.add_many_stocks(tickers) 
     
-    # 3) Request a StandardQuote to get the company names
-    quote_type = YahooFinance::StandardQuote
-    @quotes     = YahooFinance::get_quotes( quote_type, tickers ) 
-
-    @quotes['^GSPC'].name = "United States"
-    @quotes['EZA'  ].name = "South Africa"
-    @quotes['EWQ'  ].name = "France"
-    @quotes['EWG'  ].name = "Germany"
-    @quotes['EWC'  ].name = "Canada"
-    @quotes['EWD'  ].name = "Sweden"
-    @quotes['EWU'  ].name = "United Kingdom"
-    @quotes['EWA'  ].name = "Australia"
-    @quotes['EWJ'  ].name = "Japan"
-    @quotes['EWY'  ].name = "South Korea"   
-    @quotes['EWT'  ].name = "Taiwan"   
-    @quotes['EWZ'  ].name = "Brazil"   
-    @quotes['ECH'  ].name = "Chile"   
-    @quotes['EWW'  ].name = "Mexico"  
-    @quotes['EIS'  ].name = "Israel"  
-    @quotes['TUR'  ].name = "Turkey"  # This fund is most recent - launched April 1st 2008 
+    # TUR fund is most recent - launched April 1st 2008 
     
   end
   
@@ -191,22 +156,7 @@ class CorrelationController < ApplicationController
     # 2) Build correlation matrix
     @corr_matrix = Correlation_matrix.new(@period)
     @corr_matrix.add_many_stocks(tickers) 
-    
-    # 3) Request a StandardQuote to get the company names
-    quote_type = YahooFinance::StandardQuote
-    @quotes    = YahooFinance::get_quotes( quote_type, tickers )
-    
-    @quotes['SPY'  ].name = "S&P 500"
-    @quotes['XLY'  ].name = "Consumer Discretionary"
-    @quotes['XLP'  ].name = "Consumer Staples"
-    @quotes['XLE'  ].name = "Energy"   
-    @quotes['XLF'  ].name = "Financials"   
-    @quotes['XLV'  ].name = "Healthcare"   
-    @quotes['XLI'  ].name = "Industrials"   
-    @quotes['XLB'  ].name = "Materials"  
-    @quotes['XLK'  ].name = "Technology"  
-    @quotes['XLU'  ].name = "Utilities"      
-    
+      
   end   
 
   # ----------------------------------------------------------------------------------------------------------
@@ -230,21 +180,7 @@ class CorrelationController < ApplicationController
     @corr_matrix = Correlation_matrix.new(@period)
     @corr_matrix.add_many_stocks(tickers) 
     
-    # 3) Request a StandardQuote to get the company names
-    quote_type = YahooFinance::StandardQuote
-    @quotes     = YahooFinance::get_quotes( quote_type, tickers )
-    
-    @quotes['SHV'  ].name = "Treasury: Short-term"
-    @quotes['SHY'  ].name = "Treasury: 1-3 Year"
-    @quotes['IEI'  ].name = "Treasury: 3-7 Year"
-    @quotes['IEF'  ].name = "Treasury: 7-10 Year"   
-    @quotes['TLH'  ].name = "Treasury: 10-20 Year"   
-    @quotes['TLT'  ].name = "Treasury: 20+ Year"   
-    @quotes['LQD'  ].name = "Corporate: Investment Grade"   
-    @quotes['HYG'  ].name = "Corporate: High Yield"  
-    @quotes['MUB'  ].name = "Municipal Bonds"  
-    @quotes['EMB'  ].name = "Emerging Market Bonds"  # Launched Dec 19th, 2007     
-    @quotes['MBB'  ].name = "Mortgage-backed Securities"
+    # EMB Launched Dec 19th, 2007 
     
   end  
 
