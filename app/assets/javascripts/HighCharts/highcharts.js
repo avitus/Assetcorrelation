@@ -1,170 +1,11454 @@
+// ==ClosureCompiler==
+// @compilation_level SIMPLE_OPTIMIZATIONS
+
+/**
+ * @license Highcharts JS v2.1.9 (2011-11-11)
+ *
+ * (c) 2009-2011 Torstein Hønsi
+ *
+ * License: www.highcharts.com/license
+ */
+
+// JSLint options:
+/*global document, window, navigator, setInterval, clearInterval, clearTimeout, setTimeout, location, jQuery, $ */
+
+(function () {
+// encapsulated variables
+var doc = document,
+	win = window,
+	math = Math,
+	mathRound = math.round,
+	mathFloor = math.floor,
+	mathCeil = math.ceil,
+	mathMax = math.max,
+	mathMin = math.min,
+	mathAbs = math.abs,
+	mathCos = math.cos,
+	mathSin = math.sin,
+	mathPI = math.PI,
+	deg2rad = mathPI * 2 / 360,
+
+
+	// some variables
+	userAgent = navigator.userAgent,
+	isIE = /msie/i.test(userAgent) && !win.opera,
+	docMode8 = doc.documentMode === 8,
+	isWebKit = /AppleWebKit/.test(userAgent),
+	isFirefox = /Firefox/.test(userAgent),
+	SVG_NS = 'http://www.w3.org/2000/svg',
+	hasSVG = !!doc.createElementNS && !!doc.createElementNS(SVG_NS, 'svg').createSVGRect,
+	hasRtlBug = isFirefox && parseInt(userAgent.split('Firefox/')[1], 10) < 4, // issue #38
+	Renderer,
+	hasTouch = doc.documentElement.ontouchstart !== undefined,
+	symbolSizes = {},
+	idCounter = 0,
+	timeFactor = 1, // 1 = JavaScript time, 1000 = Unix time
+	garbageBin,
+	defaultOptions,
+	dateFormat, // function
+	globalAnimation,
+	pathAnim,
+
+
+	// some constants for frequently used strings
+	UNDEFINED,
+	DIV = 'div',
+	ABSOLUTE = 'absolute',
+	RELATIVE = 'relative',
+	HIDDEN = 'hidden',
+	PREFIX = 'highcharts-',
+	VISIBLE = 'visible',
+	PX = 'px',
+	NONE = 'none',
+	M = 'M',
+	L = 'L',
+	/*
+	 * Empirical lowest possible opacities for TRACKER_FILL
+	 * IE6: 0.002
+	 * IE7: 0.002
+	 * IE8: 0.002
+	 * IE9: 0.00000000001 (unlimited)
+	 * FF: 0.00000000001 (unlimited)
+	 * Chrome: 0.000001
+	 * Safari: 0.000001
+	 * Opera: 0.00000000001 (unlimited)
+	 */
+	TRACKER_FILL = 'rgba(192,192,192,' + (hasSVG ? 0.000001 : 0.002) + ')', // invisible but clickable
+	NORMAL_STATE = '',
+	HOVER_STATE = 'hover',
+	SELECT_STATE = 'select',
+
+	// time methods, changed based on whether or not UTC is used
+	makeTime,
+	getMinutes,
+	getHours,
+	getDay,
+	getDate,
+	getMonth,
+	getFullYear,
+	setMinutes,
+	setHours,
+	setDate,
+	setMonth,
+	setFullYear,
+
+	// check for a custom HighchartsAdapter defined prior to this file
+	globalAdapter = win.HighchartsAdapter,
+	adapter = globalAdapter || {},
+
+	// Utility functions. If the HighchartsAdapter is not defined, adapter is an empty object
+	// and all the utility functions will be null. In that case they are populated by the
+	// default adapters below.
+	each = adapter.each,
+	grep = adapter.grep,
+	map = adapter.map,
+	merge = adapter.merge,
+	addEvent = adapter.addEvent,
+	removeEvent = adapter.removeEvent,
+	fireEvent = adapter.fireEvent,
+	animate = adapter.animate,
+	stop = adapter.stop,
+
+	// lookup over the types and the associated classes
+	seriesTypes = {};
+
+/**
+ * Extend an object with the members of another
+ * @param {Object} a The object to be extended
+ * @param {Object} b The object to add to the first one
+ */
+function extend(a, b) {
+	var n;
+	if (!a) {
+		a = {};
+	}
+	for (n in b) {
+		a[n] = b[n];
+	}
+	return a;
+}
+
+/**
+ * Shortcut for parseInt
+ * @param {Object} s
+ */
+function pInt(s, mag) {
+	return parseInt(s, mag || 10);
+}
+
+/**
+ * Check for string
+ * @param {Object} s
+ */
+function isString(s) {
+	return typeof s === 'string';
+}
+
+/**
+ * Check for object
+ * @param {Object} obj
+ */
+function isObject(obj) {
+	return typeof obj === 'object';
+}
+
+/**
+ * Check for array
+ * @param {Object} obj
+ */
+function isArray(obj) {
+	return Object.prototype.toString.call(obj) === '[object Array]';
+}
+
+/**
+ * Check for number
+ * @param {Object} n
+ */
+function isNumber(n) {
+	return typeof n === 'number';
+}
+
+function log2lin(num) {
+	return math.log(num) / math.LN10;
+}
+function lin2log(num) {
+	return math.pow(10, num);
+}
+
+/**
+ * Remove last occurence of an item from an array
+ * @param {Array} arr
+ * @param {Mixed} item
+ */
+function erase(arr, item) {
+	var i = arr.length;
+	while (i--) {
+		if (arr[i] === item) {
+			arr.splice(i, 1);
+			break;
+		}
+	}
+	//return arr;
+}
+
+/**
+ * Returns true if the object is not null or undefined. Like MooTools' $.defined.
+ * @param {Object} obj
+ */
+function defined(obj) {
+	return obj !== UNDEFINED && obj !== null;
+}
+
+/**
+ * Set or get an attribute or an object of attributes. Can't use jQuery attr because
+ * it attempts to set expando properties on the SVG element, which is not allowed.
+ *
+ * @param {Object} elem The DOM element to receive the attribute(s)
+ * @param {String|Object} prop The property or an abject of key-value pairs
+ * @param {String} value The value if a single property is set
+ */
+function attr(elem, prop, value) {
+	var key,
+		setAttribute = 'setAttribute',
+		ret;
+
+	// if the prop is a string
+	if (isString(prop)) {
+		// set the value
+		if (defined(value)) {
+
+			elem[setAttribute](prop, value);
+
+		// get the value
+		} else if (elem && elem.getAttribute) { // elem not defined when printing pie demo...
+			ret = elem.getAttribute(prop);
+		}
+
+	// else if prop is defined, it is a hash of key/value pairs
+	} else if (defined(prop) && isObject(prop)) {
+		for (key in prop) {
+			elem[setAttribute](key, prop[key]);
+		}
+	}
+	return ret;
+}
+/**
+ * Check if an element is an array, and if not, make it into an array. Like
+ * MooTools' $.splat.
+ */
+function splat(obj) {
+	return isArray(obj) ? obj : [obj];
+}
+
+
+/**
+ * Return the first value that is defined. Like MooTools' $.pick.
+ */
+function pick() {
+	var args = arguments,
+		i,
+		arg,
+		length = args.length;
+	for (i = 0; i < length; i++) {
+		arg = args[i];
+		if (typeof arg !== 'undefined' && arg !== null) {
+			return arg;
+		}
+	}
+}
+
+/**
+ * Set CSS on a given element
+ * @param {Object} el
+ * @param {Object} styles Style object with camel case property names
+ */
+function css(el, styles) {
+	if (isIE) {
+		if (styles && styles.opacity !== UNDEFINED) {
+			styles.filter = 'alpha(opacity=' + (styles.opacity * 100) + ')';
+		}
+	}
+	extend(el.style, styles);
+}
+
+/**
+ * Utility function to create element with attributes and styles
+ * @param {Object} tag
+ * @param {Object} attribs
+ * @param {Object} styles
+ * @param {Object} parent
+ * @param {Object} nopad
+ */
+function createElement(tag, attribs, styles, parent, nopad) {
+	var el = doc.createElement(tag);
+	if (attribs) {
+		extend(el, attribs);
+	}
+	if (nopad) {
+		css(el, {padding: 0, border: NONE, margin: 0});
+	}
+	if (styles) {
+		css(el, styles);
+	}
+	if (parent) {
+		parent.appendChild(el);
+	}
+	return el;
+}
+
+/**
+ * Extend a prototyped class by new members
+ * @param {Object} parent
+ * @param {Object} members
+ */
+function extendClass(parent, members) {
+	var object = function () {};
+	object.prototype = new parent();
+	extend(object.prototype, members);
+	return object;
+}
+
+/**
+ * Format a number and return a string based on input settings
+ * @param {Number} number The input number to format
+ * @param {Number} decimals The amount of decimals
+ * @param {String} decPoint The decimal point, defaults to the one given in the lang options
+ * @param {String} thousandsSep The thousands separator, defaults to the one given in the lang options
+ */
+function numberFormat(number, decimals, decPoint, thousandsSep) {
+	var lang = defaultOptions.lang,
+		// http://kevin.vanzonneveld.net/techblog/article/javascript_equivalent_for_phps_number_format/
+		n = number,
+		c = isNaN(decimals = mathAbs(decimals)) ? 2 : decimals,
+		d = decPoint === undefined ? lang.decimalPoint : decPoint,
+		t = thousandsSep === undefined ? lang.thousandsSep : thousandsSep,
+		s = n < 0 ? "-" : "",
+		i = String(pInt(n = mathAbs(+n || 0).toFixed(c))),
+		j = i.length > 3 ? i.length % 3 : 0;
+
+	return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) +
+		(c ? d + mathAbs(n - i).toFixed(c).slice(2) : "");
+}
+
+/**
+ * Based on http://www.php.net/manual/en/function.strftime.php
+ * @param {String} format
+ * @param {Number} timestamp
+ * @param {Boolean} capitalize
+ */
+dateFormat = function (format, timestamp, capitalize) {
+	function pad(number) {
+		return number.toString().replace(/^([0-9])$/, '0$1');
+	}
+
+	if (!defined(timestamp) || isNaN(timestamp)) {
+		return 'Invalid date';
+	}
+	format = pick(format, '%Y-%m-%d %H:%M:%S');
+
+	var date = new Date(timestamp * timeFactor),
+		key, // used in for constuct below
+		// get the basic time values
+		hours = date[getHours](),
+		day = date[getDay](),
+		dayOfMonth = date[getDate](),
+		month = date[getMonth](),
+		fullYear = date[getFullYear](),
+		lang = defaultOptions.lang,
+		langWeekdays = lang.weekdays,
+		/* // uncomment this and the 'W' format key below to enable week numbers
+		weekNumber = function() {
+			var clone = new Date(date.valueOf()),
+				day = clone[getDay]() == 0 ? 7 : clone[getDay](),
+				dayNumber;
+			clone.setDate(clone[getDate]() + 4 - day);
+			dayNumber = mathFloor((clone.getTime() - new Date(clone[getFullYear](), 0, 1, -6)) / 86400000);
+			return 1 + mathFloor(dayNumber / 7);
+		},
+		*/
+
+		// list all format keys
+		replacements = {
+
+			// Day
+			'a': langWeekdays[day].substr(0, 3), // Short weekday, like 'Mon'
+			'A': langWeekdays[day], // Long weekday, like 'Monday'
+			'd': pad(dayOfMonth), // Two digit day of the month, 01 to 31
+			'e': dayOfMonth, // Day of the month, 1 through 31
+
+			// Week (none implemented)
+			//'W': weekNumber(),
+
+			// Month
+			'b': lang.shortMonths[month], // Short month, like 'Jan'
+			'B': lang.months[month], // Long month, like 'January'
+			'm': pad(month + 1), // Two digit month number, 01 through 12
+
+			// Year
+			'y': fullYear.toString().substr(2, 2), // Two digits year, like 09 for 2009
+			'Y': fullYear, // Four digits year, like 2009
+
+			// Time
+			'H': pad(hours), // Two digits hours in 24h format, 00 through 23
+			'I': pad((hours % 12) || 12), // Two digits hours in 12h format, 00 through 11
+			'l': (hours % 12) || 12, // Hours in 12h format, 1 through 12
+			'M': pad(date[getMinutes]()), // Two digits minutes, 00 through 59
+			'p': hours < 12 ? 'AM' : 'PM', // Upper case AM or PM
+			'P': hours < 12 ? 'am' : 'pm', // Lower case AM or PM
+			'S': pad(date.getSeconds()) // Two digits seconds, 00 through  59
+
+		};
+
+
+	// do the replaces
+	for (key in replacements) {
+		format = format.replace('%' + key, replacements[key]);
+	}
+
+	// Optionally capitalize the string and return
+	return capitalize ? format.substr(0, 1).toUpperCase() + format.substr(1) : format;
+};
+
+/**
+ * Loop up the node tree and add offsetWidth and offsetHeight to get the
+ * total page offset for a given element. Used by Opera and iOS on hover and
+ * all browsers on point click.
+ *
+ * @param {Object} el
+ *
+ */
+function getPosition(el) {
+	var p = { left: el.offsetLeft, top: el.offsetTop };
+	el = el.offsetParent;
+	while (el) {
+		p.left += el.offsetLeft;
+		p.top += el.offsetTop;
+		if (el !== doc.body && el !== doc.documentElement) {
+			p.left -= el.scrollLeft;
+			p.top -= el.scrollTop;
+		}
+		el = el.offsetParent;
+	}
+	return p;
+}
+
+/**
+ * Helper class that contains variuos counters that are local to the chart.
+ */
+function ChartCounters() {
+	this.color = 0;
+	this.symbol = 0;
+}
+
+ChartCounters.prototype = {
+	/**
+	 * Wraps the color counter if it reaches the specified length.
+	 */
+	wrapColor: function (length) {
+		if (this.color >= length) {
+			this.color = 0;
+		}
+	},
+
+	/**
+	 * Wraps the symbol counter if it reaches the specified length.
+	 */
+	wrapSymbol: function (length) {
+		if (this.symbol >= length) {
+			this.symbol = 0;
+		}
+	}
+};
+
+/**
+ * Utility method extracted from Tooltip code that places a tooltip in a chart without spilling over
+ * and not covering the point it self.
+ */
+function placeBox(boxWidth, boxHeight, outerLeft, outerTop, outerWidth, outerHeight, point) {
+	// keep the box within the chart area
+	var pointX = point.x,
+		pointY = point.y,
+		x = pointX - boxWidth + outerLeft - 25,
+		y = pointY - boxHeight + outerTop + 10,
+		alignedRight;
+
+	// it is too far to the left, adjust it
+	if (x < 7) {
+		x = outerLeft + pointX + 15;
+	}
+
+	// Test to see if the tooltip is to far to the right,
+	// if it is, move it back to be inside and then up to not cover the point.
+	if ((x + boxWidth) > (outerLeft + outerWidth)) {
+		x -= (x + boxWidth) - (outerLeft + outerWidth);
+		y -= boxHeight;
+		alignedRight = true;
+	}
+
+	if (y < 5) {
+		y = 5; // above
+
+		// If the tooltip is still covering the point, move it below instead
+		if (alignedRight && pointY >= y && pointY <= (y + boxHeight)) {
+			y = pointY + boxHeight - 5; // below
+		}
+	} else if (y + boxHeight > outerTop + outerHeight) {
+		y = outerTop + outerHeight - boxHeight - 5; // below
+	}
+
+	return {x: x, y: y};
+}
+
+/**
+ * Utility method that sorts an object array and keeping the order of equal items.
+ * ECMA script standard does not specify the behaviour when items are equal.
+ */
+function stableSort(arr, sortFunction) {
+	var length = arr.length,
+		i;
+
+	// Add index to each item
+	for (i = 0; i < length; i++) {
+		arr[i].ss_i = i; // stable sort index
+	}
+
+	arr.sort(function (a, b) {
+		var sortValue = sortFunction(a, b);
+		return sortValue === 0 ? a.ss_i - b.ss_i : sortValue;
+	});
+
+	// Remove index from items
+	for (i = 0; i < length; i++) {
+		delete arr[i].ss_i; // stable sort index
+	}
+}
+
+/**
+ * Utility method that destroys any SVGElement or VMLElement that are properties on the given object.
+ * It loops all properties and invokes destroy if there is a destroy method. The property is
+ * then delete'ed.
+ */
+function destroyObjectProperties(obj) {
+	var n;
+	for (n in obj) {
+		// If the object is non-null and destroy is defined
+		if (obj[n] && obj[n].destroy) {
+			// Invoke the destroy
+			obj[n].destroy();
+		}
+
+		// Delete the property from the object.
+		delete obj[n];
+	}
+}
+
+/**
+ * Path interpolation algorithm used across adapters
+ */
+pathAnim = {
+	/**
+	 * Prepare start and end values so that the path can be animated one to one
+	 */
+	init: function (elem, fromD, toD) {
+		fromD = fromD || '';
+		var shift = elem.shift,
+			bezier = fromD.indexOf('C') > -1,
+			numParams = bezier ? 7 : 3,
+			endLength,
+			slice,
+			i,
+			start = fromD.split(' '),
+			end = [].concat(toD), // copy
+			startBaseLine,
+			endBaseLine,
+			sixify = function (arr) { // in splines make move points have six parameters like bezier curves
+				i = arr.length;
+				while (i--) {
+					if (arr[i] === M) {
+						arr.splice(i + 1, 0, arr[i + 1], arr[i + 2], arr[i + 1], arr[i + 2]);
+					}
+				}
+			};
+
+		if (bezier) {
+			sixify(start);
+			sixify(end);
+		}
+
+		// pull out the base lines before padding
+		if (elem.isArea) {
+			startBaseLine = start.splice(start.length - 6, 6);
+			endBaseLine = end.splice(end.length - 6, 6);
+		}
+
+		// if shifting points, prepend a dummy point to the end path
+		if (shift) {
+
+			end = [].concat(end).splice(0, numParams).concat(end);
+			elem.shift = false; // reset for following animations
+		}
+
+		// copy and append last point until the length matches the end length
+		if (start.length) {
+			endLength = end.length;
+			while (start.length < endLength) {
+
+				//bezier && sixify(start);
+				slice = [].concat(start).splice(start.length - numParams, numParams);
+				if (bezier) { // disable first control point
+					slice[numParams - 6] = slice[numParams - 2];
+					slice[numParams - 5] = slice[numParams - 1];
+				}
+				start = start.concat(slice);
+			}
+		}
+
+		if (startBaseLine) { // append the base lines for areas
+			start = start.concat(startBaseLine);
+			end = end.concat(endBaseLine);
+		}
+		return [start, end];
+	},
+
+	/**
+	 * Interpolate each value of the path and return the array
+	 */
+	step: function (start, end, pos, complete) {
+		var ret = [],
+			i = start.length,
+			startVal;
+
+		if (pos === 1) { // land on the final path without adjustment points appended in the ends
+			ret = complete;
+
+		} else if (i === end.length && pos < 1) {
+			while (i--) {
+				startVal = parseFloat(start[i]);
+				ret[i] =
+					isNaN(startVal) ? // a letter instruction like M or L
+						start[i] :
+						pos * (parseFloat(end[i] - startVal)) + startVal;
+
+			}
+		} else { // if animation is finished or length not matching, land on right value
+			ret = end;
+		}
+		return ret;
+	}
+};
+
+
+/**
+ * Set the global animation to either a given value, or fall back to the
+ * given chart's animation option
+ * @param {Object} animation
+ * @param {Object} chart
+ */
+function setAnimation(animation, chart) {
+	globalAnimation = pick(animation, chart.animation);
+}
+
 /*
- Highcharts JS v2.1.7 (2011-10-19)
+ * Define the adapter for frameworks. If an external adapter is not defined,
+ * Highcharts reverts to the built-in jQuery adapter.
+ */
+if (globalAdapter && globalAdapter.init) {
+	// Initialize the adapter with the pathAnim object that takes care
+	// of path animations.
+	globalAdapter.init(pathAnim);
+}
+if (!globalAdapter && win.jQuery) {
+	var jQ = jQuery;
 
- (c) 2009-2011 Torstein H?nsi
+	/**
+	 * Utility for iterating over an array. Parameters are reversed compared to jQuery.
+	 * @param {Array} arr
+	 * @param {Function} fn
+	 */
+	each = function (arr, fn) {
+		var i = 0,
+			len = arr.length;
+		for (; i < len; i++) {
+			if (fn.call(arr[i], arr[i], i, arr) === false) {
+				return i;
+			}
+		}
+	};
 
- License: www.highcharts.com/license
-*/
-(function(){function E(a,b){var c;a||(a={});for(c in b)a[c]=b[c];return a}function K(a,b){return parseInt(a,b||10)}function Ya(a){return typeof a==="string"}function Ga(a){return typeof a==="object"}function fa(a){return typeof a==="number"}function ib(a){return V.log(a)/V.LN10}function jb(a,b){for(var c=a.length;c--;)if(a[c]===b){a.splice(c,1);break}}function q(a){return a!==ra&&a!==null}function F(a,b,c){var d,e;if(Ya(b))q(c)?a.setAttribute(b,c):a&&a.getAttribute&&(e=a.getAttribute(b));else if(q(b)&&
-Ga(b))for(d in b)a.setAttribute(d,b[d]);return e}function tb(a){return Object.prototype.toString.call(a)==="[object Array]"?a:[a]}function n(){var a=arguments,b,c,d=a.length;for(b=0;b<d;b++)if(c=a[b],typeof c!=="undefined"&&c!==null)return c}function C(a,b){if(Hb&&b&&b.opacity!==ra)b.filter="alpha(opacity="+b.opacity*100+")";E(a.style,b)}function W(a,b,c,d,e){a=G.createElement(a);b&&E(a,b);e&&C(a,{padding:0,border:X,margin:0});c&&C(a,c);d&&d.appendChild(a);return a}function ca(a,b){var c=function(){};
-c.prototype=new a;E(c.prototype,b);return c}function mc(a,b,c,d){var e=sa.lang,f=isNaN(b=ya(b))?2:b,b=c===void 0?e.decimalPoint:c,d=d===void 0?e.thousandsSep:d,e=a<0?"-":"",c=String(K(a=ya(+a||0).toFixed(f))),g=c.length>3?c.length%3:0;return e+(g?c.substr(0,g)+d:"")+c.substr(g).replace(/(\d{3})(?=\d)/g,"$1"+d)+(f?b+ya(a-c).toFixed(f).slice(2):"")}function nc(a){for(var b={left:a.offsetLeft,top:a.offsetTop},a=a.offsetParent;a;)b.left+=a.offsetLeft,b.top+=a.offsetTop,a!==G.body&&a!==G.documentElement&&
-(b.left-=a.scrollLeft,b.top-=a.scrollTop),a=a.offsetParent;return b}function oc(){this.symbol=this.color=0}function zc(a,b,c,d,e,f,g){var h=g.x,g=g.y,i=h-a+c-25,j=g-b+d+10,m;i<7&&(i=c+h+15);i+a>c+e&&(i-=i+a-(c+e),j-=b,m=!0);j<5?(j=5,m&&g>=j&&g<=j+b&&(j=g+b-5)):j+b>d+f&&(j=d+f-b-5);return{x:i,y:j}}function pc(a,b){var c=a.length,d;for(d=0;d<c;d++)a[d].ss_i=d;a.sort(function(a,c){var d=b(a,c);return d===0?a.ss_i-c.ss_i:d});for(d=0;d<c;d++)delete a[d].ss_i}function ub(a){for(var b in a)a[b]&&a[b].destroy&&
-a[b].destroy(),delete a[b]}function kb(a,b){vb=n(a,b.animation)}function wb(){var a=sa.global.useUTC;Ib=a?Date.UTC:function(a,c,d,e,f,g){return(new Date(a,c,n(d,1),n(e,0),n(f,0),n(g,0))).getTime()};Wb=a?"getUTCMinutes":"getMinutes";Xb=a?"getUTCHours":"getHours";Yb=a?"getUTCDay":"getDay";xb=a?"getUTCDate":"getDate";Jb=a?"getUTCMonth":"getMonth";Kb=a?"getUTCFullYear":"getFullYear";qc=a?"setUTCMinutes":"setMinutes";rc=a?"setUTCHours":"setHours";Zb=a?"setUTCDate":"setDate";sc=a?"setUTCMonth":"setMonth";
-tc=a?"setUTCFullYear":"setFullYear"}function Lb(a){za||(za=W(Za));a&&za.appendChild(a);za.innerHTML=""}function lb(){}function yb(a,b){function c(a){function b(a,c){this.pos=a;this.minor=c;this.isNew=!0;c||this.addLabel()}function c(a){if(a)this.options=a,this.id=a.id;return this}function d(a,b,c,e){this.isNegative=b;this.options=a;this.x=c;this.stack=e;this.alignOptions={align:a.align||(M?b?"left":"right":"center"),verticalAlign:a.verticalAlign||(M?"middle":b?"bottom":"top"),y:n(a.y,M?4:b?14:-6),
-x:n(a.x,M?b?-6:6:0)};this.textAlign=a.textAlign||(M?b?"right":"left":"center")}function e(){var a=[],b=[],c;Ca=Ha=null;F=[];l(Y,function(e){c=!1;l(["xAxis","yAxis"],function(a){if(e.isCartesian&&(a==="xAxis"&&p||a==="yAxis"&&!p)&&(e.options[a]===s.index||e.options[a]===ra&&s.index===0))e[a]=ja,F.push(e),c=!0});!e.visible&&o.ignoreHiddenSeries&&(c=!1);if(c){var f,g,h,i,j,k;if(!p){f=e.options.stacking;Tb=f==="percent";if(f)j=e.options.stack,i=e.type+n(j,""),k="-"+i,e.stackKey=i,g=a[i]||[],a[i]=g,h=
-b[k]||[],b[k]=h;Tb&&(Ca=0,Ha=99)}e.isCartesian&&(l(e.data,function(a){var b=a.x,c=a.y,e=c<0,m=e?h:g,zb=e?k:i;Ca===null&&(Ca=Ha=a[$]);p?b>Ha?Ha=b:b<Ca&&(Ca=b):q(c)&&(f&&(m[b]=q(m[b])?m[b]+c:c),c=m?m[b]:c,a=n(a.low,c),Tb||(c>Ha?Ha=c:a<Ca&&(Ca=a)),f&&(v[zb]||(v[zb]={}),v[zb][b]||(v[zb][b]=new d(s.stackLabels,e,b,j)),v[zb][b].setTotal(c)))}),/(area|column|bar)/.test(e.type)&&!p&&(Ca>=0?(Ca=0,ia=!0):Ha<0&&(Ha=0,ka=!0)))}})}function f(a,b){var c,d;X=b?1:V.pow(10,Ia(V.log(a)/V.LN10));c=a/X;if(!b&&(b=[1,
-2,2.5,5,10],s.allowDecimals===!1||N))X===1?b=[1,2,5,10]:X<=0.1&&(b=[1/X]);for(d=0;d<b.length;d++)if(a=b[d],c<=(b[d]+(b[d+1]||b[d]))/2)break;a*=X;return a}function g(a){var b;b=a;X=n(X,V.pow(10,Ia(V.log(na)/V.LN10)));X<1&&(b=z(1/X)*10,b=z(a*b)/b);return b}function h(){var a,b,c,d,e=s.tickInterval,i=s.tickPixelInterval;a=s.maxZoom||(p&&!q(s.min)&&!q(s.max)?Ka(k.smallestInterval*5,Ha-Ca):null);t=r?T:O;S?(c=k[p?"xAxis":"yAxis"][s.linkedTo],d=c.getExtremes(),J=n(d.min,d.dataMin),L=n(d.max,d.dataMax)):
-(J=n(C,s.min,Ca),L=n(Qa,s.max,Ha));N&&(J=ib(J),L=ib(L));L-J<a&&(d=(a-L+J)/2,J=Z(J-d,n(s.min,J-d),Ca),L=Ka(J+a,n(s.max,J+a),Ha));if(!ua&&!Tb&&!S&&q(J)&&q(L)){a=L-J||1;if(!q(s.min)&&!q(C)&&da&&(Ca<0||!ia))J-=a*da;if(!q(s.max)&&!q(Qa)&&ea&&(Ha>0||!ka))L+=a*ea}na=J===L?1:S&&!e&&i===c.options.tickPixelInterval?c.tickInterval:n(e,ua?1:(L-J)*i/t);!Mb&&!q(s.tickInterval)&&(na=f(na));ja.tickInterval=na;pa=s.minorTickInterval==="auto"&&na?na/5:s.minorTickInterval;if(Mb){P=[];var e=sa.global.useUTC,j=1E3/La,
-m=6E4/La,ta=36E5/La,i=864E5/La;a=6048E5/La;d=2592E6/La;var Ua=31556952E3/La,v=[["second",j,[1,2,5,10,15,30]],["minute",m,[1,2,5,10,15,30]],["hour",ta,[1,2,3,4,6,8,12]],["day",i,[1,2]],["week",a,[1,2]],["month",d,[1,2,3,4,6]],["year",Ua,null]],w=v[6],l=w[1],u=w[2];for(c=0;c<v.length;c++)if(w=v[c],l=w[1],u=w[2],v[c+1]&&na<=(l*u[u.length-1]+v[c+1][1])/2)break;l===Ua&&na<5*l&&(u=[1,2,5]);v=f(na/l,u);u=new Date(J*La);u.setMilliseconds(0);l>=j&&u.setSeconds(l>=m?0:v*Ia(u.getSeconds()/v));if(l>=m)u[qc](l>=
-ta?0:v*Ia(u[Wb]()/v));if(l>=ta)u[rc](l>=i?0:v*Ia(u[Xb]()/v));if(l>=i)u[Zb](l>=d?1:v*Ia(u[xb]()/v));l>=d&&(u[sc](l>=Ua?0:v*Ia(u[Jb]()/v)),b=u[Kb]());l>=Ua&&(b-=b%v,u[tc](b));if(l===a)u[Zb](u[xb]()-u[Yb]()+s.startOfWeek);c=1;b=u[Kb]();j=u.getTime()/La;m=u[Jb]();for(ta=u[xb]();j<L&&c<T;)P.push(j),l===Ua?j=Ib(b+c*v,0)/La:l===d?j=Ib(b,m+c*v)/La:!e&&(l===i||l===a)?j=Ib(b,m,ta+c*v*(l===i?1:7)):j+=l*v,c++;P.push(j);Da=s.dateTimeLabelFormats[w[0]]}else{c=g(Ia(J/na)*na);b=g($b(L/na)*na);P=[];for(c=g(c);c<=
-b;)P.push(c),c=g(c+na)}if(!S){if(ua||p&&k.hasColumn){b=(ua?1:na)*0.5;if(ua||!q(n(s.min,C)))J-=b;if(ua||!q(n(s.max,Qa)))L+=b}b=P[0];c=P[P.length-1];s.startOnTick?J=b:J>b&&P.shift();s.endOnTick?L=c:L<c&&P.pop();Va||(Va={x:0,y:0});if(!Mb&&P.length>Va[$])Va[$]=P.length}}function i(){var a,b;U=J;ba=L;e();h();y=Ea;Ea=t/(L-J||1);if(!p)for(a in v)for(b in v[a])v[a][b].cum=v[a][b].total;if(!ja.isDirty)ja.isDirty=J!==U||L!==ba}function j(a){a=(new c(a)).render();W.push(a);return a}function m(){var a=s.title,
-d=s.stackLabels,e=s.alternateGridColor,f=s.lineWidth,g,h,i=(g=k.hasRendered)&&q(U)&&!isNaN(U);h=F.length&&q(J)&&q(L);t=r?T:O;Ea=t/(L-J||1);H=r?B:Ma;if(h||S){if(pa&&!ua)for(h=J+(P[0]-J)%pa;h<=L;h+=pa)fa[h]||(fa[h]=new b(h,!0)),i&&fa[h].isNew&&fa[h].render(null,!0),fa[h].isActive=!0,fa[h].render();l(P,function(a,b){if(!S||a>=J&&a<=L)i&&R[a].isNew&&R[a].render(b,!0),R[a].isActive=!0,R[a].render(b)});e&&l(P,function(a,b){if(b%2===0&&a<L)la[a]||(la[a]=new c),la[a].options={from:a,to:P[b+1]!==ra?P[b+1]:
-L,color:e},la[a].render(),la[a].isActive=!0});g||l((s.plotLines||[]).concat(s.plotBands||[]),function(a){W.push((new c(a)).render())})}l([R,fa,la],function(a){for(var b in a)a[b].isActive?a[b].isActive=!1:(a[b].destroy(),delete a[b])});f&&(g=B+(u?T:0)+x,h=Aa-Ma-(u?O:0)+x,g=I.crispLine([va,r?B:g,r?h:D,aa,r?wa-ca:g,r?h:Aa-Ma],f),Wa?Wa.animate({d:g}):Wa=I.path(g).attr({stroke:s.lineColor,"stroke-width":f,zIndex:7}).add());if(A)g=r?B:D,f=K(a.style.fontSize||12),g={low:g+(r?0:t),middle:g+t/2,high:g+(r?
-t:0)}[a.align],f=(r?D+O:B)+(r?1:-1)*(u?-1:1)*Fa+(Ra===2?f:0),A[A.isNew?"attr":"animate"]({x:r?g:f+(u?T:0)+x+(a.x||0),y:r?f-(u?O:0)+x:g+(a.y||0)}),A.isNew=!1;if(d&&d.enabled){var j,ta,d=ja.stackTotalGroup;if(!d)ja.stackTotalGroup=d=I.g("stack-labels").attr({visibility:Pa,zIndex:6}).translate(B,D).add();for(j in v)for(ta in a=v[j],a)a[ta].render(d)}ja.isDirty=!1}function w(a){for(var b=W.length;b--;)W[b].id===a&&W[b].destroy()}var p=a.isX,u=a.opposite,r=M?!p:p,Ra=r?u?0:2:u?1:3,v={},s=Q(p?Nb:ac,[Ac,
-Bc,uc,Cc][Ra],a),ja=this,A,Ab=s.type,Mb=Ab==="datetime",N=Ab==="logarithmic",x=s.offset||0,$=p?"x":"y",t,Ea,y,H=r?B:Ma,mb,nb,ob,G,Wa,Ca,Ha,F,C,Qa,L=null,J=null,U,ba,da=s.minPadding,ea=s.maxPadding,S=q(s.linkedTo),ia,ka,Tb,Ab=s.events,gb,W=[],na,pa,X,P,R={},fa={},la={},qa,xa,Fa,Da,ua=s.categories,Oa=s.labels.formatter||function(){var a=this.value;return Da?Ob(Da,a):na%1E6===0?a/1E6+"M":na%1E3===0?a/1E3+"k":!ua&&a>=1E3?mc(a,0):a},Ga=r&&s.labels.staggerLines,za=s.reversed,Ba=ua&&s.tickmarkPlacement===
-"between"?0.5:0;b.prototype={addLabel:function(){var a=this.pos,b=s.labels,c=!(a===J&&!n(s.showFirstLabel,1)||a===L&&!n(s.showLastLabel,0)),d=ua&&r&&ua.length&&!b.step&&!b.staggerLines&&!b.rotation&&T/ua.length||!r&&T/2,e=ua&&q(ua[a])?ua[a]:a,f=this.label,a=Oa.call({isFirst:a===P[0],isLast:a===P[P.length-1],dateTimeLabelFormat:Da,value:N?V.pow(10,e):e}),d=d&&{width:Z(1,z(d-2*(b.padding||10)))+oa},d=E(d,b.style);f===ra?this.label=q(a)&&c&&b.enabled?I.text(a,0,0,b.useHTML).attr({align:b.align,rotation:b.rotation}).css(d).add(ob):
-null:f&&f.attr({text:a}).css(d)},getLabelSize:function(){var a=this.label;return a?(this.labelBBox=a.getBBox())[r?"height":"width"]:0},render:function(a,b){var c=!this.minor,d=this.label,e=this.pos,f=s.labels,g=this.gridLine,h=c?s.gridLineWidth:s.minorGridLineWidth,i=c?s.gridLineColor:s.minorGridLineColor,j=c?s.gridLineDashStyle:s.minorGridLineDashStyle,m=this.mark,k=c?s.tickLength:s.minorTickLength,ta=c?s.tickWidth:s.minorTickWidth||0,v=c?s.tickColor:s.minorTickColor,l=c?s.tickPosition:s.minorTickPosition,
-Ua=f.step,w=b&&Ta||Aa,p;p=r?mb(e+Ba,null,null,b)+H:B+x+(u?(b&&Sa||wa)-ca-B:0);w=r?w-Ma+x-(u?O:0):w-mb(e+Ba,null,null,b)-H;if(h){e=nb(e+Ba,h,b);if(g===ra){g={stroke:i,"stroke-width":h};if(j)g.dashstyle=j;if(c)g.zIndex=1;this.gridLine=g=h?I.path(e).attr(g).add(G):null}!b&&g&&e&&g.animate({d:e})}if(ta)l==="inside"&&(k=-k),u&&(k=-k),c=I.crispLine([va,p,w,aa,p+(r?0:-k),w+(r?k:0)],ta),m?m.animate({d:c}):this.mark=I.path(c).attr({stroke:v,"stroke-width":ta}).add(ob);if(d&&!isNaN(p)){p=p+f.x-(Ba&&r?Ba*Ea*
-(za?-1:1):0);w=w+f.y-(Ba&&!r?Ba*Ea*(za?1:-1):0);q(f.y)||(w+=K(d.styles.lineHeight)*0.9-d.getBBox().height/2);Ga&&(w+=a/(Ua||1)%Ga*16);if(Ua)d[a%Ua?"hide":"show"]();d[this.isNew?"attr":"animate"]({x:p,y:w})}this.isNew=!1},destroy:function(){ub(this)}};c.prototype={render:function(){var a=this,b=a.options,c=b.label,d=a.label,e=b.width,f=b.to,g=b.from,h=b.value,i,j=b.dashStyle,m=a.svgElem,k=[],ta,v,s=b.color;v=b.zIndex;var l=b.events;N&&(g=ib(g),f=ib(f),h=ib(h));if(e){if(k=nb(h,e),b={stroke:s,"stroke-width":e},
-j)b.dashstyle=j}else if(q(g)&&q(f))g=Z(g,J),f=Ka(f,L),i=nb(f),(k=nb(g))&&i?k.push(i[4],i[5],i[1],i[2]):k=null,b={fill:s};else return;if(q(v))b.zIndex=v;if(m)k?m.animate({d:k},null,m.onGetPath):(m.hide(),m.onGetPath=function(){m.show()});else if(k&&k.length&&(a.svgElem=m=I.path(k).attr(b).add(),l))for(ta in j=function(b){m.on(b,function(c){l[b].apply(a,[c])})},l)j(ta);if(c&&q(c.text)&&k&&k.length&&T>0&&O>0){c=Q({align:r&&i&&"center",x:r?!i&&4:10,verticalAlign:!r&&i&&"middle",y:r?i?16:10:i?6:-4,rotation:r&&
-!i&&90},c);if(!d)a.label=d=I.text(c.text,0,0).attr({align:c.textAlign||c.align,rotation:c.rotation,zIndex:v}).css(c.style).add();i=[k[1],k[4],n(k[6],k[1])];k=[k[2],k[5],n(k[7],k[2])];ta=Ka.apply(V,i);v=Ka.apply(V,k);d.align(c,!1,{x:ta,y:v,width:Z.apply(V,i)-ta,height:Z.apply(V,k)-v});d.show()}else d&&d.hide();return a},destroy:function(){ub(this);jb(W,this)}};d.prototype={destroy:function(){ub(this)},setTotal:function(a){this.cum=this.total=a},render:function(a){var b=this.options.formatter.call(this);
-this.label?this.label.attr({text:b,visibility:Ja}):this.label=k.renderer.text(b,0,0).css(this.options.style).attr({align:this.textAlign,rotation:this.options.rotation,visibility:Ja}).add(a)},setOffset:function(a,b){var c=this.isNegative,d=ja.translate(this.total),e=ja.translate(0),e=ya(d-e),f=k.xAxis[0].translate(this.x)+a,g=k.plotHeight,c={x:M?c?d:d-e:f,y:M?g-f-b:c?g-d-e:g-d,width:M?e:b,height:M?b:e};this.label&&this.label.align(this.alignOptions,null,c).attr({visibility:Pa})}};mb=function(a,b,c,
-d,e){var f=1,g=0,h=d?y:Ea,d=d?U:J;h||(h=Ea);c&&(f*=-1,g=t);za&&(f*=-1,g-=f*t);b?(za&&(a=t-a),a=a/h+d,N&&e&&(a=V.pow(10,a))):(N&&e&&(a=ib(a)),a=f*(a-d)*h+g);return a};nb=function(a,b,c){var d,e,f,a=mb(a,null,null,c),g=c&&Ta||Aa,h=c&&Sa||wa,i,c=e=z(a+H);d=f=z(g-a-H);if(isNaN(a))i=!0;else if(r){if(d=D,f=g-Ma,c<B||c>B+T)i=!0}else if(c=B,e=h-ca,d<D||d>D+O)i=!0;return i?null:I.crispLine([va,c,d,aa,e,f],b||0)};M&&p&&za===ra&&(za=!0);E(ja,{addPlotBand:j,addPlotLine:j,adjustTickAmount:function(){if(Va&&!Mb&&
-!ua&&!S){var a=qa,b=P.length;qa=Va[$];if(b<qa){for(;P.length<qa;)P.push(g(P[P.length-1]+na));Ea*=(b-1)/(qa-1);L=P[P.length-1]}if(q(a)&&qa!==a)ja.isDirty=!0}},categories:ua,getExtremes:function(){return{min:J,max:L,dataMin:Ca,dataMax:Ha,userMin:C,userMax:Qa}},getPlotLinePath:nb,getThreshold:function(a){J>a?a=J:L<a&&(a=L);return mb(a,0,1)},isXAxis:p,options:s,plotLinesAndBands:W,getOffset:function(){var a=F.length&&q(J)&&q(L),c=0,d=0,e=s.title,f=s.labels,g=[-1,1,1,-1][Ra],h;ob||(ob=I.g("axis").attr({zIndex:7}).add(),
-G=I.g("grid").attr({zIndex:1}).add());xa=0;if(a||S)l(P,function(a){R[a]?R[a].addLabel():R[a]=new b(a);if(Ra===0||Ra===2||{1:"left",3:"right"}[Ra]===f.align)xa=Z(R[a].getLabelSize(),xa)}),Ga&&(xa+=(Ga-1)*16);else for(h in R)R[h].destroy(),delete R[h];if(e&&e.text){if(!A)A=ja.axisTitle=I.text(e.text,0,0,e.useHTML).attr({zIndex:7,rotation:e.rotation||0,align:e.textAlign||{low:"left",middle:"center",high:"right"}[e.align]}).css(e.style).add(),A.isNew=!0;c=A.getBBox()[r?"height":"width"];d=n(e.margin,
-r?5:10)}x=g*(s.offset||ma[Ra]);Fa=xa+(Ra!==2&&xa&&g*s.labels[r?"y":"x"])+d;ma[Ra]=Z(ma[Ra],Fa+c+g*x)},render:m,setCategories:function(b,c){ja.categories=a.categories=ua=b;l(F,function(a){a.translate();a.setTooltipPoints(!0)});ja.isDirty=!0;n(c,!0)&&k.redraw()},setExtremes:function(a,b,c,d){c=n(c,!0);ga(ja,"setExtremes",{min:a,max:b},function(){C=a;Qa=b;c&&k.redraw(d)})},setScale:i,setTickPositions:h,translate:mb,redraw:function(){$a.resetTracker&&$a.resetTracker();m();l(W,function(a){a.render()});
-l(F,function(a){a.isDirty=!0})},removePlotBand:w,removePlotLine:w,reversed:za,stacks:v,destroy:function(){var a;Na(ja);for(a in v)ub(v[a]),v[a]=null;if(ja.stackTotalGroup)ja.stackTotalGroup=ja.stackTotalGroup.destroy();l([R,fa,la,W],function(a){ub(a)});l([Wa,ob,G,A],function(a){a&&a.destroy()});Wa=ob=G=A=null}});for(gb in Ab)ha(ja,gb,Ab[gb]);i()}function d(){var b={};return{add:function(c,d,e,f){b[c]||(d=I.text(d,0,0).css(a.toolbar.itemStyle).align({align:"right",x:-ca-20,y:D+30}).on("click",f).attr({align:"right",
-zIndex:20}).add(),b[c]=d)},remove:function(a){Lb(b[a].element);b[a]=null}}}function e(a){function b(){var a=this.points||tb(this),c=a[0].series.xAxis,d=this.x,c=c&&c.options.type==="datetime",e=Ya(d)||c,f;f=e?['<span style="font-size: 10px">'+(c?Ob("%A, %b %e, %Y",d):d)+"</span>"]:[];l(a,function(a){f.push(a.point.tooltipFormatter(e))});return f.join("<br/>")}function c(a,b){o=u?a:(2*o+a)/3;v=u?b:(v+b)/2;s.translate(o,v);bc=ya(a-o)>1||ya(b-v)>1?function(){c(a,b)}:null}function d(){if(!u){var a=k.hoverPoints;
-s.hide();l(h,function(a){a&&a.hide()});a&&l(a,function(a){a.setState()});k.hoverPoints=null;u=!0}}var e,f=a.borderWidth,g=a.crosshairs,h=[],i=a.style,j=a.shared,m=K(i.padding),w=f+m,u=!0,p,r,o=0,v=0;i.padding=0;var s=I.g("tooltip").attr({zIndex:8}).add(),n=I.rect(w,w,0,0,a.borderRadius,f).attr({fill:a.backgroundColor,"stroke-width":f}).add(s).shadow(a.shadow),A=I.text("",m+w,K(i.fontSize)+m+w,a.useHTML).attr({zIndex:1}).css(i).add(s);s.hide();return{shared:j,refresh:function(f){var i,v,o,N=0,q={},
-t=[];o=f.tooltipPos;i=a.formatter||b;q=k.hoverPoints;j?(q&&l(q,function(a){a.setState()}),k.hoverPoints=f,l(f,function(a){a.setState(xa);N+=a.plotY;t.push(a.getLabelConfig())}),v=f[0].plotX,N=z(N)/f.length,q={x:f[0].category},q.points=t,f=f[0]):q=f.getLabelConfig();q=i.call(q);e=f.series;v=j?v:f.plotX;N=j?N:f.plotY;i=z(o?o[0]:M?T-N:v);v=z(o?o[1]:M?O-v:N);o=j||!f.series.isCartesian||db(i,v);q===!1||!o?d():(u&&(s.show(),u=!1),A.attr({text:q}),o=A.getBBox(),p=o.width+2*m,r=o.height+2*m,n.attr({width:p,
-height:r,stroke:a.borderColor||f.color||e.color||"#606060"}),i=zc(p,r,B,D,T,O,{x:i,y:v}),c(z(i.x-w),z(i.y-w)));if(g){g=tb(g);for(i=g.length;i--;)if(v=f.series[i?"yAxis":"xAxis"],g[i]&&v)if(v=v.getPlotLinePath(f[i?"y":"x"],1),h[i])h[i].attr({d:v,visibility:Pa});else{o={"stroke-width":g[i].width||1,stroke:g[i].color||"#C0C0C0",zIndex:2};if(g[i].dashStyle)o.dashstyle=g[i].dashStyle;h[i]=I.path(v).attr(o).add()}}},hide:d,destroy:function(){l(h,function(a){a&&a.destroy()});l([n,A,s],function(a){a&&a.destroy()});
-n=A=s=null}}}function f(a){function b(a){var c,d=vc&&G.width/G.body.scrollWidth-1,e,f,g,a=a||ka.event;if(!a.target)a.target=a.srcElement;c=a.touches?a.touches.item(0):a;if(a.type!=="mousemove"||ka.opera||d)Da=nc(H),e=Da.left,f=Da.top;Hb?(g=a.x,c=a.y):c.layerX===ra?(g=c.pageX-e,c=c.pageY-f):(g=a.layerX,c=a.layerY);d&&(g+=z((d+1)*e-e),c+=z((d+1)*f-f));return E(a,{chartX:g,chartY:c})}function c(a){var b={xAxis:[],yAxis:[]};l(da,function(c){var d=c.translate,e=c.isXAxis;b[e?"xAxis":"yAxis"].push({axis:c,
-value:d((M?!e:e)?a.chartX-B:O-a.chartY+D,!0)})});return b}function d(){var a=k.hoverSeries,b=k.hoverPoint;if(b)b.onMouseOut();if(a)a.onMouseOut();eb&&eb.hide();cc=null}function f(){if(m){var a={xAxis:[],yAxis:[]},b=m.getBBox(),c=b.x-B,d=b.y-D;j&&(l(da,function(e){var f=e.translate,g=e.isXAxis,h=M?!g:g,i=f(h?c:O-d-b.height,!0,0,0,1),f=f(h?c+b.width:O-d,!0,0,0,1);a[g?"xAxis":"yAxis"].push({axis:e,min:Ka(i,f),max:Z(i,f)})}),ga(k,"selection",a,dc));m=m.destroy()}k.mouseIsDown=ec=j=!1;Na(G,Oa?"touchend":
-"mouseup",f)}function g(a){var b=q(a.pageX)?a.pageX:a.page.x,a=q(a.pageX)?a.pageY:a.page.y;Da&&!db(b-Da.left-B,a-Da.top-D)&&d()}var h,i,j,m,w=o.zoomType,u=/x/.test(w),p=/y/.test(w),r=u&&!M||p&&M,n=p&&!M||u&&M;Pb=function(){Bb?(Bb.translate(B,D),M&&Bb.attr({width:k.plotWidth,height:k.plotHeight}).invert()):k.trackerGroup=Bb=I.g("tracker").attr({zIndex:9}).add()};Pb();if(a.enabled)k.tooltip=eb=e(a);(function(){H.onmousedown=function(a){a=b(a);!Oa&&a.preventDefault&&a.preventDefault();k.mouseIsDown=
-ec=!0;h=a.chartX;i=a.chartY;ha(G,Oa?"touchend":"mouseup",f)};var e=function(c){if(!c||!(c.touches&&c.touches.length>1)){c=b(c);if(!Oa)c.returnValue=!1;var d=c.chartX,e=c.chartY,f=!db(d-B,e-D);Da||(Da=nc(H));Oa&&c.type==="touchstart"&&(F(c.target,"isTracker")?k.runTrackerClick||c.preventDefault():!lb&&!f&&c.preventDefault());f&&(d<B?d=B:d>B+T&&(d=B+T),e<D?e=D:e>D+O&&(e=D+O));if(ec&&c.type!=="touchstart"){if(j=Math.sqrt(Math.pow(h-d,2)+Math.pow(i-e,2)),j>10){if(pb&&(u||p)&&db(h-B,i-D))m||(m=I.rect(B,
-D,r?1:T,n?1:O,0).attr({fill:o.selectionMarkerFill||"rgba(69,114,167,0.25)",zIndex:7}).add());m&&r&&(d-=h,m.attr({width:ya(d),x:(d>0?0:d)+h}));m&&n&&(e-=i,m.attr({height:ya(e),y:(e>0?0:e)+i}))}}else if(!f){var g,e=k.hoverPoint,d=k.hoverSeries,l,w,A=wa,q=M?c.chartY:c.chartX-B;if(eb&&a.shared){g=[];l=Y.length;for(w=0;w<l;w++)if(Y[w].visible&&Y[w].tooltipPoints.length)c=Y[w].tooltipPoints[q],c._dist=ya(q-c.plotX),A=Ka(A,c._dist),g.push(c);for(l=g.length;l--;)g[l]._dist>A&&g.splice(l,1);if(g.length&&g[0].plotX!==
-cc)eb.refresh(g),cc=g[0].plotX}if(d&&d.tracker&&(c=d.tooltipPoints[q])&&c!==e)c.onMouseOver()}return f||!pb}};H.onmousemove=e;ha(H,"mouseleave",d);ha(G,"mousemove",g);H.ontouchstart=function(a){if(u||p)H.onmousedown(a);e(a)};H.ontouchmove=e;H.ontouchend=function(){j&&d()};H.onclick=function(a){var d=k.hoverPoint,a=b(a);a.cancelBubble=!0;if(!j)if(d&&F(a.target,"isTracker")){var e=d.plotX,f=d.plotY;E(d,{pageX:Da.left+B+(M?T-f:e),pageY:Da.top+D+(M?O-e:f)});ga(d.series,"click",E(a,{point:d}));d.firePointEvent("click",
-a)}else E(a,c(a)),db(a.chartX-B,a.chartY-D)&&ga(k,"click",a);j=!1}})();yb=setInterval(function(){bc&&bc()},32);E(this,{zoomX:u,zoomY:p,resetTracker:d,destroy:function(){if(k.trackerGroup)k.trackerGroup=Bb=k.trackerGroup.destroy();Na(G,"mousemove",g);H.onclick=H.onmousedown=H.onmousemove=H.ontouchstart=H.ontouchend=H.ontouchmove=null}})}function g(a){var b=a.type||o.type||o.defaultSeriesType,c=la[b],d=k.hasRendered;if(d)if(M&&b==="column")c=la.bar;else if(!M&&b==="bar")c=la.column;b=new c;b.init(k,
-a);!d&&b.inverted&&(M=!0);if(b.isCartesian)pb=b.isCartesian;Y.push(b);return b}function h(){o.alignTicks!==!1&&l(da,function(a){a.adjustTickAmount()});Va=null}function i(a){var b=k.isDirtyLegend,c,d=k.isDirtyBox,e=Y.length,f=e,g=k.clipRect;for(kb(a,k);f--;)if(a=Y[f],a.isDirty&&a.options.stacking){c=!0;break}if(c)for(f=e;f--;)if(a=Y[f],a.options.stacking)a.isDirty=!0;l(Y,function(a){a.isDirty&&(a.cleanData(),a.getSegments(),a.options.legendType==="point"&&(b=!0))});if(b&&Cb.renderLegend)Cb.renderLegend(),
-k.isDirtyLegend=!1;pb&&(Qb||(Va=null,l(da,function(a){a.setScale()})),h(),Db(),l(da,function(a){if(a.isDirty||d)a.redraw(),d=!0}));d&&(fc(),Pb(),g&&(Eb(g),g.animate({width:k.plotSizeX,height:k.plotSizeY})));l(Y,function(a){a.isDirty&&a.visible&&(!a.isCartesian||a.xAxis)&&a.redraw()});$a&&$a.resetTracker&&$a.resetTracker();ga(k,"redraw")}function j(){var b=a.xAxis||{},d=a.yAxis||{},e,b=tb(b);l(b,function(a,b){a.index=b;a.isX=!0});d=tb(d);l(d,function(a,b){a.index=b});da=b.concat(d);k.xAxis=[];k.yAxis=
-[];da=qb(da,function(a){e=new c(a);k[e.isXAxis?"xAxis":"yAxis"].push(e);return e});h()}function m(b,c){ba=Q(a.title,b);ia=Q(a.subtitle,c);l([["title",b,ba],["subtitle",c,ia]],function(a){var b=a[0],c=k[b],d=a[1],a=a[2];c&&d&&(c=c.destroy());a&&a.text&&!c&&(k[b]=I.text(a.text,0,0,a.useHTML).attr({align:a.align,"class":"highcharts-"+b,zIndex:1}).css(a.style).add().align(a,!1,ea))})}function w(){R=o.renderTo;Fa=rb+gc++;Ya(R)&&(R=G.getElementById(R));R.innerHTML="";R.offsetWidth||(U=R.cloneNode(0),C(U,
-{position:fb,top:"-9999px",display:""}),G.body.appendChild(U));qa=(U||R).offsetWidth;fa=(U||R).offsetHeight;k.chartWidth=wa=o.width||qa||600;k.chartHeight=Aa=o.height||(fa>19?fa:400);k.container=H=W(Za,{className:"highcharts-container"+(o.className?" "+o.className:""),id:Fa},E({position:wc,overflow:Ja,width:wa+oa,height:Aa+oa,textAlign:"left"},o.style),U||R);k.renderer=I=o.forExport?new Rb(H,wa,Aa,!0):new Sb(H,wa,Aa);var a,b;xc&&H.getBoundingClientRect&&(a=function(){C(H,{left:0,top:0});b=H.getBoundingClientRect();
-C(H,{left:-(b.left-K(b.left))+oa,top:-(b.top-K(b.top))+oa})},a(),ha(ka,"resize",a),ha(k,"destroy",function(){Na(ka,"resize",a)}))}function N(){function a(){var c=o.width||R.offsetWidth,d=o.height||R.offsetHeight;if(c&&d){if(c!==qa||d!==fa)clearTimeout(b),b=setTimeout(function(){hc(c,d,!1)},100);qa=c;fa=d}}var b;ha(ka,"resize",a);ha(k,"destroy",function(){Na(ka,"resize",a)})}function x(){ga(k,"endResize",null,function(){Qb-=1})}function t(){var b=a.labels,c=a.credits,e;m();Cb=k.legend=new Vb;Db();
-l(da,function(a){a.setTickPositions(!0)});h();Db();fc();pb&&l(da,function(a){a.render()});if(!k.seriesGroup)k.seriesGroup=I.g("series-group").attr({zIndex:3}).add();l(Y,function(a){a.translate();a.setTooltipPoints();a.render()});b.items&&l(b.items,function(){var a=E(b.style,this.style),c=K(a.left)+B,d=K(a.top)+D+12;delete a.left;delete a.top;I.text(this.html,c,d).attr({zIndex:2}).css(a).add()});if(!k.toolbar)k.toolbar=d();if(c.enabled&&!k.credits)e=c.href,k.credits=I.text(c.text,0,0).on("click",function(){if(e)location.href=
-e}).attr({align:c.position.align,zIndex:8}).css(c.style).add().align(c.position);Pb();k.hasRendered=!0;U&&(R.appendChild(H),Lb(U))}function r(){var a,b=H&&H.parentNode;if(k!==null){ga(k,"destroy");Na(ka,"unload",r);Na(k);for(a=da.length;a--;)da[a]=da[a].destroy();for(a=Y.length;a--;)Y[a]=Y[a].destroy();l("title,subtitle,seriesGroup,clipRect,credits,tracker".split(","),function(a){var b=k[a];b&&(k[a]=b.destroy())});l([sb,Cb,eb,I,$a],function(a){a&&a.destroy&&a.destroy()});sb=Cb=eb=I=$a=null;if(H)H.innerHTML=
-"",Na(H),b&&b.removeChild(H),H=null;clearInterval(yb);for(a in k)delete k[a];k=null}}function $(){!Fb&&ka==ka.top&&G.readyState!=="complete"?G.attachEvent("onreadystatechange",function(){G.detachEvent("onreadystatechange",$);G.readyState==="complete"&&$()}):(w(),ic(),jc(),l(a.series||[],function(a){g(a)}),k.inverted=M=n(M,a.chart.inverted),j(),k.render=t,k.tracker=$a=new f(a.tooltip),t(),ga(k,"load"),b&&b.apply(k,[k]),l(k.callbacks,function(a){a.apply(k,[k])}))}Nb=Q(Nb,sa.xAxis);ac=Q(ac,sa.yAxis);
-sa.xAxis=sa.yAxis=null;var a=Q(sa,a),o=a.chart,A=o.margin,A=Ga(A)?A:[A,A,A,A],p=n(o.marginTop,A[0]),u=n(o.marginRight,A[1]),Ea=n(o.marginBottom,A[2]),y=n(o.marginLeft,A[3]),Qa=o.spacingTop,Wa=o.spacingRight,gb=o.spacingBottom,S=o.spacingLeft,ea,ba,ia,D,ca,Ma,B,ma,R,U,H,Fa,qa,fa,wa,Aa,Sa,Ta,sb,Ba,Xa,za,k=this,lb=(A=o.events)&&!!A.click,cb,db,eb,ec,hb,wb,kc,O,T,$a,Bb,Pb,Cb,ab,bb,Da,pb=o.showAxes,Qb=0,da=[],Va,Y=[],M,I,bc,yb,cc,fc,Db,ic,jc,hc,dc,Gb,Vb=function(){function a(b,c){var d=b.legendItem,e=
-b.legendLine,g=b.legendSymbol,h=p.color,i=c?f.itemStyle.color:h,j=c?b.color:h,h=c?b.pointAttr[pa]:{stroke:h,fill:h};d&&d.css({fill:i});e&&e.attr({stroke:j});g&&g.attr(h)}function b(a,c,d){var e=a.legendItem,f=a.legendLine,g=a.legendSymbol,a=a.checkbox;e&&e.attr({x:c,y:d});f&&f.translate(c,d-4);g&&g.attr({x:c+g.xOff,y:d+g.yOff});if(a)a.x=c,a.y=d}function c(){l(j,function(a){var b=a.checkbox,c=$.alignAttr;b&&C(b,{left:c.translateX+a.legendItemWidth+b.x-40+oa,top:c.translateY+b.y-11+oa})})}function d(c){var e,
-j,m,k,l=c.legendItem;k=c.series||c;var o=k.options,t=o&&o.borderWidth||0;if(!l){k=/^(bar|pie|area|column)$/.test(k.type);c.legendItem=l=I.text(f.labelFormatter.call(c),0,0).css(c.visible?w:p).on("mouseover",function(){c.setState(xa);l.css(u)}).on("mouseout",function(){l.css(c.visible?w:p);c.setState()}).on("click",function(){var a=function(){c.setVisible()};c.firePointEvent?c.firePointEvent("legendItemClick",null,a):ga(c,"legendItemClick",null,a)}).attr({zIndex:2}).add($);if(!k&&o&&o.lineWidth){var x=
-{"stroke-width":o.lineWidth,zIndex:2};if(o.dashStyle)x.dashstyle=o.dashStyle;c.legendLine=I.path([va,-h-i,0,aa,-i,0]).attr(x).add($)}k?e=I.rect(j=-h-i,m=-11,h,12,2).attr({zIndex:3}).add($):o&&o.marker&&o.marker.enabled&&(e=I.symbol(c.symbol,j=-h/2-i,m=-4,o.marker.radius).attr({zIndex:3}).add($));if(e)e.xOff=j+t%2/2,e.yOff=m+t%2/2;c.legendSymbol=e;a(c,c.visible);if(o&&o.showCheckbox)c.checkbox=W("input",{type:"checkbox",checked:c.selected,defaultChecked:c.selected},f.itemCheckboxStyle,H),ha(c.checkbox,
-"click",function(a){ga(c,"checkboxClick",{checked:a.target.checked},function(){c.select()})})}e=l.getBBox();j=c.legendItemWidth=f.itemWidth||h+i+e.width+r;N=e.height;if(g&&s-n+j>(B||wa-2*r-n))s=n,A+=N;q=A;b(c,s,A);g?s+=j:A+=N;z=B||Z(g?s-n:j,z)}function e(){s=n;A=o;q=z=0;$||($=I.g("legend").attr({zIndex:7}).add());j=[];l(y,function(a){var b=a.options;b.showInLegend&&(j=j.concat(b.legendType==="point"?a.data:a))});pc(j,function(a,b){return(a.options.legendIndex||0)-(b.options.legendIndex||0)});D&&j.reverse();
-l(j,d);ab=B||z;bb=q-o+N;if(x||Ea){ab+=2*r;bb+=2*r;if(t){if(ab>0&&bb>0)t[t.isNew?"attr":"animate"](t.crisp(null,null,null,ab,bb)),t.isNew=!1}else t=I.rect(0,0,ab,bb,f.borderRadius,x||0).attr({stroke:f.borderColor,"stroke-width":x||0,fill:Ea||X}).add($).shadow(f.shadow),t.isNew=!0;t[j.length?"show":"hide"]()}for(var a=["left","right","top","bottom"],b,g=4;g--;)b=a[g],m[b]&&m[b]!=="auto"&&(f[g<2?"align":"verticalAlign"]=b,f[g<2?"x":"y"]=K(m[b])*(g%2?-1:1));j.length&&$.align(E(f,{width:ab,height:bb}),
-!0,ea);Qb||c()}var f=k.options.legend;if(f.enabled){var g=f.layout==="horizontal",h=f.symbolWidth,i=f.symbolPadding,j,m=f.style,w=f.itemStyle,u=f.itemHoverStyle,p=f.itemHiddenStyle,r=K(m.padding),o=18,n=4+r+h+i,s,A,q,N=0,t,x=f.borderWidth,Ea=f.backgroundColor,$,z,B=f.width,y=k.series,D=f.reversed;e();ha(k,"endResize",c);return{colorizeItem:a,destroyItem:function(a){var b=a.checkbox;l(["legendItem","legendLine","legendSymbol"],function(b){a[b]&&a[b].destroy()});b&&Lb(a.checkbox)},renderLegend:e,destroy:function(){t&&
-(t=t.destroy());$&&($=$.destroy())}}}};db=function(a,b){return a>=0&&a<=T&&b>=0&&b<=O};Gb=function(){ga(k,"selection",{resetSelection:!0},dc);k.toolbar.remove("zoom")};dc=function(a){var b=sa.lang,c=k.pointCount<100;k.toolbar.add("zoom",b.resetZoom,b.resetZoomTitle,Gb);!a||a.resetSelection?l(da,function(a){a.setExtremes(null,null,!1,c)}):l(a.xAxis.concat(a.yAxis),function(a){var b=a.axis;k.tracker[b.isXAxis?"zoomX":"zoomY"]&&b.setExtremes(a.min,a.max,!1,c)});i()};Db=function(){var b=a.legend,c=n(b.margin,
-10),d=b.x,e=b.y,f=b.align,g=b.verticalAlign,h;ic();if((k.title||k.subtitle)&&!q(p))(h=Z(k.title&&!ba.floating&&!ba.verticalAlign&&ba.y||0,k.subtitle&&!ia.floating&&!ia.verticalAlign&&ia.y||0))&&(D=Z(D,h+n(ba.margin,15)+Qa));b.enabled&&!b.floating&&(f==="right"?q(u)||(ca=Z(ca,ab-d+c+Wa)):f==="left"?q(y)||(B=Z(B,ab+d+c+S)):g==="top"?q(p)||(D=Z(D,bb+e+c+Qa)):g==="bottom"&&(q(Ea)||(Ma=Z(Ma,bb-e+c+gb))));pb&&l(da,function(a){a.getOffset()});q(y)||(B+=ma[3]);q(p)||(D+=ma[0]);q(Ea)||(Ma+=ma[2]);q(u)||(ca+=
-ma[1]);jc()};hc=function(a,b,c){var d=k.title,e=k.subtitle;Qb+=1;kb(c,k);Ta=Aa;Sa=wa;k.chartWidth=wa=z(a);k.chartHeight=Aa=z(b);C(H,{width:wa+oa,height:Aa+oa});I.setSize(wa,Aa,c);T=wa-B-ca;O=Aa-D-Ma;Va=null;l(da,function(a){a.isDirty=!0;a.setScale()});l(Y,function(a){a.isDirty=!0});k.isDirtyLegend=!0;k.isDirtyBox=!0;Db();d&&d.align(null,null,ea);e&&e.align(null,null,ea);i(c);Ta=null;ga(k,"resize");vb===!1?x():setTimeout(x,vb&&vb.duration||500)};jc=function(){k.plotLeft=B=z(B);k.plotTop=D=z(D);k.plotWidth=
-T=z(wa-B-ca);k.plotHeight=O=z(Aa-D-Ma);k.plotSizeX=M?O:T;k.plotSizeY=M?T:O;ea={x:S,y:Qa,width:wa-S-Wa,height:Aa-Qa-gb}};ic=function(){D=n(p,Qa);ca=n(u,Wa);Ma=n(Ea,gb);B=n(y,S);ma=[0,0,0,0]};fc=function(){var a=o.borderWidth||0,b=o.backgroundColor,c=o.plotBackgroundColor,d=o.plotBackgroundImage,e,f={x:B,y:D,width:T,height:O};e=a+(o.shadow?8:0);if(a||b)sb?sb.animate(sb.crisp(null,null,null,wa-e,Aa-e)):sb=I.rect(e/2,e/2,wa-e,Aa-e,o.borderRadius,a).attr({stroke:o.borderColor,"stroke-width":a,fill:b||
-X}).add().shadow(o.shadow);c&&(Ba?Ba.animate(f):Ba=I.rect(B,D,T,O,0).attr({fill:c}).add().shadow(o.plotShadow));d&&(Xa?Xa.animate(f):Xa=I.image(d,B,D,T,O).add());o.plotBorderWidth&&(za?za.animate(za.crisp(null,B,D,T,O)):za=I.rect(B,D,T,O,0,o.plotBorderWidth).attr({stroke:o.plotBorderColor,"stroke-width":o.plotBorderWidth,zIndex:4}).add());k.isDirtyBox=!1};ha(ka,"unload",r);o.reflow!==!1&&ha(k,"load",N);if(A)for(cb in A)ha(k,cb,A[cb]);k.options=a;k.series=Y;k.addSeries=function(a,b,c){var d;a&&(kb(c,
-k),b=n(b,!0),ga(k,"addSeries",{options:a},function(){d=g(a);d.isDirty=!0;k.isDirtyLegend=!0;b&&k.redraw()}));return d};k.animation=n(o.animation,!0);k.destroy=r;k.get=function(a){var b,c,d;for(b=0;b<da.length;b++)if(da[b].options.id===a)return da[b];for(b=0;b<Y.length;b++)if(Y[b].options.id===a)return Y[b];for(b=0;b<Y.length;b++){d=Y[b].data;for(c=0;c<d.length;c++)if(d[c].id===a)return d[c]}return null};k.getSelectedPoints=function(){var a=[];l(Y,function(b){a=a.concat(lc(b.data,function(a){return a.selected}))});
-return a};k.getSelectedSeries=function(){return lc(Y,function(a){return a.selected})};k.hideLoading=function(){Ub(hb,{opacity:0},{duration:a.loading.hideDuration,complete:function(){C(hb,{display:X})}});kc=!1};k.isInsidePlot=db;k.redraw=i;k.setSize=hc;k.setTitle=m;k.showLoading=function(b){var c=a.loading;hb||(hb=W(Za,{className:"highcharts-loading"},E(c.style,{left:B+oa,top:D+oa,width:T+oa,height:O+oa,zIndex:10,display:X}),H),wb=W("span",null,c.labelStyle,hb));wb.innerHTML=b||a.lang.loading;kc||
-(C(hb,{opacity:0,display:""}),Ub(hb,{opacity:c.style.opacity},{duration:c.showDuration}),kc=!0)};k.pointCount=0;k.counters=new oc;$()}var G=document,ka=window,V=Math,z=V.round,Ia=V.floor,$b=V.ceil,Z=V.max,Ka=V.min,ya=V.abs,S=V.cos,ma=V.sin,qa=V.PI,Gb=qa*2/360,Sa=navigator.userAgent,Hb=/msie/i.test(Sa)&&!ka.opera,Ta=G.documentMode===8,vc=/AppleWebKit/.test(Sa),xc=/Firefox/.test(Sa),Fb=!!G.createElementNS&&!!G.createElementNS("http://www.w3.org/2000/svg","svg").createSVGRect,Dc=xc&&parseInt(Sa.split("Firefox/")[1],
-10)<4,Sb,Oa=G.documentElement.ontouchstart!==void 0,Vb={},gc=0,La=1,za,sa,Ob,vb,Ba,ra,Za="div",fb="absolute",wc="relative",Ja="hidden",rb="highcharts-",Pa="visible",oa="px",X="none",va="M",aa="L",yc="rgba(192,192,192,"+(Fb?1.0E-6:0.0020)+")",pa="",xa="hover",Ib,Wb,Xb,Yb,xb,Jb,Kb,qc,rc,Zb,sc,tc,y=ka.HighchartsAdapter,U=y||{},l=U.each,lc=U.grep,qb=U.map,Q=U.merge,ha=U.addEvent,Na=U.removeEvent,ga=U.fireEvent,Ub=U.animate,Eb=U.stop,la={};Ob=function(a,b,c){function d(a){return a.toString().replace(/^([0-9])$/,
-"0$1")}if(!q(b)||isNaN(b))return"Invalid date";var a=n(a,"%Y-%m-%d %H:%M:%S"),b=new Date(b*La),e,f=b[Xb](),g=b[Yb](),h=b[xb](),i=b[Jb](),j=b[Kb](),m=sa.lang,l=m.weekdays,b={a:l[g].substr(0,3),A:l[g],d:d(h),e:h,b:m.shortMonths[i],B:m.months[i],m:d(i+1),y:j.toString().substr(2,2),Y:j,H:d(f),I:d(f%12||12),l:f%12||12,M:d(b[Wb]()),p:f<12?"AM":"PM",P:f<12?"am":"pm",S:d(b.getSeconds())};for(e in b)a=a.replace("%"+e,b[e]);return c?a.substr(0,1).toUpperCase()+a.substr(1):a};oc.prototype={wrapColor:function(a){if(this.color>=
-a)this.color=0},wrapSymbol:function(a){if(this.symbol>=a)this.symbol=0}};Ba={init:function(a,b,c){var b=b||"",d=a.shift,e=b.indexOf("C")>-1,f=e?7:3,g,b=b.split(" "),c=[].concat(c),h,i,j=function(a){for(g=a.length;g--;)a[g]===va&&a.splice(g+1,0,a[g+1],a[g+2],a[g+1],a[g+2])};e&&(j(b),j(c));a.isArea&&(h=b.splice(b.length-6,6),i=c.splice(c.length-6,6));if(d)c=[].concat(c).splice(0,f).concat(c),a.shift=!1;if(b.length)for(a=c.length;b.length<a;)d=[].concat(b).splice(b.length-f,f),e&&(d[f-6]=d[f-2],d[f-
-5]=d[f-1]),b=b.concat(d);h&&(b=b.concat(h),c=c.concat(i));return[b,c]},step:function(a,b,c,d){var e=[],f=a.length;if(c===1)e=d;else if(f===b.length&&c<1)for(;f--;)d=parseFloat(a[f]),e[f]=isNaN(d)?a[f]:c*parseFloat(b[f]-d)+d;else e=b;return e}};y&&y.init&&y.init(Ba);if(!y&&ka.jQuery){var ea=jQuery,l=function(a,b){for(var c=0,d=a.length;c<d;c++)if(b.call(a[c],a[c],c,a)===!1)return c},lc=ea.grep,qb=function(a,b){for(var c=[],d=0,e=a.length;d<e;d++)c[d]=b.call(a[d],a[d],d,a);return c},Q=function(){var a=
-arguments;return ea.extend(!0,null,a[0],a[1],a[2],a[3])},ha=function(a,b,c){ea(a).bind(b,c)},Na=function(a,b,c){var d=G.removeEventListener?"removeEventListener":"detachEvent";G[d]&&!a[d]&&(a[d]=function(){});ea(a).unbind(b,c)},ga=function(a,b,c,d){var e=ea.Event(b),f="detached"+b;E(e,c);a[b]&&(a[f]=a[b],a[b]=null);ea(a).trigger(e);a[f]&&(a[b]=a[f],a[f]=null);d&&!e.isDefaultPrevented()&&d(e)},Ub=function(a,b,c){var d=ea(a);if(b.d)a.toD=b.d,b.d=1;d.stop();d.animate(b,c)},Eb=function(a){ea(a).stop()};
-ea.extend(ea.easing,{easeOutQuad:function(a,b,c,d,e){return-d*(b/=e)*(b-2)+c}});var Ec=jQuery.fx.step._default,Fc=jQuery.fx.prototype.cur;ea.fx.step._default=function(a){var b=a.elem;b.attr?b.attr(a.prop,a.now):Ec.apply(this,arguments)};ea.fx.step.d=function(a){var b=a.elem;if(!a.started){var c=Ba.init(b,b.d,b.toD);a.start=c[0];a.end=c[1];a.started=!0}b.attr("d",Ba.step(a.start,a.end,a.pos,b.toD))};ea.fx.prototype.cur=function(){var a=this.elem;return a.attr?a.attr(this.prop):Fc.apply(this,arguments)}}y=
-{enabled:!0,align:"center",x:0,y:15,style:{color:"#666",fontSize:"11px",lineHeight:"14px"}};sa={colors:"#4572A7,#AA4643,#89A54E,#80699B,#3D96AE,#DB843D,#92A8CD,#A47D7C,#B5CA92".split(","),symbols:["circle","diamond","square","triangle","triangle-down"],lang:{loading:"Loading...",months:"January,February,March,April,May,June,July,August,September,October,November,December".split(","),shortMonths:"Jan,Feb,Mar,Apr,May,June,Jul,Aug,Sep,Oct,Nov,Dec".split(","),weekdays:"Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday".split(","),
-decimalPoint:".",resetZoom:"Reset zoom",resetZoomTitle:"Reset zoom level 1:1",thousandsSep:","},global:{useUTC:!0},chart:{borderColor:"#4572A7",borderRadius:5,defaultSeriesType:"line",ignoreHiddenSeries:!0,spacingTop:10,spacingRight:10,spacingBottom:15,spacingLeft:10,style:{fontFamily:'"Lucida Grande", "Lucida Sans Unicode", Verdana, Arial, Helvetica, sans-serif',fontSize:"12px"},backgroundColor:"#FFFFFF",plotBorderColor:"#C0C0C0"},title:{text:"Chart title",align:"center",y:15,style:{color:"#3E576F",
-fontSize:"16px"}},subtitle:{text:"",align:"center",y:30,style:{color:"#6D869F"}},plotOptions:{line:{allowPointSelect:!1,showCheckbox:!1,animation:{duration:1E3},events:{},lineWidth:2,shadow:!0,marker:{enabled:!0,lineWidth:0,radius:4,lineColor:"#FFFFFF",states:{hover:{},select:{fillColor:"#FFFFFF",lineColor:"#000000",lineWidth:2}}},point:{events:{}},dataLabels:Q(y,{enabled:!1,y:-6,formatter:function(){return this.y}}),showInLegend:!0,states:{hover:{marker:{}},select:{marker:{}}},stickyTracking:!0}},
-labels:{style:{position:fb,color:"#3E576F"}},legend:{enabled:!0,align:"center",layout:"horizontal",labelFormatter:function(){return this.name},borderWidth:1,borderColor:"#909090",borderRadius:5,shadow:!1,style:{padding:"5px"},itemStyle:{cursor:"pointer",color:"#3E576F"},itemHoverStyle:{cursor:"pointer",color:"#000000"},itemHiddenStyle:{color:"#C0C0C0"},itemCheckboxStyle:{position:fb,width:"13px",height:"13px"},symbolWidth:16,symbolPadding:5,verticalAlign:"bottom",x:0,y:0},loading:{hideDuration:100,
-labelStyle:{fontWeight:"bold",position:wc,top:"1em"},showDuration:100,style:{position:fb,backgroundColor:"white",opacity:0.5,textAlign:"center"}},tooltip:{enabled:!0,backgroundColor:"rgba(255, 255, 255, .85)",borderWidth:2,borderRadius:5,shadow:!0,snap:Oa?25:10,style:{color:"#333333",fontSize:"12px",padding:"5px",whiteSpace:"nowrap"}},toolbar:{itemStyle:{color:"#4572A7",cursor:"pointer"}},credits:{enabled:!0,text:"Highcharts.com",href:"http://www.highcharts.com",position:{align:"right",x:-10,verticalAlign:"bottom",
-y:-5},style:{cursor:"pointer",color:"#909090",fontSize:"10px"}}};var Nb={dateTimeLabelFormats:{second:"%H:%M:%S",minute:"%H:%M",hour:"%H:%M",day:"%e. %b",week:"%e. %b",month:"%b '%y",year:"%Y"},endOnTick:!1,gridLineColor:"#C0C0C0",labels:y,lineColor:"#C0D0E0",lineWidth:1,max:null,min:null,minPadding:0.01,maxPadding:0.01,minorGridLineColor:"#E0E0E0",minorGridLineWidth:1,minorTickColor:"#A0A0A0",minorTickLength:2,minorTickPosition:"outside",startOfWeek:1,startOnTick:!1,tickColor:"#C0D0E0",tickLength:5,
-tickmarkPlacement:"between",tickPixelInterval:100,tickPosition:"outside",tickWidth:1,title:{align:"middle",style:{color:"#6D869F",fontWeight:"bold"}},type:"linear"},ac=Q(Nb,{endOnTick:!0,gridLineWidth:1,tickPixelInterval:72,showLastLabel:!0,labels:{align:"right",x:-8,y:3},lineWidth:0,maxPadding:0.05,minPadding:0.05,startOnTick:!0,tickWidth:0,title:{rotation:270,text:"Y-values"},stackLabels:{enabled:!1,formatter:function(){return this.total},style:y.style}}),Cc={labels:{align:"right",x:-8,y:null},
-title:{rotation:270}},Bc={labels:{align:"left",x:8,y:null},title:{rotation:90}},uc={labels:{align:"center",x:0,y:14},title:{rotation:0}},Ac=Q(uc,{labels:{y:-5}}),ia=sa.plotOptions,y=ia.line;ia.spline=Q(y);ia.scatter=Q(y,{lineWidth:0,states:{hover:{lineWidth:0}}});ia.area=Q(y,{});ia.areaspline=Q(ia.area);ia.column=Q(y,{borderColor:"#FFFFFF",borderWidth:1,borderRadius:0,groupPadding:0.2,marker:null,pointPadding:0.1,minPointLength:0,states:{hover:{brightness:0.1,shadow:!1},select:{color:"#C0C0C0",borderColor:"#000000",
-shadow:!1}},dataLabels:{y:null,verticalAlign:null}});ia.bar=Q(ia.column,{dataLabels:{align:"left",x:5,y:0}});ia.pie=Q(y,{borderColor:"#FFFFFF",borderWidth:1,center:["50%","50%"],colorByPoint:!0,dataLabels:{distance:30,enabled:!0,formatter:function(){return this.point.name},y:5},legendType:"point",marker:null,size:"75%",showInLegend:!1,slicedOffset:10,states:{hover:{brightness:0.1,shadow:!1}}});wb();var Fa=function(a){var b=[],c;(function(a){(c=/rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]?(?:\.[0-9]+)?)\s*\)/.exec(a))?
-b=[K(c[1]),K(c[2]),K(c[3]),parseFloat(c[4],10)]:(c=/#([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})/.exec(a))&&(b=[K(c[1],16),K(c[2],16),K(c[3],16),1])})(a);return{get:function(c){return b&&!isNaN(b[0])?c==="rgb"?"rgb("+b[0]+","+b[1]+","+b[2]+")":c==="a"?b[3]:"rgba("+b.join(",")+")":a},brighten:function(a){if(fa(a)&&a!==0){var c;for(c=0;c<3;c++)b[c]+=K(a*255),b[c]<0&&(b[c]=0),b[c]>255&&(b[c]=255)}return this},setOpacity:function(a){b[3]=a;return this}}};lb.prototype={init:function(a,b){this.element=
-G.createElementNS("http://www.w3.org/2000/svg",b);this.renderer=a},animate:function(a,b,c){if(b=n(b,vb,!0)){b=Q(b);if(c)b.complete=c;Ub(this,a,b)}else this.attr(a),c&&c()},attr:function(a,b){var c,d,e,f,g=this.element,h=g.nodeName,i=this.renderer,j,m=this.shadows,l=this.htmlNode,n,x=this;Ya(a)&&q(b)&&(c=a,a={},a[c]=b);if(Ya(a))c=a,h==="circle"?c={x:"cx",y:"cy"}[c]||c:c==="strokeWidth"&&(c="stroke-width"),x=F(g,c)||this[c]||0,c!=="d"&&c!=="visibility"&&(x=parseFloat(x));else for(c in a){j=!1;d=a[c];
-if(c==="d")d&&d.join&&(d=d.join(" ")),/(NaN| {2}|^$)/.test(d)&&(d="M 0 0"),this.d=d;else if(c==="x"&&h==="text"){for(e=0;e<g.childNodes.length;e++)f=g.childNodes[e],F(f,"x")===F(g,"x")&&F(f,"x",d);this.rotation&&F(g,"transform","rotate("+this.rotation+" "+d+" "+K(a.y||F(g,"y"))+")")}else if(c==="fill")d=i.color(d,g,c);else if(h==="circle"&&(c==="x"||c==="y"))c={x:"cx",y:"cy"}[c]||c;else if(c==="translateX"||c==="translateY"||c==="rotation"||c==="verticalAlign")this[c]=d,this.updateTransform(),j=!0;
-else if(c==="stroke")d=i.color(d,g,c);else if(c==="dashstyle")if(c="stroke-dasharray",d=d&&d.toLowerCase(),d==="solid")d=X;else{if(d){d=d.replace("shortdashdotdot","3,1,1,1,1,1,").replace("shortdashdot","3,1,1,1").replace("shortdot","1,1,").replace("shortdash","3,1,").replace("longdash","8,3,").replace(/dot/g,"1,3,").replace("dash","4,3,").replace(/,$/,"").split(",");for(e=d.length;e--;)d[e]=K(d[e])*a["stroke-width"];d=d.join(",")}}else c==="isTracker"?this[c]=d:c==="width"?d=K(d):c==="align"?(c=
-"text-anchor",d={left:"start",center:"middle",right:"end"}[d]):c==="title"&&(e=G.createElementNS("http://www.w3.org/2000/svg","title"),e.appendChild(G.createTextNode(d)),g.appendChild(e));c==="strokeWidth"&&(c="stroke-width");vc&&c==="stroke-width"&&d===0&&(d=1.0E-6);this.symbolName&&/^(x|y|r|start|end|innerR)/.test(c)&&(n||(this.symbolAttr(a),n=!0),j=!0);if(m&&/^(width|height|visibility|x|y|d)$/.test(c))for(e=m.length;e--;)F(m[e],c,d);if((c==="width"||c==="height")&&h==="rect"&&d<0)d=0;c==="text"?
-(this.textStr=d,this.added&&i.buildText(this)):j||F(g,c,d);if(l&&(c==="x"||c==="y"||c==="translateX"||c==="translateY"||c==="visibility")){e=l.length?l:[this];f=e.length;var t;for(t=0;t<f;t++)l=e[t],j=l.getBBox(),l=l.htmlNode,C(l,E(this.styles,{left:j.x+(this.translateX||0)+oa,top:j.y+(this.translateY||0)+oa})),c==="visibility"&&C(l,{visibility:d})}}return x},symbolAttr:function(a){var b=this;l("x,y,r,start,end,width,height,innerR".split(","),function(c){b[c]=n(a[c],b[c])});b.attr({d:b.renderer.symbols[b.symbolName](z(b.x*
-2)/2,z(b.y*2)/2,b.r,{start:b.start,end:b.end,width:b.width,height:b.height,innerR:b.innerR})})},clip:function(a){return this.attr("clip-path","url("+this.renderer.url+"#"+a.id+")")},crisp:function(a,b,c,d,e){var f,g={},h={},i,a=a||this.strokeWidth||0;i=a%2/2;h.x=Ia(b||this.x||0)+i;h.y=Ia(c||this.y||0)+i;h.width=Ia((d||this.width||0)-2*i);h.height=Ia((e||this.height||0)-2*i);h.strokeWidth=a;for(f in h)this[f]!==h[f]&&(this[f]=g[f]=h[f]);return g},css:function(a){var b=this.element,b=a&&a.width&&b.nodeName===
-"text",c,d="",e=function(a,b){return"-"+b.toLowerCase()};if(a&&a.color)a.fill=a.color;this.styles=a=E(this.styles,a);if(Hb&&!Fb)b&&delete a.width,C(this.element,a);else{for(c in a)d+=c.replace(/([A-Z])/g,e)+":"+a[c]+";";this.attr({style:d})}b&&this.added&&this.renderer.buildText(this);return this},on:function(a,b){var c=b;Oa&&a==="click"&&(a="touchstart",c=function(a){a.preventDefault();b()});this.element["on"+a]=c;return this},translate:function(a,b){return this.attr({translateX:a,translateY:b})},
-invert:function(){this.inverted=!0;this.updateTransform();return this},updateTransform:function(){var a=this.translateX||0,b=this.translateY||0,c=this.inverted,d=this.rotation,e=[];c&&(a+=this.attr("width"),b+=this.attr("height"));(a||b)&&e.push("translate("+a+","+b+")");c?e.push("rotate(90) scale(-1,1)"):d&&e.push("rotate("+d+" "+this.x+" "+this.y+")");e.length&&F(this.element,"transform",e.join(" "))},toFront:function(){var a=this.element;a.parentNode.appendChild(a);return this},align:function(a,
-b,c){a?(this.alignOptions=a,this.alignByTranslate=b,c||this.renderer.alignedObjects.push(this)):(a=this.alignOptions,b=this.alignByTranslate);var c=n(c,this.renderer),d=a.align,e=a.verticalAlign,f=(c.x||0)+(a.x||0),g=(c.y||0)+(a.y||0),h={};/^(right|center)$/.test(d)&&(f+=(c.width-(a.width||0))/{right:1,center:2}[d]);h[b?"translateX":"x"]=z(f);/^(bottom|middle)$/.test(e)&&(g+=(c.height-(a.height||0))/({bottom:1,middle:2}[e]||1));h[b?"translateY":"y"]=z(g);this[this.placed?"animate":"attr"](h);this.placed=
-!0;this.alignAttr=h;return this},getBBox:function(){var a,b,c,d=this.rotation,e=d*Gb;try{a=E({},this.element.getBBox())}catch(f){a={width:0,height:0}}b=a.width;c=a.height;if(d)a.width=ya(c*ma(e))+ya(b*S(e)),a.height=ya(c*S(e))+ya(b*ma(e));return a},show:function(){return this.attr({visibility:Pa})},hide:function(){return this.attr({visibility:Ja})},add:function(a){var b=this.renderer,c=a||b,d=c.element||b.box,e=d.childNodes,f=this.element,g=F(f,"zIndex");this.parentInverted=a&&a.inverted;this.textStr!==
-void 0&&b.buildText(this);if(a&&this.htmlNode){if(!a.htmlNode)a.htmlNode=[];a.htmlNode.push(this)}if(g)c.handleZ=!0,g=K(g);if(c.handleZ)for(c=0;c<e.length;c++)if(a=e[c],b=F(a,"zIndex"),a!==f&&(K(b)>g||!q(g)&&q(b)))return d.insertBefore(f,a),this;d.appendChild(f);this.added=!0;return this},destroy:function(){var a=this.element||{},b=this.shadows,c=a.parentNode,d,e;a.onclick=a.onmouseout=a.onmouseover=a.onmousemove=null;Eb(this);if(this.clipPath)this.clipPath=this.clipPath.destroy();if(this.stops){for(e=
-0;e<this.stops.length;e++)this.stops[e]=this.stops[e].destroy();this.stops=null}c&&c.removeChild(a);b&&l(b,function(a){(c=a.parentNode)&&c.removeChild(a)});jb(this.renderer.alignedObjects,this);for(d in this)delete this[d];return null},empty:function(){for(var a=this.element,b=a.childNodes,c=b.length;c--;)a.removeChild(b[c])},shadow:function(a,b){var c=[],d,e,f=this.element,g=this.parentInverted?"(-1,-1)":"(1,1)";if(a){for(d=1;d<=3;d++)e=f.cloneNode(0),F(e,{isShadow:"true",stroke:"rgb(0, 0, 0)","stroke-opacity":0.05*
-d,"stroke-width":7-2*d,transform:"translate"+g,fill:X}),b?b.element.appendChild(e):f.parentNode.insertBefore(e,f),c.push(e);this.shadows=c}return this}};var Rb=function(){this.init.apply(this,arguments)};Rb.prototype={Element:lb,init:function(a,b,c,d){var e=location,f;f=this.createElement("svg").attr({xmlns:"http://www.w3.org/2000/svg",version:"1.1"});a.appendChild(f.element);this.box=f.element;this.boxWrapper=f;this.alignedObjects=[];this.url=Hb?"":e.href.replace(/#.*?$/,"");this.defs=this.createElement("defs").add();
-this.forExport=d;this.gradients=[];this.setSize(b,c,!1)},destroy:function(){var a,b=this.gradients,c=this.defs;this.box=null;this.boxWrapper=this.boxWrapper.destroy();if(b){for(a=0;a<b.length;a++)this.gradients[a]=b[a].destroy();this.gradients=null}if(c)this.defs=c.destroy();return this.alignedObjects=null},createElement:function(a){var b=new this.Element;b.init(this,a);return b},buildText:function(a){for(var b=a.element,c=n(a.textStr,"").toString().replace(/<(b|strong)>/g,'<span style="font-weight:bold">').replace(/<(i|em)>/g,
-'<span style="font-style:italic">').replace(/<a/g,"<span").replace(/<\/(b|strong|i|em|a)>/g,"</span>").split(/<br.*?>/g),d=b.childNodes,e=/style="([^"]+)"/,f=/href="([^"]+)"/,g=F(b,"x"),h=a.styles,i=h&&a.useHTML&&!this.forExport,j=a.htmlNode,m=h&&K(h.width),w=h&&h.lineHeight,q,x=d.length;x--;)b.removeChild(d[x]);m&&!a.added&&this.box.appendChild(b);l(c,function(c,d){var h,i=0,j,c=c.replace(/<span/g,"|||<span").replace(/<\/span>/g,"</span>|||");h=c.split("|||");l(h,function(c){if(c!==""||h.length===
-1){var l={},n=G.createElementNS("http://www.w3.org/2000/svg","tspan");e.test(c)&&F(n,"style",c.match(e)[1].replace(/(;| |^)color([ :])/,"$1fill$2"));f.test(c)&&(F(n,"onclick",'location.href="'+c.match(f)[1]+'"'),C(n,{cursor:"pointer"}));c=(c.replace(/<(.|\n)*?>/g,"")||" ").replace(/&lt;/g,"<").replace(/&gt;/g,">");n.appendChild(G.createTextNode(c));i?l.dx=3:l.x=g;if(!i){if(d){!Fb&&a.renderer.forExport&&C(n,{display:"block"});j=ka.getComputedStyle&&K(ka.getComputedStyle(q,null).getPropertyValue("line-height"));
-if(!j||isNaN(j))j=w||q.offsetHeight||18;F(n,"dy",j)}q=n}F(n,l);b.appendChild(n);i++;if(m)for(var c=c.replace(/-/g,"- ").split(" "),t,x=[];c.length||x.length;)t=b.getBBox().width,l=t>m,!l||c.length===1?(c=x,x=[],c.length&&(n=G.createElementNS("http://www.w3.org/2000/svg","tspan"),F(n,{dy:w||16,x:g}),b.appendChild(n),t>m&&(m=t))):(n.removeChild(n.firstChild),x.unshift(c.pop())),c.length&&n.appendChild(G.createTextNode(c.join(" ").replace(/- /g,"-")))}})});if(i){if(!j)j=a.htmlNode=W("span",null,E(h,
-{position:fb,top:0,left:0}),this.box.parentNode);j.innerHTML=a.textStr;for(x=d.length;x--;)d[x].style.visibility=Ja}},crispLine:function(a,b){a[1]===a[4]&&(a[1]=a[4]=z(a[1])+b%2/2);a[2]===a[5]&&(a[2]=a[5]=z(a[2])+b%2/2);return a},path:function(a){return this.createElement("path").attr({d:a,fill:X})},circle:function(a,b,c){a=Ga(a)?a:{x:a,y:b,r:c};return this.createElement("circle").attr(a)},arc:function(a,b,c,d,e,f){if(Ga(a))b=a.y,c=a.r,d=a.innerR,e=a.start,f=a.end,a=a.x;return this.symbol("arc",a||
-0,b||0,c||0,{innerR:d||0,start:e||0,end:f||0})},rect:function(a,b,c,d,e,f){if(Ga(a))b=a.y,c=a.width,d=a.height,e=a.r,f=a.strokeWidth,a=a.x;e=this.createElement("rect").attr({rx:e,ry:e,fill:X});return e.attr(e.crisp(f,a,b,Z(c,0),Z(d,0)))},setSize:function(a,b,c){var d=this.alignedObjects,e=d.length;this.width=a;this.height=b;for(this.boxWrapper[n(c,!0)?"animate":"attr"]({width:a,height:b});e--;)d[e].align()},g:function(a){var b=this.createElement("g");return q(a)?b.attr({"class":rb+a}):b},image:function(a,
-b,c,d,e){var f={preserveAspectRatio:X};arguments.length>1&&E(f,{x:b,y:c,width:d,height:e});f=this.createElement("image").attr(f);f.element.setAttributeNS?f.element.setAttributeNS("http://www.w3.org/1999/xlink","href",a):f.element.setAttribute("hc-svg-href",a);return f},symbol:function(a,b,c,d,e){var f,g=this.symbols[a],g=g&&g(z(b),z(c),d,e),h=/^url\((.*?)\)$/,i;if(g)f=this.path(g),E(f,{symbolName:a,x:b,y:c,r:d}),e&&E(f,e);else if(h.test(a)){var j=function(a,b){a.attr({width:b[0],height:b[1]}).translate(-z(b[0]/
-2),-z(b[1]/2))};i=a.match(h)[1];a=Vb[i];f=this.image(i).attr({x:b,y:c});a?j(f,a):(f.attr({width:0,height:0}),W("img",{onload:function(){j(f,Vb[i]=[this.width,this.height])},src:i}))}else f=this.circle(b,c,d);return f},symbols:{square:function(a,b,c){c*=0.707;return[va,a-c,b-c,aa,a+c,b-c,a+c,b+c,a-c,b+c,"Z"]},triangle:function(a,b,c){return[va,a,b-1.33*c,aa,a+c,b+0.67*c,a-c,b+0.67*c,"Z"]},"triangle-down":function(a,b,c){return[va,a,b+1.33*c,aa,a-c,b-0.67*c,a+c,b-0.67*c,"Z"]},diamond:function(a,b,c){return[va,
-a,b-c,aa,a+c,b,a,b+c,a-c,b,"Z"]},arc:function(a,b,c,d){var e=d.start,f=d.end-1.0E-6,g=d.innerR,h=S(e),i=ma(e),j=S(f),f=ma(f),d=d.end-e<qa?0:1;return[va,a+c*h,b+c*i,"A",c,c,0,d,1,a+c*j,b+c*f,aa,a+g*j,b+g*f,"A",g,g,0,d,0,a+g*h,b+g*i,"Z"]}},clipRect:function(a,b,c,d){var e=rb+gc++,f=this.createElement("clipPath").attr({id:e}).add(this.defs),a=this.rect(a,b,c,d,0).add(f);a.id=e;a.clipPath=f;return a},color:function(a,b,c){var d,e=/^rgba/;if(a&&a.linearGradient){var f=this,b=a.linearGradient,c=rb+gc++,
-g,h,i;g=f.createElement("linearGradient").attr({id:c,gradientUnits:"userSpaceOnUse",x1:b[0],y1:b[1],x2:b[2],y2:b[3]}).add(f.defs);f.gradients.push(g);g.stops=[];l(a.stops,function(a){e.test(a[1])?(d=Fa(a[1]),h=d.get("rgb"),i=d.get("a")):(h=a[1],i=1);a=f.createElement("stop").attr({offset:a[0],"stop-color":h,"stop-opacity":i}).add(g);g.stops.push(a)});return"url("+this.url+"#"+c+")"}else return e.test(a)?(d=Fa(a),F(b,c+"-opacity",d.get("a")),d.get("rgb")):(b.removeAttribute(c+"-opacity"),a)},text:function(a,
-b,c,d){var e=sa.chart.style,b=z(n(b,0)),c=z(n(c,0)),a=this.createElement("text").attr({x:b,y:c,text:a}).css({fontFamily:e.fontFamily,fontSize:e.fontSize});a.x=b;a.y=c;a.useHTML=d;return a}};Sb=Rb;if(!Fb)U=ca(lb,{init:function(a,b){var c=["<",b,' filled="f" stroked="f"'],d=["position: ",fb,";"];(b==="shape"||b===Za)&&d.push("left:0;top:0;width:10px;height:10px;");Ta&&d.push("visibility: ",b===Za?Ja:Pa);c.push(' style="',d.join(""),'"/>');if(b)c=b===Za||b==="span"||b==="img"?c.join(""):a.prepVML(c),
-this.element=W(c);this.renderer=a},add:function(a){var b=this.renderer,c=this.element,d=b.box,d=a?a.element||a:d;a&&a.inverted&&b.invertChild(c,d);Ta&&d.gVis===Ja&&C(c,{visibility:Ja});d.appendChild(c);this.added=!0;this.alignOnAdd&&this.updateTransform();return this},attr:function(a,b){var c,d,e,f=this.element||{},g=f.style,h=f.nodeName,i=this.renderer,j=this.symbolName,m,l,n=this.shadows,x=this;Ya(a)&&q(b)&&(c=a,a={},a[c]=b);if(Ya(a))c=a,x=c==="strokeWidth"||c==="stroke-width"?this.strokeweight:
-this[c];else for(c in a){d=a[c];m=!1;if(j&&/^(x|y|r|start|end|width|height|innerR)/.test(c))l||(this.symbolAttr(a),l=!0),m=!0;else if(c==="d"){d=d||[];this.d=d.join(" ");e=d.length;for(m=[];e--;)m[e]=fa(d[e])?z(d[e]*10)-5:d[e]==="Z"?"x":d[e];d=m.join(" ")||"x";f.path=d;if(n)for(e=n.length;e--;)n[e].path=d;m=!0}else if(c==="zIndex"||c==="visibility"){if(Ta&&c==="visibility"&&h==="DIV"){f.gVis=d;m=f.childNodes;for(e=m.length;e--;)C(m[e],{visibility:d});d===Pa&&(d=null)}d&&(g[c]=d);m=!0}else if(/^(width|height)$/.test(c))this[c]=
-d,this.updateClipping?(this[c]=d,this.updateClipping()):g[c]=d,m=!0;else if(/^(x|y)$/.test(c))this[c]=d,f.tagName==="SPAN"?this.updateTransform():g[{x:"left",y:"top"}[c]]=d;else if(c==="class")f.className=d;else if(c==="stroke")d=i.color(d,f,c),c="strokecolor";else if(c==="stroke-width"||c==="strokeWidth")f.stroked=d?!0:!1,c="strokeweight",this[c]=d,fa(d)&&(d+=oa);else if(c==="dashstyle")(f.getElementsByTagName("stroke")[0]||W(i.prepVML(["<stroke/>"]),null,null,f))[c]=d||"solid",this.dashstyle=d,
-m=!0;else if(c==="fill")h==="SPAN"?g.color=d:(f.filled=d!==X?!0:!1,d=i.color(d,f,c),c="fillcolor");else if(c==="translateX"||c==="translateY"||c==="rotation"||c==="align")c==="align"&&(c="textAlign"),this[c]=d,this.updateTransform(),m=!0;else if(c==="text")this.bBox=null,f.innerHTML=d,m=!0;if(n&&c==="visibility")for(e=n.length;e--;)n[e].style[c]=d;m||(Ta?f[c]=d:F(f,c,d))}return x},clip:function(a){var b=this,c=a.members;c.push(b);b.destroyClip=function(){jb(c,b)};return b.css(a.getCSS(b.inverted))},
-css:function(a){var b=this.element;if(b=a&&b.tagName==="SPAN"&&a.width)delete a.width,this.textWidth=b,this.updateTransform();this.styles=E(this.styles,a);C(this.element,a);return this},destroy:function(){this.destroyClip&&this.destroyClip();return lb.prototype.destroy.apply(this)},empty:function(){for(var a=this.element.childNodes,b=a.length,c;b--;)c=a[b],c.parentNode.removeChild(c)},getBBox:function(){var a=this.element,b=this.bBox;if(!b){if(a.nodeName==="text")a.style.position=fb;b=this.bBox={x:a.offsetLeft,
-y:a.offsetTop,width:a.offsetWidth,height:a.offsetHeight}}return b},on:function(a,b){this.element["on"+a]=function(){var a=ka.event;a.target=a.srcElement;b(a)};return this},updateTransform:function(){if(this.added){var a=this,b=a.element,c=a.translateX||0,d=a.translateY||0,e=a.x||0,f=a.y||0,g=a.textAlign||"left",h={left:0,center:0.5,right:1}[g],i=g&&g!=="left";(c||d)&&a.css({marginLeft:c,marginTop:d});a.inverted&&l(b.childNodes,function(c){a.renderer.invertChild(c,b)});if(b.tagName==="SPAN"){var j,
-m,c=a.rotation,n;j=0;var d=1,N=0,x;n=K(a.textWidth);var t=a.xCorr||0,r=a.yCorr||0,$=[c,g,b.innerHTML,a.textWidth].join(",");if($!==a.cTT)q(c)&&(j=c*Gb,d=S(j),N=ma(j),C(b,{filter:c?["progid:DXImageTransform.Microsoft.Matrix(M11=",d,", M12=",-N,", M21=",N,", M22=",d,", sizingMethod='auto expand')"].join(""):X})),j=b.offsetWidth,m=b.offsetHeight,j>n&&(C(b,{width:n+oa,display:"block",whiteSpace:"normal"}),j=n),n=z((K(b.style.fontSize)||12)*1.2),t=d<0&&-j,r=N<0&&-m,x=d*N<0,t+=N*n*(x?1-h:h),r-=d*n*(c?x?
-h:1-h:1),i&&(t-=j*h*(d<0?-1:1),c&&(r-=m*h*(N<0?-1:1)),C(b,{textAlign:g})),a.xCorr=t,a.yCorr=r;C(b,{left:e+t,top:f+r});a.cTT=$}}else this.alignOnAdd=!0},shadow:function(a,b){var c=[],d,e=this.element,f=this.renderer,g,h=e.style,i,j=e.path;j&&typeof j.value!=="string"&&(j="x");if(a){for(d=1;d<=3;d++)i=['<shape isShadow="true" strokeweight="',7-2*d,'" filled="false" path="',j,'" coordsize="100,100" style="',e.style.cssText,'" />'],g=W(f.prepVML(i),null,{left:K(h.left)+1,top:K(h.top)+1}),i=['<stroke color="black" opacity="',
-0.05*d,'"/>'],W(f.prepVML(i),null,null,g),b?b.element.appendChild(g):e.parentNode.insertBefore(g,e),c.push(g);this.shadows=c}return this}}),y=function(){this.init.apply(this,arguments)},y.prototype=Q(Rb.prototype,{Element:U,isIE8:Sa.indexOf("MSIE 8.0")>-1,init:function(a,b,c){var d;this.alignedObjects=[];d=this.createElement(Za);a.appendChild(d.element);this.box=d.element;this.boxWrapper=d;this.setSize(b,c,!1);if(!G.namespaces.hcv)G.namespaces.add("hcv","urn:schemas-microsoft-com:vml"),G.createStyleSheet().cssText=
-"hcv\\:fill, hcv\\:path, hcv\\:shape, hcv\\:stroke{ behavior:url(#default#VML); display: inline-block; } "},clipRect:function(a,b,c,d){var e=this.createElement();return E(e,{members:[],left:a,top:b,width:c,height:d,getCSS:function(a){var b=this.top,c=this.left,d=c+this.width,e=b+this.height,b={clip:"rect("+z(a?c:b)+"px,"+z(a?e:d)+"px,"+z(a?d:e)+"px,"+z(a?b:c)+"px)"};!a&&Ta&&E(b,{width:d+oa,height:e+oa});return b},updateClipping:function(){l(e.members,function(a){a.css(e.getCSS(a.inverted))})}})},
-color:function(a,b,c){var d,e=/^rgba/;if(a&&a.linearGradient){var f,g,h=a.linearGradient,i,j,m,n;l(a.stops,function(a,b){e.test(a[1])?(d=Fa(a[1]),f=d.get("rgb"),g=d.get("a")):(f=a[1],g=1);b?(m=f,n=g):(i=f,j=g)});a=90-V.atan((h[3]-h[1])/(h[2]-h[0]))*180/qa;a=["<",c,' colors="0% ',i,",100% ",m,'" angle="',a,'" opacity="',n,'" o:opacity2="',j,'" type="gradient" focus="100%" />'];W(this.prepVML(a),null,null,b)}else if(e.test(a)&&b.tagName!=="IMG")return d=Fa(a),a=["<",c,' opacity="',d.get("a"),'"/>'],
-W(this.prepVML(a),null,null,b),d.get("rgb");else{b=b.getElementsByTagName(c);if(b.length)b[0].opacity=1;return a}},prepVML:function(a){var b=this.isIE8,a=a.join("");b?(a=a.replace("/>",' xmlns="urn:schemas-microsoft-com:vml" />'),a=a.indexOf('style="')===-1?a.replace("/>",' style="display:inline-block;behavior:url(#default#VML);" />'):a.replace('style="','style="display:inline-block;behavior:url(#default#VML);')):a=a.replace("<","<hcv:");return a},text:function(a,b,c){var d=sa.chart.style;return this.createElement("span").attr({text:a,
-x:z(b),y:z(c)}).css({whiteSpace:"nowrap",fontFamily:d.fontFamily,fontSize:d.fontSize})},path:function(a){return this.createElement("shape").attr({coordsize:"100 100",d:a})},circle:function(a,b,c){return this.symbol("circle").attr({x:a,y:b,r:c})},g:function(a){var b;a&&(b={className:rb+a,"class":rb+a});return this.createElement(Za).attr(b)},image:function(a,b,c,d,e){var f=this.createElement("img").attr({src:a});arguments.length>1&&f.css({left:b,top:c,width:d,height:e});return f},rect:function(a,b,
-c,d,e,f){if(Ga(a))b=a.y,c=a.width,d=a.height,e=a.r,f=a.strokeWidth,a=a.x;var g=this.symbol("rect");g.r=e;return g.attr(g.crisp(f,a,b,Z(c,0),Z(d,0)))},invertChild:function(a,b){var c=b.style;C(a,{flip:"x",left:K(c.width)-10,top:K(c.height)-10,rotation:-90})},symbols:{arc:function(a,b,c,d){var e=d.start,f=d.end,g=S(e),h=ma(e),i=S(f),j=ma(f),d=d.innerR,m=0.07/c,l=d&&0.1/d||0;if(f-e===0)return["x"];else 2*qa-f+e<m?i=-m:f-e<l&&(i=S(e+l));return["wa",a-c,b-c,a+c,b+c,a+c*g,b+c*h,a+c*i,b+c*j,"at",a-d,b-d,
-a+d,b+d,a+d*i,b+d*j,a+d*g,b+d*h,"x","e"]},circle:function(a,b,c){return["wa",a-c,b-c,a+c,b+c,a+c,b,a+c,b,"e"]},rect:function(a,b,c,d){if(!q(d))return[];var e=d.width,d=d.height,f=a+e,g=b+d,c=Ka(c,e,d);return[va,a+c,b,aa,f-c,b,"wa",f-2*c,b,f,b+2*c,f-c,b,f,b+c,aa,f,g-c,"wa",f-2*c,g-2*c,f,g,f,g-c,f-c,g,aa,a+c,g,"wa",a,g-2*c,a+2*c,g,a+c,g,a,g-c,aa,a,b+c,"wa",a,b,a+2*c,b+2*c,a,b+c,a+c,b,"x","e"]}}}),Sb=y;yb.prototype.callbacks=[];var Xa=function(){};Xa.prototype={init:function(a,b){var c=a.chart.counters,
-d;this.series=a;this.applyOptions(b);this.pointAttr={};if(a.options.colorByPoint){d=a.chart.options.colors;if(!this.options)this.options={};this.color=this.options.color=this.color||d[c.color++];c.wrapColor(d.length)}a.chart.pointCount++;return this},applyOptions:function(a){var b=this.series;this.config=a;if(fa(a)||a===null)this.y=a;else if(Ga(a)&&!fa(a.length))E(this,a),this.options=a;else if(Ya(a[0]))this.name=a[0],this.y=a[1];else if(fa(a[0]))this.x=a[0],this.y=a[1];if(this.x===ra)this.x=b.autoIncrement()},
-destroy:function(){var a=this,b=a.series,c=b.chart.hoverPoints,d;b.chart.pointCount--;c&&(a.setState(),jb(c,a));if(a===b.chart.hoverPoint)a.onMouseOut();Na(a);l("graphic,tracker,group,dataLabel,connector,shadowGroup".split(","),function(b){a[b]&&a[b].destroy()});a.legendItem&&a.series.chart.legend.destroyItem(a);for(d in a)a[d]=null},getLabelConfig:function(){return{x:this.category,y:this.y,series:this.series,point:this,percentage:this.percentage,total:this.total||this.stackTotal}},select:function(a,
-b){var c=this,d=c.series.chart,a=n(a,!c.selected);c.firePointEvent(a?"select":"unselect",{accumulate:b},function(){c.selected=a;c.setState(a&&"select");b||l(d.getSelectedPoints(),function(a){if(a.selected&&a!==c)a.selected=!1,a.setState(pa),a.firePointEvent("unselect")})})},onMouseOver:function(){var a=this.series.chart,b=a.tooltip,c=a.hoverPoint;if(c&&c!==this)c.onMouseOut();this.firePointEvent("mouseOver");b&&!b.shared&&b.refresh(this);this.setState(xa);a.hoverPoint=this},onMouseOut:function(){this.firePointEvent("mouseOut");
-this.setState();this.series.chart.hoverPoint=null},tooltipFormatter:function(a){var b=this.series;return['<span style="color:'+b.color+'">',this.name||b.name,"</span>: ",!a?"<b>x = "+(this.name||this.x)+",</b> ":"","<b>",!a?"y = ":"",this.y,"</b>"].join("")},update:function(a,b,c){var d=this,e=d.series,f=d.graphic,g=e.chart,b=n(b,!0);d.firePointEvent("update",{options:a},function(){d.applyOptions(a);Ga(a)&&(e.getAttribs(),f&&f.attr(d.pointAttr[e.state]));e.isDirty=!0;b&&g.redraw(c)})},remove:function(a,
-b){var c=this,d=c.series,e=d.chart,f=d.data;kb(b,e);a=n(a,!0);c.firePointEvent("remove",null,function(){jb(f,c);c.destroy();d.isDirty=!0;a&&e.redraw()})},firePointEvent:function(a,b,c){var d=this,e=this.series.options;(e.point.events[a]||d.options&&d.options.events&&d.options.events[a])&&this.importEvents();a==="click"&&e.allowPointSelect&&(c=function(a){d.select(null,a.ctrlKey||a.metaKey||a.shiftKey)});ga(this,a,b,c)},importEvents:function(){if(!this.hasImportedEvents){var a=Q(this.series.options.point,
-this.options).events,b;this.events=a;for(b in a)ha(this,b,a[b]);this.hasImportedEvents=!0}},setState:function(a){var b=this.series,c=b.options.states,d=ia[b.type].marker&&b.options.marker,e=d&&!d.enabled,f=(d=d&&d.states[a])&&d.enabled===!1,g=b.stateMarkerGraphic,h=b.chart,i=this.pointAttr,a=a||pa;if(!(a===this.state||this.selected&&a!=="select"||c[a]&&c[a].enabled===!1||a&&(f||e&&!d.enabled))){if(this.graphic)this.graphic.attr(i[a]);else{if(a){if(!g)b.stateMarkerGraphic=g=h.renderer.circle(0,0,i[a].r).attr(i[a]).add(b.group);
-g.translate(this.plotX,this.plotY)}if(g)g[a?"show":"hide"]()}this.state=a}}};var ba=function(){};ba.prototype={isCartesian:!0,type:"line",pointClass:Xa,pointAttrToOptions:{stroke:"lineColor","stroke-width":"lineWidth",fill:"fillColor",r:"radius"},init:function(a,b){var c,d;d=a.series.length;this.chart=a;b=this.setOptions(b);E(this,{index:d,options:b,name:b.name||"Series "+(d+1),state:pa,pointAttr:{},visible:b.visible!==!1,selected:b.selected===!0});d=b.events;for(c in d)ha(this,c,d[c]);if(d&&d.click||
-b.point&&b.point.events&&b.point.events.click||b.allowPointSelect)a.runTrackerClick=!0;this.getColor();this.getSymbol();this.setData(b.data,!1)},autoIncrement:function(){var a=this.options,b=this.xIncrement,b=n(b,a.pointStart,0);this.pointInterval=n(this.pointInterval,a.pointInterval,1);this.xIncrement=b+this.pointInterval;return b},cleanData:function(){var a=this.chart,b=this.data,c,d,e=a.smallestInterval,f,g;pc(b,function(a,b){return a.x-b.x});if(this.options.connectNulls)for(g=b.length-1;g>=0;g--)b[g].y===
-null&&b[g-1]&&b[g+1]&&b.splice(g,1);for(g=b.length-1;g>=0;g--)if(b[g-1]&&(f=b[g].x-b[g-1].x,f>0&&(d===ra||f<d)))d=f,c=g;if(e===ra||d<e)a.smallestInterval=d;this.closestPoints=c},getSegments:function(){var a=-1,b=[],c=this.data;l(c,function(d,e){d.y===null?(e>a+1&&b.push(c.slice(a+1,e)),a=e):e===c.length-1&&b.push(c.slice(a+1,e+1))});this.segments=b},setOptions:function(a){var b=this.chart.options.plotOptions;return Q(b[this.type],b.series,a)},getColor:function(){var a=this.chart.options.colors,b=
-this.chart.counters;this.color=this.options.color||a[b.color++]||"#0000ff";b.wrapColor(a.length)},getSymbol:function(){var a=this.chart.options.symbols,b=this.chart.counters;this.symbol=this.options.marker.symbol||a[b.symbol++];b.wrapSymbol(a.length)},addPoint:function(a,b,c,d){var e=this.data,f=this.graph,g=this.area,h=this.chart,a=(new this.pointClass).init(this,a);kb(d,h);if(f&&c)f.shift=c;if(g)g.shift=c,g.isArea=!0;b=n(b,!0);e.push(a);c&&e[0].remove(!1);this.getAttribs();this.isDirty=!0;b&&h.redraw()},
-setData:function(a,b){var c=this,d=c.data,e=c.initialColor,f=c.chart,g=d&&d.length||0;c.xIncrement=null;if(q(e))f.counters.color=e;for(a=qb(tb(a||[]),function(a){return(new c.pointClass).init(c,a)});g--;)d[g].destroy();c.data=a;c.cleanData();c.getSegments();c.getAttribs();c.isDirty=!0;f.isDirtyBox=!0;n(b,!0)&&f.redraw(!1)},remove:function(a,b){var c=this,d=c.chart,a=n(a,!0);if(!c.isRemoving)c.isRemoving=!0,ga(c,"remove",null,function(){c.destroy();d.isDirtyLegend=d.isDirtyBox=!0;a&&d.redraw(b)});
-c.isRemoving=!1},translate:function(){for(var a=this.chart,b=this.options.stacking,c=this.xAxis.categories,d=this.yAxis,e=this.data,f=e.length;f--;){var g=e[f],h=g.x,i=g.y,j=g.low,m=d.stacks[(i<0?"-":"")+this.stackKey];g.plotX=this.xAxis.translate(h);if(b&&this.visible&&m&&m[h])j=m[h],h=j.total,j.cum=j=j.cum-i,i=j+i,b==="percent"&&(j=h?j*100/h:0,i=h?i*100/h:0),g.percentage=h?g.y*100/h:0,g.stackTotal=h;if(q(j))g.yBottom=d.translate(j,0,1,0,1);if(i!==null)g.plotY=d.translate(i,0,1,0,1);g.clientX=a.inverted?
-a.plotHeight-g.plotX:g.plotX;g.category=c&&c[g.x]!==ra?c[g.x]:g.x}},setTooltipPoints:function(a){var b=this.chart,c=b.inverted,d=[],e=z((c?b.plotTop:b.plotLeft)+b.plotSizeX),f,g,h=[];if(a)this.tooltipPoints=null;l(this.segments,function(a){d=d.concat(a)});this.xAxis&&this.xAxis.reversed&&(d=d.reverse());l(d,function(a,b){f=d[b-1]?d[b-1]._high+1:0;for(g=a._high=d[b+1]?Ia((a.plotX+(d[b+1]?d[b+1].plotX:e))/2):e;f<=g;)h[c?e-f++:f++]=a});this.tooltipPoints=h},onMouseOver:function(){var a=this.chart,b=
-a.hoverSeries;if(Oa||!a.mouseIsDown){if(b&&b!==this)b.onMouseOut();this.options.events.mouseOver&&ga(this,"mouseOver");this.tracker&&this.tracker.toFront();this.setState(xa);a.hoverSeries=this}},onMouseOut:function(){var a=this.options,b=this.chart,c=b.tooltip,d=b.hoverPoint;if(d)d.onMouseOut();this&&a.events.mouseOut&&ga(this,"mouseOut");c&&!a.stickyTracking&&c.hide();this.setState();b.hoverSeries=null},animate:function(a){var b=this.chart,c=this.clipRect,d=this.options.animation;d&&!Ga(d)&&(d={});
-if(a){if(!c.isAnimating)c.attr("width",0),c.isAnimating=!0}else c.animate({width:b.plotSizeX},d),this.animate=null},drawPoints:function(){var a,b=this.data,c=this.chart,d,e,f,g,h,i;if(this.options.marker.enabled)for(f=b.length;f--;)if(g=b[f],d=g.plotX,e=g.plotY,i=g.graphic,e!==ra&&!isNaN(e))a=g.pointAttr[g.selected?"select":pa],h=a.r,i?i.animate({x:d,y:e,r:h}):g.graphic=c.renderer.symbol(n(g.marker&&g.marker.symbol,this.symbol),d,e,h).attr(a).add(this.group)},convertAttribs:function(a,b,c,d){var e=
-this.pointAttrToOptions,f,g,h={},a=a||{},b=b||{},c=c||{},d=d||{};for(f in e)g=e[f],h[f]=n(a[g],b[f],c[f],d[f]);return h},getAttribs:function(){var a=this,b=ia[a.type].marker?a.options.marker:a.options,c=b.states,d=c[xa],e,f=a.color,g={stroke:f,fill:f},h=a.data,i=[],j,m=a.pointAttrToOptions,n;a.options.marker?(d.radius=d.radius||b.radius+2,d.lineWidth=d.lineWidth||b.lineWidth+1):d.color=d.color||Fa(d.color||f).brighten(d.brightness).get();i[pa]=a.convertAttribs(b,g);l([xa,"select"],function(b){i[b]=
-a.convertAttribs(c[b],i[pa])});a.pointAttr=i;for(f=h.length;f--;){g=h[f];if((b=g.options&&g.options.marker||g.options)&&b.enabled===!1)b.radius=0;e=!1;if(g.options)for(n in m)q(b[m[n]])&&(e=!0);if(e){j=[];c=b.states||{};e=c[xa]=c[xa]||{};if(!a.options.marker)e.color=Fa(e.color||g.options.color).brighten(e.brightness||d.brightness).get();j[pa]=a.convertAttribs(b,i[pa]);j[xa]=a.convertAttribs(c[xa],i[xa],j[pa]);j.select=a.convertAttribs(c.select,i.select,j[pa])}else j=i;g.pointAttr=j}},destroy:function(){var a=
-this,b=a.chart,c=a.clipRect,d=/\/5[0-9\.]+ (Safari|Mobile)\//.test(Sa),e,f;ga(a,"destroy");Na(a);a.legendItem&&a.chart.legend.destroyItem(a);l(a.data,function(a){a.destroy()});if(c&&c!==b.clipRect)a.clipRect=c.destroy();l(["area","graph","dataLabelsGroup","group","tracker"],function(b){a[b]&&(e=d&&b==="group"?"hide":"destroy",a[b][e]())});if(b.hoverSeries===a)b.hoverSeries=null;jb(b.series,a);for(f in a)delete a[f]},drawDataLabels:function(){if(this.options.dataLabels.enabled){var a,b,c=this.data,
-d=this.options,e=d.dataLabels,f,g=this.dataLabelsGroup,h=this.chart,i=h.renderer,j=h.inverted,m=this.type,w;w=d.stacking;var z=m==="column"||m==="bar",x=e.verticalAlign===null,t=e.y===null;z&&(w?(x&&(e=Q(e,{verticalAlign:"middle"})),t&&(e=Q(e,{y:{top:14,middle:4,bottom:-6}[e.verticalAlign]}))):x&&(e=Q(e,{verticalAlign:"top"})));g?g.translate(h.plotLeft,h.plotTop):g=this.dataLabelsGroup=i.g("data-labels").attr({visibility:this.visible?Pa:Ja,zIndex:6}).translate(h.plotLeft,h.plotTop).add();w=e.color;
-w==="auto"&&(w=null);e.style.color=n(w,this.color,"black");l(c,function(c){var l=c.barX,o=l&&l+c.barW/2||c.plotX||-999,w=n(c.plotY,-999),p=c.dataLabel,u=e.align,x=t?c.y>=0?-6:12:e.y;f=e.formatter.call(c.getLabelConfig());a=(j?h.plotWidth-w:o)+e.x;b=(j?h.plotHeight-o:w)+x;m==="column"&&(a+={left:-1,right:1}[u]*c.barW/2||0);j&&c.y<0&&(u="right",a-=10);if(p)j&&!e.y&&(b=b+K(p.styles.lineHeight)*0.9-p.getBBox().height/2),p.attr({text:f}).animate({x:a,y:b});else if(q(f))p=c.dataLabel=i.text(f,a,b).attr({align:u,
-rotation:e.rotation,zIndex:1}).css(e.style).add(g),j&&!e.y&&p.attr({y:b+K(p.styles.lineHeight)*0.9-p.getBBox().height/2});if(z&&d.stacking&&p)o=c.barY,w=c.barW,c=c.barH,p.align(e,null,{x:j?h.plotWidth-o-c:l,y:j?h.plotHeight-l-w:o,width:j?c:w,height:j?w:c})})}},drawGraph:function(){var a=this,b=a.options,c=a.graph,d=[],e,f=a.area,g=a.group,h=b.lineColor||a.color,i=b.lineWidth,j=b.dashStyle,m,w=a.chart.renderer,q=a.yAxis.getThreshold(b.threshold||0),x=/^area/.test(a.type),t=[],r=[];l(a.segments,function(c){m=
-[];l(c,function(d,e){a.getPointSpline?m.push.apply(m,a.getPointSpline(c,d,e)):(m.push(e?aa:va),e&&b.step&&m.push(d.plotX,c[e-1].plotY),m.push(d.plotX,d.plotY))});c.length>1?d=d.concat(m):t.push(c[0]);if(x){var e=[],f,g=m.length;for(f=0;f<g;f++)e.push(m[f]);g===3&&e.push(aa,m[1],m[2]);if(b.stacking&&a.type!=="areaspline")for(f=c.length-1;f>=0;f--)e.push(c[f].plotX,c[f].yBottom);else e.push(aa,c[c.length-1].plotX,q,aa,c[0].plotX,q);r=r.concat(e)}});a.graphPath=d;a.singlePoints=t;if(x)e=n(b.fillColor,
-Fa(a.color).setOpacity(b.fillOpacity||0.75).get()),f?f.animate({d:r}):a.area=a.chart.renderer.path(r).attr({fill:e}).add(g);if(c)Eb(c),c.animate({d:d});else if(i){c={stroke:h,"stroke-width":i};if(j)c.dashstyle=j;a.graph=w.path(d).attr(c).add(g).shadow(b.shadow)}},render:function(){var a=this,b=a.chart,c,d,e=a.options,f=e.animation,g=f&&a.animate,f=g?f&&f.duration||500:0,h=a.clipRect,i=b.renderer;if(!h&&(h=a.clipRect=!b.hasRendered&&b.clipRect?b.clipRect:i.clipRect(0,0,b.plotSizeX,b.plotSizeY),!b.clipRect))b.clipRect=
-h;if(!a.group)c=a.group=i.g("series"),b.inverted&&(d=function(){c.attr({width:b.plotWidth,height:b.plotHeight}).invert()},d(),ha(b,"resize",d),ha(a,"destroy",function(){Na(b,"resize",d)})),c.clip(a.clipRect).attr({visibility:a.visible?Pa:Ja,zIndex:e.zIndex}).translate(b.plotLeft,b.plotTop).add(b.seriesGroup);a.drawDataLabels();g&&a.animate(!0);a.drawGraph&&a.drawGraph();a.drawPoints();a.options.enableMouseTracking!==!1&&a.drawTracker();g&&a.animate();setTimeout(function(){h.isAnimating=!1;if((c=a.group)&&
-h!==b.clipRect&&h.renderer)c.clip(a.clipRect=b.clipRect),h.destroy()},f);a.isDirty=!1},redraw:function(){var a=this.chart,b=this.group;b&&(a.inverted&&b.attr({width:a.plotWidth,height:a.plotHeight}),b.animate({translateX:a.plotLeft,translateY:a.plotTop}));this.translate();this.setTooltipPoints(!0);this.render()},setState:function(a){var b=this.options,c=this.graph,d=b.states,b=b.lineWidth,a=a||pa;if(this.state!==a)this.state=a,d[a]&&d[a].enabled===!1||(a&&(b=d[a].lineWidth||b+1),c&&!c.dashstyle&&
-c.attr({"stroke-width":b},a?0:500))},setVisible:function(a,b){var c=this.chart,d=this.legendItem,e=this.group,f=this.tracker,g=this.dataLabelsGroup,h,i=this.data,j=c.options.chart.ignoreHiddenSeries;h=this.visible;h=(this.visible=a=a===ra?!h:a)?"show":"hide";if(e)e[h]();if(f)f[h]();else for(e=i.length;e--;)if(f=i[e],f.tracker)f.tracker[h]();if(g)g[h]();d&&c.legend.colorizeItem(this,a);this.isDirty=!0;this.options.stacking&&l(c.series,function(a){if(a.options.stacking&&a.visible)a.isDirty=!0});if(j)c.isDirtyBox=
-!0;b!==!1&&c.redraw();ga(this,h)},show:function(){this.setVisible(!0)},hide:function(){this.setVisible(!1)},select:function(a){this.selected=a=a===ra?!this.selected:a;if(this.checkbox)this.checkbox.checked=a;ga(this,a?"select":"unselect")},drawTracker:function(){var a=this,b=a.options,c=[].concat(a.graphPath),d=c.length,e=a.chart,f=e.options.tooltip.snap,g=a.tracker,h=b.cursor,h=h&&{cursor:h},i=a.singlePoints,j;if(d)for(j=d+1;j--;)c[j]===va&&c.splice(j+1,0,c[j+1]-f,c[j+2],aa),(j&&c[j]===va||j===d)&&
-c.splice(j,0,aa,c[j-2]+f,c[j-1]);for(j=0;j<i.length;j++)d=i[j],c.push(va,d.plotX-f,d.plotY,aa,d.plotX+f,d.plotY);g?g.attr({d:c}):a.tracker=e.renderer.path(c).attr({isTracker:!0,stroke:yc,fill:X,"stroke-width":b.lineWidth+2*f,visibility:a.visible?Pa:Ja,zIndex:b.zIndex||1}).on(Oa?"touchstart":"mouseover",function(){if(e.hoverSeries!==a)a.onMouseOver()}).on("mouseout",function(){if(!b.stickyTracking)a.onMouseOut()}).css(h).add(e.trackerGroup)}};y=ca(ba);la.line=y;y=ca(ba,{type:"area"});la.area=y;y=ca(ba,
-{type:"spline",getPointSpline:function(a,b,c){var d=b.plotX,e=b.plotY,f=a[c-1],g=a[c+1],h,i,j,m;if(c&&c<a.length-1){a=f.plotY;j=g.plotX;var g=g.plotY,l;h=(1.5*d+f.plotX)/2.5;i=(1.5*e+a)/2.5;j=(1.5*d+j)/2.5;m=(1.5*e+g)/2.5;l=(m-i)*(j-d)/(j-h)+e-m;i+=l;m+=l;i>a&&i>e?(i=Z(a,e),m=2*e-i):i<a&&i<e&&(i=Ka(a,e),m=2*e-i);m>g&&m>e?(m=Z(g,e),i=2*e-m):m<g&&m<e&&(m=Ka(g,e),i=2*e-m);b.rightContX=j;b.rightContY=m}c?(b=["C",f.rightContX||f.plotX,f.rightContY||f.plotY,h||d,i||e,d,e],f.rightContX=f.rightContY=null):
-b=[va,d,e];return b}});la.spline=y;y=ca(y,{type:"areaspline"});la.areaspline=y;var cb=ca(ba,{type:"column",pointAttrToOptions:{stroke:"borderColor","stroke-width":"borderWidth",fill:"color",r:"borderRadius"},init:function(){ba.prototype.init.apply(this,arguments);var a=this,b=a.chart;b.hasColumn=!0;b.hasRendered&&l(b.series,function(b){if(b.type===a.type)b.isDirty=!0})},translate:function(){var a=this,b=a.chart,c=a.options,d=c.stacking,e=c.borderWidth,f=0,g=a.xAxis.reversed,h=a.xAxis.categories,i=
-{},j,m;ba.prototype.translate.apply(a);l(b.series,function(b){if(b.type===a.type&&b.visible)b.options.stacking?(j=b.stackKey,i[j]===ra&&(i[j]=f++),m=i[j]):m=f++,b.columnIndex=m});var w=a.data,z=a.closestPoints,h=ya(w[1]?w[z].plotX-w[z-1].plotX:b.plotSizeX/(h&&h.length||1)),z=h*c.groupPadding,x=(h-2*z)/f,t=c.pointWidth,r=q(t)?(x-t)/2:x*c.pointPadding,y=Z(n(t,x-2*r),1),o=r+(z+((g?f-a.columnIndex:a.columnIndex)||0)*x-h/2)*(g?-1:1),A=a.yAxis.getThreshold(c.threshold||0),p=n(c.minPointLength,5);l(w,function(f){var g=
-f.plotY,h=f.yBottom||A,i=f.plotX+o,j=$b(Ka(g,h)),m=$b(Z(g,h)-j),l=a.yAxis.stacks[(f.y<0?"-":"")+a.stackKey],n;d&&a.visible&&l&&l[f.x]&&l[f.x].setOffset(o,y);ya(m)<p&&(p&&(m=p,j=ya(j-A)>p?h-p:A-(g<=A?p:0)),n=j-3);E(f,{barX:i,barY:j,barW:y,barH:m});f.shapeType="rect";g=E(b.renderer.Element.prototype.crisp.apply({},[e,i,j,y,m]),{r:c.borderRadius});e%2&&(g.y-=1,g.height+=1);f.shapeArgs=g;f.trackerArgs=q(n)&&Q(f.shapeArgs,{height:Z(6,m+3),y:n})})},getSymbol:function(){},drawGraph:function(){},drawPoints:function(){var a=
-this,b=a.options,c=a.chart.renderer,d,e;l(a.data,function(f){var g=f.plotY;if(g!==ra&&!isNaN(g)&&f.y!==null)d=f.graphic,e=f.shapeArgs,d?(Eb(d),d.animate(e)):f.graphic=c[f.shapeType](e).attr(f.pointAttr[f.selected?"select":pa]).add(a.group).shadow(b.shadow)})},drawTracker:function(){var a=this,b=a.chart,c=b.renderer,d,e,f=+new Date,g=a.options,h=g.cursor,i=h&&{cursor:h},j;l(a.data,function(h){e=h.tracker;d=h.trackerArgs||h.shapeArgs;delete d.strokeWidth;if(h.y!==null)e?e.attr(d):h.tracker=c[h.shapeType](d).attr({isTracker:f,
-fill:yc,visibility:a.visible?Pa:Ja,zIndex:g.zIndex||1}).on(Oa?"touchstart":"mouseover",function(c){j=c.relatedTarget||c.fromElement;if(b.hoverSeries!==a&&F(j,"isTracker")!==f)a.onMouseOver();h.onMouseOver()}).on("mouseout",function(b){if(!g.stickyTracking&&(j=b.relatedTarget||b.toElement,F(j,"isTracker")!==f))a.onMouseOut()}).css(i).add(h.group||b.trackerGroup)})},animate:function(a){var b=this,c=b.data;if(!a)l(c,function(a){var c=a.graphic,a=a.shapeArgs;c&&(c.attr({height:0,y:b.yAxis.translate(0,
-0,1)}),c.animate({height:a.height,y:a.y},b.options.animation))}),b.animate=null},remove:function(){var a=this,b=a.chart;b.hasRendered&&l(b.series,function(b){if(b.type===a.type)b.isDirty=!0});ba.prototype.remove.apply(a,arguments)}});la.column=cb;y=ca(cb,{type:"bar",init:function(a){a.inverted=this.inverted=!0;cb.prototype.init.apply(this,arguments)}});la.bar=y;y=ca(ba,{type:"scatter",translate:function(){var a=this;ba.prototype.translate.apply(a);l(a.data,function(b){b.shapeType="circle";b.shapeArgs=
-{x:b.plotX,y:b.plotY,r:a.chart.options.tooltip.snap}})},drawTracker:function(){var a=this,b=a.options.cursor,c=b&&{cursor:b},d;l(a.data,function(b){(d=b.graphic)&&d.attr({isTracker:!0}).on("mouseover",function(){a.onMouseOver();b.onMouseOver()}).on("mouseout",function(){if(!a.options.stickyTracking)a.onMouseOut()}).css(c)})},cleanData:function(){}});la.scatter=y;y=ca(Xa,{init:function(){Xa.prototype.init.apply(this,arguments);var a=this,b;E(a,{visible:a.visible!==!1,name:n(a.name,"Slice")});b=function(){a.slice()};
-ha(a,"select",b);ha(a,"unselect",b);return a},setVisible:function(a){var b=this.series.chart,c=this.tracker,d=this.dataLabel,e=this.connector,f=this.shadowGroup,g;g=(this.visible=a=a===ra?!this.visible:a)?"show":"hide";this.group[g]();if(c)c[g]();if(d)d[g]();if(e)e[g]();if(f)f[g]();this.legendItem&&b.legend.colorizeItem(this,a)},slice:function(a,b,c){var d=this.series.chart,e=this.slicedTranslation;kb(c,d);n(b,!0);a=this.sliced=q(a)?a:!this.sliced;a={translateX:a?e[0]:d.plotLeft,translateY:a?e[1]:
-d.plotTop};this.group.animate(a);this.shadowGroup&&this.shadowGroup.animate(a)}});y=ca(ba,{type:"pie",isCartesian:!1,pointClass:y,pointAttrToOptions:{stroke:"borderColor","stroke-width":"borderWidth",fill:"color"},getColor:function(){this.initialColor=this.chart.counters.color},animate:function(){var a=this;l(a.data,function(b){var c=b.graphic,b=b.shapeArgs,d=-qa/2;c&&(c.attr({r:0,start:d,end:d}),c.animate({r:b.r,start:b.start,end:b.end},a.options.animation))});a.animate=null},translate:function(){var a=
-0,b=-0.25,c=this.options,d=c.slicedOffset,e=d+c.borderWidth,f=c.center.concat([c.size,c.innerSize||0]),g=this.chart,h=g.plotWidth,i=g.plotHeight,j,m,n,q=this.data,x=2*qa,t,r=Ka(h,i),y,o,A,p=c.dataLabels.distance,f=qb(f,function(a,b){return(y=/%$/.test(a))?[h,i,r,r][b]*K(a)/100:a});this.getX=function(a,b){n=V.asin((a-f[1])/(f[2]/2+p));return f[0]+(b?-1:1)*S(n)*(f[2]/2+p)};this.center=f;l(q,function(b){a+=b.y});l(q,function(c){t=a?c.y/a:0;j=z(b*x*1E3)/1E3;b+=t;m=z(b*x*1E3)/1E3;c.shapeType="arc";c.shapeArgs=
-{x:f[0],y:f[1],r:f[2]/2,innerR:f[3]/2,start:j,end:m};n=(m+j)/2;c.slicedTranslation=qb([S(n)*d+g.plotLeft,ma(n)*d+g.plotTop],z);o=S(n)*f[2]/2;A=ma(n)*f[2]/2;c.tooltipPos=[f[0]+o*0.7,f[1]+A*0.7];c.labelPos=[f[0]+o+S(n)*p,f[1]+A+ma(n)*p,f[0]+o+S(n)*e,f[1]+A+ma(n)*e,f[0]+o,f[1]+A,p<0?"center":n<x/4?"left":"right",n];c.percentage=t*100;c.total=a});this.setTooltipPoints()},render:function(){this.drawPoints();this.options.enableMouseTracking!==!1&&this.drawTracker();this.drawDataLabels();this.options.animation&&
-this.animate&&this.animate();this.isDirty=!1},drawPoints:function(){var a=this.chart,b=a.renderer,c,d,e,f=this.options.shadow,g,h;l(this.data,function(i){d=i.graphic;h=i.shapeArgs;e=i.group;g=i.shadowGroup;if(f&&!g)g=i.shadowGroup=b.g("shadow").attr({zIndex:4}).add();if(!e)e=i.group=b.g("point").attr({zIndex:5}).add();c=i.sliced?i.slicedTranslation:[a.plotLeft,a.plotTop];e.translate(c[0],c[1]);g&&g.translate(c[0],c[1]);d?d.animate(h):i.graphic=b.arc(h).attr(E(i.pointAttr[pa],{"stroke-linejoin":"round"})).add(i.group).shadow(f,
-g);i.visible===!1&&i.setVisible(!1)})},drawDataLabels:function(){var a=this.data,b,c=this.chart,d=this.options.dataLabels,e=n(d.connectorPadding,10),f=n(d.connectorWidth,1),g,h,i=n(d.softConnector,!0),j=d.distance,m=this.center,q=m[2]/2,m=m[1],z=j>0,x=[[],[]],t,r,y,o,A=2,p;if(d.enabled){ba.prototype.drawDataLabels.apply(this);l(a,function(a){a.dataLabel&&x[a.labelPos[7]<qa/2?0:1].push(a)});x[1].reverse();o=function(a,b){return b.y-a.y};for(a=x[0][0]&&x[0][0].dataLabel&&K(x[0][0].dataLabel.styles.lineHeight);A--;){var u=
-[],G=[],E=x[A],F=E.length,C;for(p=m-q-j;p<=m+q+j;p+=a)u.push(p);y=u.length;if(F>y){h=[].concat(E);h.sort(o);for(p=F;p--;)h[p].rank=p;for(p=F;p--;)E[p].rank>=y&&E.splice(p,1);F=E.length}for(p=0;p<F;p++){b=E[p];h=b.labelPos;b=9999;for(r=0;r<y;r++)g=ya(u[r]-h[1]),g<b&&(b=g,C=r);if(C<p&&u[p]!==null)C=p;else for(y<F-p+C&&u[p]!==null&&(C=y-F+p);u[C]===null;)C++;G.push({i:C,y:u[C]});u[C]=null}G.sort(o);for(p=0;p<F;p++){b=E[p];h=b.labelPos;g=b.dataLabel;r=G.pop();t=h[1];y=b.visible===!1?Ja:Pa;C=r.i;r=r.y;
-if(t>r&&u[C+1]!==null||t<r&&u[C-1]!==null)r=t;t=this.getX(C===0||C===u.length-1?t:r,A);g.attr({visibility:y,align:h[6]})[g.moved?"animate":"attr"]({x:t+d.x+({left:e,right:-e}[h[6]]||0),y:r+d.y});g.moved=!0;if(z&&f)g=b.connector,h=i?[va,t+(h[6]==="left"?5:-5),r,"C",t,r,2*h[2]-h[4],2*h[3]-h[5],h[2],h[3],aa,h[4],h[5]]:[va,t+(h[6]==="left"?5:-5),r,aa,h[2],h[3],aa,h[4],h[5]],g?(g.animate({d:h}),g.attr("visibility",y)):b.connector=g=this.chart.renderer.path(h).attr({"stroke-width":f,stroke:d.connectorColor||
-b.color||"#606060",visibility:y,zIndex:3}).translate(c.plotLeft,c.plotTop).add()}}}},drawTracker:cb.prototype.drawTracker,getSymbol:function(){}});la.pie=y;ka.Highcharts={Chart:yb,dateFormat:Ob,pathAnim:Ba,getOptions:function(){return sa},hasRtlBug:Dc,numberFormat:mc,Point:Xa,Color:Fa,Renderer:Sb,seriesTypes:la,setOptions:function(a){sa=Q(sa,a);wb();return sa},Series:ba,addEvent:ha,createElement:W,discardElement:Lb,css:C,each:l,extend:E,map:qb,merge:Q,pick:n,extendClass:ca,product:"Highcharts",version:"2.1.7"}})();
+	/**
+	 * Filter an array
+	 */
+	grep = jQ.grep;
+
+	/**
+	 * Map an array
+	 * @param {Array} arr
+	 * @param {Function} fn
+	 */
+	map = function (arr, fn) {
+		//return jQuery.map(arr, fn);
+		var results = [],
+			i = 0,
+			len = arr.length;
+		for (; i < len; i++) {
+			results[i] = fn.call(arr[i], arr[i], i, arr);
+		}
+		return results;
+
+	};
+
+	/**
+	 * Deep merge two objects and return a third object
+	 */
+	merge = function () {
+		var args = arguments;
+		return jQ.extend(true, null, args[0], args[1], args[2], args[3]);
+	};
+
+	/**
+	 * Add an event listener
+	 * @param {Object} el A HTML element or custom object
+	 * @param {String} event The event type
+	 * @param {Function} fn The event handler
+	 */
+	addEvent = function (el, event, fn) {
+		jQ(el).bind(event, fn);
+	};
+
+	/**
+	 * Remove event added with addEvent
+	 * @param {Object} el The object
+	 * @param {String} eventType The event type. Leave blank to remove all events.
+	 * @param {Function} handler The function to remove
+	 */
+	removeEvent = function (el, eventType, handler) {
+		// workaround for jQuery issue with unbinding custom events:
+		// http://forum.jquery.com/topic/javascript-error-when-unbinding-a-custom-event-using-jquery-1-4-2
+		var func = doc.removeEventListener ? 'removeEventListener' : 'detachEvent';
+		if (doc[func] && !el[func]) {
+			el[func] = function () {};
+		}
+
+		jQ(el).unbind(eventType, handler);
+	};
+
+	/**
+	 * Fire an event on a custom object
+	 * @param {Object} el
+	 * @param {String} type
+	 * @param {Object} eventArguments
+	 * @param {Function} defaultFunction
+	 */
+	fireEvent = function (el, type, eventArguments, defaultFunction) {
+		var event = jQ.Event(type),
+			detachedType = 'detached' + type;
+		extend(event, eventArguments);
+
+		// Prevent jQuery from triggering the object method that is named the
+		// same as the event. For example, if the event is 'select', jQuery
+		// attempts calling el.select and it goes into a loop.
+		if (el[type]) {
+			el[detachedType] = el[type];
+			el[type] = null;
+		}
+
+		// trigger it
+		jQ(el).trigger(event);
+
+		// attach the method
+		if (el[detachedType]) {
+			el[type] = el[detachedType];
+			el[detachedType] = null;
+		}
+
+		if (defaultFunction && !event.isDefaultPrevented()) {
+			defaultFunction(event);
+		}
+	};
+
+	/**
+	 * Animate a HTML element or SVG element wrapper
+	 * @param {Object} el
+	 * @param {Object} params
+	 * @param {Object} options jQuery-like animation options: duration, easing, callback
+	 */
+	animate = function (el, params, options) {
+		var $el = jQ(el);
+		if (params.d) {
+			el.toD = params.d; // keep the array form for paths, used in jQ.fx.step.d
+			params.d = 1; // because in jQuery, animating to an array has a different meaning
+		}
+
+		$el.stop();
+		$el.animate(params, options);
+
+	};
+	/**
+	 * Stop running animation
+	 */
+	stop = function (el) {
+		jQ(el).stop();
+	};
+
+
+	//=== Extend jQuery on init
+	
+	/*jslint unparam: true*//* allow unused param x in this function */
+	jQ.extend(jQ.easing, {
+		easeOutQuad: function (x, t, b, c, d) {
+			return -c * (t /= d) * (t - 2) + b;
+		}
+	});
+	/*jslint unparam: false*/
+
+	// extend the animate function to allow SVG animations
+	var jFx = jQuery.fx,
+		jStep = jFx.step;
+		
+	// extend some methods to check for elem.attr, which means it is a Highcharts SVG object
+	each(['cur', '_default', 'width', 'height'], function (fn, i) {
+		var obj = i ? jStep : jFx.prototype, // 'cur', the getter' relates to jFx.prototype
+			base = obj[fn],
+			elem;
+		
+		if (base) { // step.width and step.height don't exist in jQuery < 1.7
+		
+			// create the extended function replacement
+			obj[fn] = function (fx) {
+				
+				// jFx.prototype.cur does not use fx argument
+				fx = i ? fx : this;
+				
+				// shortcut
+				elem = fx.elem;
+				
+				// jFX.prototype.cur returns the current value. The other ones are setters 
+				// and returning a value has no effect.
+				return elem.attr ? // is SVG element wrapper
+					elem.attr(fx.prop, fx.now) : // apply the SVG wrapper's method
+					base.apply(this, arguments); // use jQuery's built-in method
+			};
+		}
+	});
+	
+	// animate paths
+	jStep.d = function (fx) {
+		var elem = fx.elem;
+
+
+		// Normally start and end should be set in state == 0, but sometimes,
+		// for reasons unknown, this doesn't happen. Perhaps state == 0 is skipped
+		// in these cases
+		if (!fx.started) {
+			var ends = pathAnim.init(elem, elem.d, elem.toD);
+			fx.start = ends[0];
+			fx.end = ends[1];
+			fx.started = true;
+		}
+
+
+		// interpolate each value of the path
+		elem.attr('d', pathAnim.step(fx.start, fx.end, fx.pos, elem.toD));
+
+	};
+}
+
+
+/**
+ * Add a global listener for mousemove events
+ */
+/*addEvent(doc, 'mousemove', function(e) {
+	if (globalMouseMove) {
+		globalMouseMove(e);
+	}
+});*/
+/**
+ * Set the time methods globally based on the useUTC option. Time method can be either
+ * local time or UTC (default).
+ */
+function setTimeMethods() {
+	var useUTC = defaultOptions.global.useUTC;
+
+	makeTime = useUTC ? Date.UTC : function (year, month, date, hours, minutes, seconds) {
+		return new Date(
+			year,
+			month,
+			pick(date, 1),
+			pick(hours, 0),
+			pick(minutes, 0),
+			pick(seconds, 0)
+		).getTime();
+	};
+	getMinutes = useUTC ? 'getUTCMinutes' : 'getMinutes';
+	getHours = useUTC ? 'getUTCHours' : 'getHours';
+	getDay = useUTC ? 'getUTCDay' : 'getDay';
+	getDate = useUTC ? 'getUTCDate' : 'getDate';
+	getMonth = useUTC ? 'getUTCMonth' : 'getMonth';
+	getFullYear = useUTC ? 'getUTCFullYear' : 'getFullYear';
+	setMinutes = useUTC ? 'setUTCMinutes' : 'setMinutes';
+	setHours = useUTC ? 'setUTCHours' : 'setHours';
+	setDate = useUTC ? 'setUTCDate' : 'setDate';
+	setMonth = useUTC ? 'setUTCMonth' : 'setMonth';
+	setFullYear = useUTC ? 'setUTCFullYear' : 'setFullYear';
+
+}
+
+/**
+ * Merge the default options with custom options and return the new options structure
+ * @param {Object} options The new custom options
+ */
+function setOptions(options) {
+	defaultOptions = merge(defaultOptions, options);
+
+	// apply UTC
+	setTimeMethods();
+
+	return defaultOptions;
+}
+
+/**
+ * Get the updated default options. Merely exposing defaultOptions for outside modules
+ * isn't enough because the setOptions method creates a new object.
+ */
+function getOptions() {
+	return defaultOptions;
+}
+
+/**
+ * Discard an element by moving it to the bin and delete
+ * @param {Object} The HTML node to discard
+ */
+function discardElement(element) {
+	// create a garbage bin element, not part of the DOM
+	if (!garbageBin) {
+		garbageBin = createElement(DIV);
+	}
+
+	// move the node and empty bin
+	if (element) {
+		garbageBin.appendChild(element);
+	}
+	garbageBin.innerHTML = '';
+}
+
+/* ****************************************************************************
+ * Handle the options                                                         *
+ *****************************************************************************/
+var
+
+defaultLabelOptions = {
+	enabled: true,
+	// rotation: 0,
+	align: 'center',
+	x: 0,
+	y: 15,
+	/*formatter: function() {
+		return this.value;
+	},*/
+	style: {
+		color: '#666',
+		fontSize: '11px',
+		lineHeight: '14px'
+	}
+};
+
+defaultOptions = {
+	colors: ['#4572A7', '#AA4643', '#89A54E', '#80699B', '#3D96AE',
+		'#DB843D', '#92A8CD', '#A47D7C', '#B5CA92'],
+	symbols: ['circle', 'diamond', 'square', 'triangle', 'triangle-down'],
+	lang: {
+		loading: 'Loading...',
+		months: ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+				'August', 'September', 'October', 'November', 'December'],
+		shortMonths: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+		weekdays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+		decimalPoint: '.',
+		resetZoom: 'Reset zoom',
+		resetZoomTitle: 'Reset zoom level 1:1',
+		thousandsSep: ','
+	},
+	global: {
+		useUTC: true
+	},
+	chart: {
+		//animation: true,
+		//alignTicks: false,
+		//reflow: true,
+		//className: null,
+		//events: { load, selection },
+		//margin: [null],
+		//marginTop: null,
+		//marginRight: null,
+		//marginBottom: null,
+		//marginLeft: null,
+		borderColor: '#4572A7',
+		//borderWidth: 0,
+		borderRadius: 5,
+		defaultSeriesType: 'line',
+		ignoreHiddenSeries: true,
+		//inverted: false,
+		//shadow: false,
+		spacingTop: 10,
+		spacingRight: 10,
+		spacingBottom: 15,
+		spacingLeft: 10,
+		style: {
+			fontFamily: '"Lucida Grande", "Lucida Sans Unicode", Verdana, Arial, Helvetica, sans-serif', // default font
+			fontSize: '12px'
+		},
+		backgroundColor: '#FFFFFF',
+		//plotBackgroundColor: null,
+		plotBorderColor: '#C0C0C0'
+		//plotBorderWidth: 0,
+		//plotShadow: false,
+		//zoomType: ''
+	},
+	title: {
+		text: 'Chart title',
+		align: 'center',
+		// floating: false,
+		// margin: 15,
+		// x: 0,
+		// verticalAlign: 'top',
+		y: 15,
+		style: {
+			color: '#3E576F',
+			fontSize: '16px'
+		}
+
+	},
+	subtitle: {
+		text: '',
+		align: 'center',
+		// floating: false
+		// x: 0,
+		// verticalAlign: 'top',
+		y: 30,
+		style: {
+			color: '#6D869F'
+		}
+	},
+
+	plotOptions: {
+		line: { // base series options
+			allowPointSelect: false,
+			showCheckbox: false,
+			animation: {
+				duration: 1000
+			},
+			//connectNulls: false,
+			//cursor: 'default',
+			//dashStyle: null,
+			//enableMouseTracking: true,
+			events: {},
+			//legendIndex: 0,
+			lineWidth: 2,
+			shadow: true,
+			// stacking: null,
+			marker: {
+				enabled: true,
+				//symbol: null,
+				lineWidth: 0,
+				radius: 4,
+				lineColor: '#FFFFFF',
+				//fillColor: null,
+				states: { // states for a single point
+					hover: {
+						//radius: base + 2
+					},
+					select: {
+						fillColor: '#FFFFFF',
+						lineColor: '#000000',
+						lineWidth: 2
+					}
+				}
+			},
+			point: {
+				events: {}
+			},
+			dataLabels: merge(defaultLabelOptions, {
+				enabled: false,
+				y: -6,
+				formatter: function () {
+					return this.y;
+				}
+			}),
+
+			//pointStart: 0,
+			//pointInterval: 1,
+			showInLegend: true,
+			states: { // states for the entire series
+				hover: {
+					//enabled: false,
+					//lineWidth: base + 1,
+					marker: {
+						// lineWidth: base + 1,
+						// radius: base + 1
+					}
+				},
+				select: {
+					marker: {}
+				}
+			},
+			stickyTracking: true
+			//zIndex: null
+		}
+	},
+	labels: {
+		//items: [],
+		style: {
+			//font: defaultFont,
+			position: ABSOLUTE,
+			color: '#3E576F'
+		}
+	},
+	legend: {
+		enabled: true,
+		align: 'center',
+		//floating: false,
+		layout: 'horizontal',
+		labelFormatter: function () {
+			return this.name;
+		},
+		borderWidth: 1,
+		borderColor: '#909090',
+		borderRadius: 5,
+		// margin: 10,
+		// reversed: false,
+		shadow: false,
+		// backgroundColor: null,
+		style: {
+			padding: '5px'
+		},
+		itemStyle: {
+			cursor: 'pointer',
+			color: '#3E576F'
+		},
+		itemHoverStyle: {
+			cursor: 'pointer',
+			color: '#000000'
+		},
+		itemHiddenStyle: {
+			color: '#C0C0C0'
+		},
+		itemCheckboxStyle: {
+			position: ABSOLUTE,
+			width: '13px', // for IE precision
+			height: '13px'
+		},
+		// itemWidth: undefined,
+		symbolWidth: 16,
+		symbolPadding: 5,
+		verticalAlign: 'bottom',
+		// width: undefined,
+		x: 0,
+		y: 0
+	},
+
+	loading: {
+		hideDuration: 100,
+		labelStyle: {
+			fontWeight: 'bold',
+			position: RELATIVE,
+			top: '1em'
+		},
+		showDuration: 100,
+		style: {
+			position: ABSOLUTE,
+			backgroundColor: 'white',
+			opacity: 0.5,
+			textAlign: 'center'
+		}
+	},
+
+	tooltip: {
+		enabled: true,
+		//crosshairs: null,
+		backgroundColor: 'rgba(255, 255, 255, .85)',
+		borderWidth: 2,
+		borderRadius: 5,
+		//formatter: defaultFormatter,
+		shadow: true,
+		//shared: false,
+		snap: hasTouch ? 25 : 10,
+		style: {
+			color: '#333333',
+			fontSize: '12px',
+			padding: '5px',
+			whiteSpace: 'nowrap'
+		}
+	},
+
+	toolbar: {
+		itemStyle: {
+			color: '#4572A7',
+			cursor: 'pointer'
+		}
+	},
+
+	credits: {
+		enabled: true,
+		text: 'Highcharts.com',
+		href: 'http://www.highcharts.com',
+		position: {
+			align: 'right',
+			x: -10,
+			verticalAlign: 'bottom',
+			y: -5
+		},
+		style: {
+			cursor: 'pointer',
+			color: '#909090',
+			fontSize: '10px'
+		}
+	}
+};
+
+// Axis defaults
+var defaultXAxisOptions =  {
+	// allowDecimals: null,
+	// alternateGridColor: null,
+	// categories: [],
+	dateTimeLabelFormats: {
+		second: '%H:%M:%S',
+		minute: '%H:%M',
+		hour: '%H:%M',
+		day: '%e. %b',
+		week: '%e. %b',
+		month: '%b \'%y',
+		year: '%Y'
+	},
+	endOnTick: false,
+	gridLineColor: '#C0C0C0',
+	// gridLineDashStyle: 'solid', // docs
+	// gridLineWidth: 0,
+	// reversed: false,
+
+	labels: defaultLabelOptions,
+		// { step: null },
+	lineColor: '#C0D0E0',
+	lineWidth: 1,
+	//linkedTo: null,
+	max: null,
+	min: null,
+	minPadding: 0.01,
+	maxPadding: 0.01,
+	//maxZoom: null,
+	minorGridLineColor: '#E0E0E0',
+	// minorGridLineDashStyle: null,
+	minorGridLineWidth: 1,
+	minorTickColor: '#A0A0A0',
+	//minorTickInterval: null,
+	minorTickLength: 2,
+	minorTickPosition: 'outside', // inside or outside
+	//minorTickWidth: 0,
+	//opposite: false,
+	//offset: 0,
+	//plotBands: [{
+	//	events: {},
+	//	zIndex: 1,
+	//	labels: { align, x, verticalAlign, y, style, rotation, textAlign }
+	//}],
+	//plotLines: [{
+	//	events: {}
+	//  dashStyle: {}
+	//	zIndex:
+	//	labels: { align, x, verticalAlign, y, style, rotation, textAlign }
+	//}],
+	//reversed: false,
+	// showFirstLabel: true,
+	// showLastLabel: false,
+	startOfWeek: 1,
+	startOnTick: false,
+	tickColor: '#C0D0E0',
+	//tickInterval: null,
+	tickLength: 5,
+	tickmarkPlacement: 'between', // on or between
+	tickPixelInterval: 100,
+	tickPosition: 'outside',
+	tickWidth: 1,
+	title: {
+		//text: null,
+		align: 'middle', // low, middle or high
+		//margin: 0 for horizontal, 10 for vertical axes,
+		//rotation: 0,
+		//side: 'outside',
+		style: {
+			color: '#6D869F',
+			//font: defaultFont.replace('normal', 'bold')
+			fontWeight: 'bold'
+		}
+		//x: 0,
+		//y: 0
+	},
+	type: 'linear' // linear, logarithmic or datetime
+},
+
+defaultYAxisOptions = merge(defaultXAxisOptions, {
+	endOnTick: true,
+	gridLineWidth: 1,
+	tickPixelInterval: 72,
+	showLastLabel: true,
+	labels: {
+		align: 'right',
+		x: -8,
+		y: 3
+	},
+	lineWidth: 0,
+	maxPadding: 0.05,
+	minPadding: 0.05,
+	startOnTick: true,
+	tickWidth: 0,
+	title: {
+		rotation: 270,
+		text: 'Y-values'
+	},
+	stackLabels: {
+		enabled: false,
+		//align: dynamic,
+		//y: dynamic,
+		//x: dynamic,
+		//verticalAlign: dynamic,
+		//textAlign: dynamic,
+		//rotation: 0,
+		formatter: function () {
+			return this.total;
+		},
+		style: defaultLabelOptions.style
+	}
+}),
+
+defaultLeftAxisOptions = {
+	labels: {
+		align: 'right',
+		x: -8,
+		y: null
+	},
+	title: {
+		rotation: 270
+	}
+},
+defaultRightAxisOptions = {
+	labels: {
+		align: 'left',
+		x: 8,
+		y: null
+	},
+	title: {
+		rotation: 90
+	}
+},
+defaultBottomAxisOptions = { // horizontal axis
+	labels: {
+		align: 'center',
+		x: 0,
+		y: 14
+		// staggerLines: null
+	},
+	title: {
+		rotation: 0
+	}
+},
+defaultTopAxisOptions = merge(defaultBottomAxisOptions, {
+	labels: {
+		y: -5
+		// staggerLines: null
+	}
+});
+
+
+
+
+// Series defaults
+var defaultPlotOptions = defaultOptions.plotOptions,
+	defaultSeriesOptions = defaultPlotOptions.line;
+//defaultPlotOptions.line = merge(defaultSeriesOptions);
+defaultPlotOptions.spline = merge(defaultSeriesOptions);
+defaultPlotOptions.scatter = merge(defaultSeriesOptions, {
+	lineWidth: 0,
+	states: {
+		hover: {
+			lineWidth: 0
+		}
+	}
+});
+defaultPlotOptions.area = merge(defaultSeriesOptions, {
+	// threshold: 0,
+	// lineColor: null, // overrides color, but lets fillColor be unaltered
+	// fillOpacity: 0.75,
+	// fillColor: null
+
+});
+defaultPlotOptions.areaspline = merge(defaultPlotOptions.area);
+defaultPlotOptions.column = merge(defaultSeriesOptions, {
+	borderColor: '#FFFFFF',
+	borderWidth: 1,
+	borderRadius: 0,
+	//colorByPoint: undefined,
+	groupPadding: 0.2,
+	marker: null, // point options are specified in the base options
+	pointPadding: 0.1,
+	//pointWidth: null,
+	minPointLength: 0,
+	states: {
+		hover: {
+			brightness: 0.1,
+			shadow: false
+		},
+		select: {
+			color: '#C0C0C0',
+			borderColor: '#000000',
+			shadow: false
+		}
+	},
+	dataLabels: {
+		y: null,
+		verticalAlign: null
+	}
+});
+defaultPlotOptions.bar = merge(defaultPlotOptions.column, {
+	dataLabels: {
+		align: 'left',
+		x: 5,
+		y: 0
+	}
+});
+defaultPlotOptions.pie = merge(defaultSeriesOptions, {
+	//dragType: '', // n/a
+	borderColor: '#FFFFFF',
+	borderWidth: 1,
+	center: ['50%', '50%'],
+	colorByPoint: true, // always true for pies
+	dataLabels: {
+		// align: null,
+		// connectorWidth: 1,
+		// connectorColor: point.color,
+		// connectorPadding: 5,
+		distance: 30,
+		enabled: true,
+		formatter: function () {
+			return this.point.name;
+		},
+		// softConnector: true,
+		y: 5
+	},
+	//innerSize: 0,
+	legendType: 'point',
+	marker: null, // point options are specified in the base options
+	size: '75%',
+	showInLegend: false,
+	slicedOffset: 10,
+	states: {
+		hover: {
+			brightness: 0.1,
+			shadow: false
+		}
+	}
+
+});
+
+// set the default time methods
+setTimeMethods();
+
+
+/**
+ * Handle color operations. The object methods are chainable.
+ * @param {String} input The input color in either rbga or hex format
+ */
+var Color = function (input) {
+	// declare variables
+	var rgba = [], result;
+
+	/**
+	 * Parse the input color to rgba array
+	 * @param {String} input
+	 */
+	function init(input) {
+
+		// rgba
+		result = /rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]?(?:\.[0-9]+)?)\s*\)/.exec(input);
+		if (result) {
+			rgba = [pInt(result[1]), pInt(result[2]), pInt(result[3]), parseFloat(result[4], 10)];
+		} else { // hex
+			result = /#([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})/.exec(input);
+			if (result) {
+				rgba = [pInt(result[1], 16), pInt(result[2], 16), pInt(result[3], 16), 1];
+			}
+		}
+
+	}
+	/**
+	 * Return the color a specified format
+	 * @param {String} format
+	 */
+	function get(format) {
+		var ret;
+
+		// it's NaN if gradient colors on a column chart
+		if (rgba && !isNaN(rgba[0])) {
+			if (format === 'rgb') {
+				ret = 'rgb(' + rgba[0] + ',' + rgba[1] + ',' + rgba[2] + ')';
+			} else if (format === 'a') {
+				ret = rgba[3];
+			} else {
+				ret = 'rgba(' + rgba.join(',') + ')';
+			}
+		} else {
+			ret = input;
+		}
+		return ret;
+	}
+
+	/**
+	 * Brighten the color
+	 * @param {Number} alpha
+	 */
+	function brighten(alpha) {
+		if (isNumber(alpha) && alpha !== 0) {
+			var i;
+			for (i = 0; i < 3; i++) {
+				rgba[i] += pInt(alpha * 255);
+
+				if (rgba[i] < 0) {
+					rgba[i] = 0;
+				}
+				if (rgba[i] > 255) {
+					rgba[i] = 255;
+				}
+			}
+		}
+		return this;
+	}
+	/**
+	 * Set the color's opacity to a given alpha value
+	 * @param {Number} alpha
+	 */
+	function setOpacity(alpha) {
+		rgba[3] = alpha;
+		return this;
+	}
+
+	// initialize: parse the input
+	init(input);
+
+	// public methods
+	return {
+		get: get,
+		brighten: brighten,
+		setOpacity: setOpacity
+	};
+};
+
+/**
+ * A wrapper object for SVG elements
+ */
+function SVGElement() {}
+
+SVGElement.prototype = {
+	/**
+	 * Initialize the SVG renderer
+	 * @param {Object} renderer
+	 * @param {String} nodeName
+	 */
+	init: function (renderer, nodeName) {
+		this.element = doc.createElementNS(SVG_NS, nodeName);
+		this.renderer = renderer;
+	},
+	/**
+	 * Animate a given attribute
+	 * @param {Object} params
+	 * @param {Number} options The same options as in jQuery animation
+	 * @param {Function} complete Function to perform at the end of animation
+	 */
+	animate: function (params, options, complete) {
+		var animOptions = pick(options, globalAnimation, true);
+		if (animOptions) {
+			animOptions = merge(animOptions);
+			if (complete) { // allows using a callback with the global animation without overwriting it
+				animOptions.complete = complete;
+			}
+			animate(this, params, animOptions);
+		} else {
+			this.attr(params);
+			if (complete) {
+				complete();
+			}
+		}
+	},
+	/**
+	 * Set or get a given attribute
+	 * @param {Object|String} hash
+	 * @param {Mixed|Undefined} val
+	 */
+	attr: function (hash, val) {
+		var key,
+			value,
+			i,
+			child,
+			element = this.element,
+			nodeName = element.nodeName,
+			renderer = this.renderer,
+			skipAttr,
+			shadows = this.shadows,
+			htmlNode = this.htmlNode,
+			hasSetSymbolSize,
+			ret = this;
+
+		// single key-value pair
+		if (isString(hash) && defined(val)) {
+			key = hash;
+			hash = {};
+			hash[key] = val;
+		}
+
+		// used as a getter: first argument is a string, second is undefined
+		if (isString(hash)) {
+			key = hash;
+			if (nodeName === 'circle') {
+				key = { x: 'cx', y: 'cy' }[key] || key;
+			} else if (key === 'strokeWidth') {
+				key = 'stroke-width';
+			}
+			ret = attr(element, key) || this[key] || 0;
+
+			if (key !== 'd' && key !== 'visibility') { // 'd' is string in animation step
+				ret = parseFloat(ret);
+			}
+
+		// setter
+		} else {
+
+			for (key in hash) {
+				skipAttr = false; // reset
+				value = hash[key];
+
+				// paths
+				if (key === 'd') {
+					if (value && value.join) { // join path
+						value = value.join(' ');
+					}
+					if (/(NaN| {2}|^$)/.test(value)) {
+						value = 'M 0 0';
+					}
+					this.d = value; // shortcut for animations
+
+				// update child tspans x values
+				} else if (key === 'x' && nodeName === 'text') {
+					for (i = 0; i < element.childNodes.length; i++) {
+						child = element.childNodes[i];
+						// if the x values are equal, the tspan represents a linebreak
+						if (attr(child, 'x') === attr(element, 'x')) {
+							//child.setAttribute('x', value);
+							attr(child, 'x', value);
+						}
+					}
+
+					if (this.rotation) {
+						attr(element, 'transform', 'rotate(' + this.rotation + ' ' + value + ' ' +
+							pInt(hash.y || attr(element, 'y')) + ')');
+					}
+
+				// apply gradients
+				} else if (key === 'fill') {
+					value = renderer.color(value, element, key);
+
+				// circle x and y
+				} else if (nodeName === 'circle' && (key === 'x' || key === 'y')) {
+					key = { x: 'cx', y: 'cy' }[key] || key;
+
+				// translation and text rotation
+				} else if (key === 'translateX' || key === 'translateY' || key === 'rotation' || key === 'verticalAlign') {
+					this[key] = value;
+					this.updateTransform();
+					skipAttr = true;
+
+				// apply opacity as subnode (required by legacy WebKit and Batik)
+				} else if (key === 'stroke') {
+					value = renderer.color(value, element, key);
+
+				// emulate VML's dashstyle implementation
+				} else if (key === 'dashstyle') {
+					key = 'stroke-dasharray';
+					value = value && value.toLowerCase();
+					if (value === 'solid') {
+						value = NONE;
+					} else if (value) {
+						value = value
+							.replace('shortdashdotdot', '3,1,1,1,1,1,')
+							.replace('shortdashdot', '3,1,1,1')
+							.replace('shortdot', '1,1,')
+							.replace('shortdash', '3,1,')
+							.replace('longdash', '8,3,')
+							.replace(/dot/g, '1,3,')
+							.replace('dash', '4,3,')
+							.replace(/,$/, '')
+							.split(','); // ending comma
+
+						i = value.length;
+						while (i--) {
+							value[i] = pInt(value[i]) * hash['stroke-width'];
+						}
+
+						value = value.join(',');
+					}
+
+				// special
+				} else if (key === 'isTracker') {
+					this[key] = value;
+
+				// IE9/MooTools combo: MooTools returns objects instead of numbers and IE9 Beta 2
+				// is unable to cast them. Test again with final IE9.
+				} else if (key === 'width') {
+					value = pInt(value);
+
+				// Text alignment
+				} else if (key === 'align') {
+					key = 'text-anchor';
+					value = { left: 'start', center: 'middle', right: 'end' }[value];
+
+
+				// Title requires a subnode, #431
+				} else if (key === 'title') {
+					var title = doc.createElementNS(SVG_NS, 'title');
+					title.appendChild(doc.createTextNode(value));
+					element.appendChild(title);
+				}
+
+
+
+				// jQuery animate changes case
+				if (key === 'strokeWidth') {
+					key = 'stroke-width';
+				}
+
+				// Chrome/Win < 6 bug (http://code.google.com/p/chromium/issues/detail?id=15461)
+				if (isWebKit && key === 'stroke-width' && value === 0) {
+					value = 0.000001;
+				}
+
+				// symbols
+				if (this.symbolName && /^(x|y|r|start|end|innerR)/.test(key)) {
+
+
+					if (!hasSetSymbolSize) {
+						this.symbolAttr(hash);
+						hasSetSymbolSize = true;
+					}
+					skipAttr = true;
+				}
+
+				// let the shadow follow the main element
+				if (shadows && /^(width|height|visibility|x|y|d)$/.test(key)) {
+					i = shadows.length;
+					while (i--) {
+						attr(shadows[i], key, value);
+					}
+				}
+
+				// validate heights
+				if ((key === 'width' || key === 'height') && nodeName === 'rect' && value < 0) {
+					value = 0;
+				}
+
+				if (key === 'text') {
+					// only one node allowed
+					this.textStr = value;
+					if (this.added) {
+						renderer.buildText(this);
+					}
+				} else if (!skipAttr) {
+					//element.setAttribute(key, value);
+					attr(element, key, value);
+				}
+
+				// Issue #38
+				if (htmlNode && (key === 'x' || key === 'y' ||
+						key === 'translateX' || key === 'translateY' || key === 'visibility')) {
+					var wrapper = this,
+						bBox,
+						arr = htmlNode.length ? htmlNode : [this],
+						length = arr.length,
+						itemWrapper,
+						j;
+
+					for (j = 0; j < length; j++) {
+						itemWrapper = arr[j];
+						bBox = itemWrapper.getBBox();
+						htmlNode = itemWrapper.htmlNode; // reassign to child item
+						css(htmlNode, extend(wrapper.styles, {
+							left: (bBox.x + (wrapper.translateX || 0)) + PX,
+							top: (bBox.y + (wrapper.translateY || 0)) + PX
+						}));
+
+						if (key === 'visibility') {
+							css(htmlNode, {
+								visibility: value
+							});
+						}
+					}
+				}
+
+			}
+
+		}
+		return ret;
+	},
+
+	/**
+	 * If one of the symbol size affecting parameters are changed,
+	 * check all the others only once for each call to an element's
+	 * .attr() method
+	 * @param {Object} hash
+	 */
+	symbolAttr: function (hash) {
+		var wrapper = this;
+
+		each(['x', 'y', 'r', 'start', 'end', 'width', 'height', 'innerR'], function (key) {
+			wrapper[key] = pick(hash[key], wrapper[key]);
+		});
+
+		wrapper.attr({
+			d: wrapper.renderer.symbols[wrapper.symbolName](
+					mathRound(wrapper.x * 2) / 2, // Round to halves. Issue #274.
+					mathRound(wrapper.y * 2) / 2,
+					wrapper.r,
+					{
+						start: wrapper.start,
+						end: wrapper.end,
+						width: wrapper.width,
+						height: wrapper.height,
+						innerR: wrapper.innerR
+					}
+			)
+		});
+	},
+
+	/**
+	 * Apply a clipping path to this object
+	 * @param {String} id
+	 */
+	clip: function (clipRect) {
+		return this.attr('clip-path', 'url(' + this.renderer.url + '#' + clipRect.id + ')');
+	},
+
+	/**
+	 * Calculate the coordinates needed for drawing a rectangle crisply and return the
+	 * calculated attributes
+	 * @param {Number} strokeWidth
+	 * @param {Number} x
+	 * @param {Number} y
+	 * @param {Number} width
+	 * @param {Number} height
+	 */
+	crisp: function (strokeWidth, x, y, width, height) {
+
+		var wrapper = this,
+			key,
+			attr = {},
+			values = {},
+			normalizer;
+
+		strokeWidth = strokeWidth || wrapper.strokeWidth || 0;
+		normalizer = strokeWidth % 2 / 2;
+
+		// normalize for crisp edges
+		values.x = mathFloor(x || wrapper.x || 0) + normalizer;
+		values.y = mathFloor(y || wrapper.y || 0) + normalizer;
+		values.width = mathFloor((width || wrapper.width || 0) - 2 * normalizer);
+		values.height = mathFloor((height || wrapper.height || 0) - 2 * normalizer);
+		values.strokeWidth = strokeWidth;
+
+		for (key in values) {
+			if (wrapper[key] !== values[key]) { // only set attribute if changed
+				wrapper[key] = attr[key] = values[key];
+			}
+		}
+
+		return attr;
+	},
+
+	/**
+	 * Set styles for the element
+	 * @param {Object} styles
+	 */
+	css: function (styles) {
+		/*jslint unparam: true*//* allow unused param a in the regexp function below */
+		var elemWrapper = this,
+			elem = elemWrapper.element,
+			textWidth = styles && styles.width && elem.nodeName === 'text',
+			n,
+			serializedCss = '',
+			hyphenate = function (a, b) { return '-' + b.toLowerCase(); };
+		/*jslint unparam: false*/
+
+		// convert legacy
+		if (styles && styles.color) {
+			styles.fill = styles.color;
+		}
+
+		// Merge the new styles with the old ones
+		styles = extend(
+			elemWrapper.styles,
+			styles
+		);
+
+
+		// store object
+		elemWrapper.styles = styles;
+
+
+		// serialize and set style attribute
+		if (isIE && !hasSVG) { // legacy IE doesn't support setting style attribute
+			if (textWidth) {
+				delete styles.width;
+			}
+			css(elemWrapper.element, styles);
+		} else {
+			for (n in styles) {
+				serializedCss += n.replace(/([A-Z])/g, hyphenate) + ':' + styles[n] + ';';
+			}
+			elemWrapper.attr({
+				style: serializedCss
+			});
+		}
+
+
+		// re-build text
+		if (textWidth && elemWrapper.added) {
+			elemWrapper.renderer.buildText(elemWrapper);
+		}
+
+		return elemWrapper;
+	},
+
+	/**
+	 * Add an event listener
+	 * @param {String} eventType
+	 * @param {Function} handler
+	 */
+	on: function (eventType, handler) {
+		var fn = handler;
+		// touch
+		if (hasTouch && eventType === 'click') {
+			eventType = 'touchstart';
+			fn = function (e) {
+				e.preventDefault();
+				handler();
+			};
+		}
+		// simplest possible event model for internal use
+		this.element['on' + eventType] = fn;
+		return this;
+	},
+
+
+	/**
+	 * Move an object and its children by x and y values
+	 * @param {Number} x
+	 * @param {Number} y
+	 */
+	translate: function (x, y) {
+		return this.attr({
+			translateX: x,
+			translateY: y
+		});
+	},
+
+	/**
+	 * Invert a group, rotate and flip
+	 */
+	invert: function () {
+		var wrapper = this;
+		wrapper.inverted = true;
+		wrapper.updateTransform();
+		return wrapper;
+	},
+
+	/**
+	 * Private method to update the transform attribute based on internal
+	 * properties
+	 */
+	updateTransform: function () {
+		var wrapper = this,
+			translateX = wrapper.translateX || 0,
+			translateY = wrapper.translateY || 0,
+			inverted = wrapper.inverted,
+			rotation = wrapper.rotation,
+			transform = [];
+
+		// flipping affects translate as adjustment for flipping around the group's axis
+		if (inverted) {
+			translateX += wrapper.attr('width');
+			translateY += wrapper.attr('height');
+		}
+
+		// apply translate
+		if (translateX || translateY) {
+			transform.push('translate(' + translateX + ',' + translateY + ')');
+		}
+
+		// apply rotation
+		if (inverted) {
+			transform.push('rotate(90) scale(-1,1)');
+		} else if (rotation) { // text rotation
+			transform.push('rotate(' + rotation + ' ' + wrapper.x + ' ' + wrapper.y + ')');
+		}
+
+		if (transform.length) {
+			attr(wrapper.element, 'transform', transform.join(' '));
+		}
+	},
+	/**
+	 * Bring the element to the front
+	 */
+	toFront: function () {
+		var element = this.element;
+		element.parentNode.appendChild(element);
+		return this;
+	},
+
+
+	/**
+	 * Break down alignment options like align, verticalAlign, x and y
+	 * to x and y relative to the chart.
+	 *
+	 * @param {Object} alignOptions
+	 * @param {Boolean} alignByTranslate
+	 * @param {Object} box The box to align to, needs a width and height
+	 *
+	 */
+	align: function (alignOptions, alignByTranslate, box) {
+		var elemWrapper = this;
+
+		if (!alignOptions) { // called on resize
+			alignOptions = elemWrapper.alignOptions;
+			alignByTranslate = elemWrapper.alignByTranslate;
+		} else { // first call on instanciate
+			elemWrapper.alignOptions = alignOptions;
+			elemWrapper.alignByTranslate = alignByTranslate;
+			if (!box) { // boxes other than renderer handle this internally
+				elemWrapper.renderer.alignedObjects.push(elemWrapper);
+			}
+		}
+
+		box = pick(box, elemWrapper.renderer);
+
+		var align = alignOptions.align,
+			vAlign = alignOptions.verticalAlign,
+			x = (box.x || 0) + (alignOptions.x || 0), // default: left align
+			y = (box.y || 0) + (alignOptions.y || 0), // default: top align
+			attribs = {};
+
+
+		// align
+		if (/^(right|center)$/.test(align)) {
+			x += (box.width - (alignOptions.width || 0)) /
+					{ right: 1, center: 2 }[align];
+		}
+		attribs[alignByTranslate ? 'translateX' : 'x'] = mathRound(x);
+
+
+		// vertical align
+		if (/^(bottom|middle)$/.test(vAlign)) {
+			y += (box.height - (alignOptions.height || 0)) /
+					({ bottom: 1, middle: 2 }[vAlign] || 1);
+
+		}
+		attribs[alignByTranslate ? 'translateY' : 'y'] = mathRound(y);
+
+		// animate only if already placed
+		elemWrapper[elemWrapper.placed ? 'animate' : 'attr'](attribs);
+		elemWrapper.placed = true;
+		elemWrapper.alignAttr = attribs;
+
+		return elemWrapper;
+	},
+
+	/**
+	 * Get the bounding box (width, height, x and y) for the element
+	 */
+	getBBox: function () {
+		var bBox,
+			width,
+			height,
+			rotation = this.rotation,
+			rad = rotation * deg2rad;
+
+		try { // fails in Firefox if the container has display: none
+			// use extend because IE9 is not allowed to change width and height in case
+			// of rotation (below)
+			bBox = extend({}, this.element.getBBox());
+		} catch (e) {
+			bBox = { width: 0, height: 0 };
+		}
+		width = bBox.width;
+		height = bBox.height;
+
+		// adjust for rotated text
+		if (rotation) {
+			bBox.width = mathAbs(height * mathSin(rad)) + mathAbs(width * mathCos(rad));
+			bBox.height = mathAbs(height * mathCos(rad)) + mathAbs(width * mathSin(rad));
+		}
+
+		return bBox;
+	},
+
+	/* *
+	 * Manually compute width and height of rotated text from non-rotated. Shared by SVG and VML
+	 * @param {Object} bBox
+	 * @param {number} rotation
+	 * /
+	rotateBBox: function(bBox, rotation) {
+		var rad = rotation * math.PI * 2 / 360, // radians
+			width = bBox.width,
+			height = bBox.height;
+
+
+	},*/
+
+	/**
+	 * Show the element
+	 */
+	show: function () {
+		return this.attr({ visibility: VISIBLE });
+	},
+
+	/**
+	 * Hide the element
+	 */
+	hide: function () {
+		return this.attr({ visibility: HIDDEN });
+	},
+
+	/**
+	 * Add the element
+	 * @param {Object|Undefined} parent Can be an element, an element wrapper or undefined
+	 *    to append the element to the renderer.box.
+	 */
+	add: function (parent) {
+
+		var renderer = this.renderer,
+			parentWrapper = parent || renderer,
+			parentNode = parentWrapper.element || renderer.box,
+			childNodes = parentNode.childNodes,
+			element = this.element,
+			zIndex = attr(element, 'zIndex'),
+			otherElement,
+			otherZIndex,
+			i;
+
+		// mark as inverted
+		this.parentInverted = parent && parent.inverted;
+
+		// build formatted text
+		if (this.textStr !== undefined) {
+			renderer.buildText(this);
+		}
+
+		// register html spans in groups
+		if (parent && this.htmlNode) {
+			if (!parent.htmlNode) {
+				parent.htmlNode = [];
+			}
+			parent.htmlNode.push(this);
+		}
+
+		// mark the container as having z indexed children
+		if (zIndex) {
+			parentWrapper.handleZ = true;
+			zIndex = pInt(zIndex);
+		}
+
+		// insert according to this and other elements' zIndex
+		if (parentWrapper.handleZ) { // this element or any of its siblings has a z index
+			for (i = 0; i < childNodes.length; i++) {
+				otherElement = childNodes[i];
+				otherZIndex = attr(otherElement, 'zIndex');
+				if (otherElement !== element && (
+						// insert before the first element with a higher zIndex
+						pInt(otherZIndex) > zIndex ||
+						// if no zIndex given, insert before the first element with a zIndex
+						(!defined(zIndex) && defined(otherZIndex))
+
+						)) {
+					parentNode.insertBefore(element, otherElement);
+					return this;
+				}
+			}
+		}
+
+		// default: append at the end
+		parentNode.appendChild(element);
+
+		this.added = true;
+
+		return this;
+	},
+
+	/**
+	 * Removes a child either by removeChild or move to garbageBin.
+	 * Issue 490; in VML removeChild results in Orphaned nodes according to sIEve, discardElement does not.
+	 */
+	safeRemoveChild: function (element) {
+		var parentNode = element.parentNode;
+		if (parentNode) {
+			parentNode.removeChild(element);
+		}
+	},
+
+	/**
+	 * Destroy the element and element wrapper
+	 */
+	destroy: function () {
+		var wrapper = this,
+			element = wrapper.element || {},
+			shadows = wrapper.shadows,
+			key,
+			i;
+
+		// remove events
+		element.onclick = element.onmouseout = element.onmouseover = element.onmousemove = null;
+		stop(wrapper); // stop running animations
+
+		if (wrapper.clipPath) {
+			wrapper.clipPath = wrapper.clipPath.destroy();
+		}
+
+		// Destroy stops in case this is a gradient object
+		if (wrapper.stops) {
+			for (i = 0; i < wrapper.stops.length; i++) {
+				wrapper.stops[i] = wrapper.stops[i].destroy();
+			}
+			wrapper.stops = null;
+		}
+
+		// remove element
+		wrapper.safeRemoveChild(element);
+
+		// destroy shadows
+		if (shadows) {
+			each(shadows, function (shadow) {
+				wrapper.safeRemoveChild(shadow);
+			});
+		}
+
+		// remove from alignObjects
+		erase(wrapper.renderer.alignedObjects, wrapper);
+
+		for (key in wrapper) {
+			delete wrapper[key];
+		}
+
+		return null;
+	},
+
+	/**
+	 * Empty a group element
+	 */
+	empty: function () {
+		var element = this.element,
+			childNodes = element.childNodes,
+			i = childNodes.length;
+
+		while (i--) {
+			element.removeChild(childNodes[i]);
+		}
+	},
+
+	/**
+	 * Add a shadow to the element. Must be done after the element is added to the DOM
+	 * @param {Boolean} apply
+	 */
+	shadow: function (apply, group) {
+		var shadows = [],
+			i,
+			shadow,
+			element = this.element,
+
+			// compensate for inverted plot area
+			transform = this.parentInverted ? '(-1,-1)' : '(1,1)';
+
+
+		if (apply) {
+			for (i = 1; i <= 3; i++) {
+				shadow = element.cloneNode(0);
+				attr(shadow, {
+					'isShadow': 'true',
+					'stroke': 'rgb(0, 0, 0)',
+					'stroke-opacity': 0.05 * i,
+					'stroke-width': 7 - 2 * i,
+					'transform': 'translate' + transform,
+					'fill': NONE
+				});
+
+				if (group) {
+					group.element.appendChild(shadow);
+				} else {
+					element.parentNode.insertBefore(shadow, element);
+				}
+
+				shadows.push(shadow);
+			}
+
+			this.shadows = shadows;
+		}
+		return this;
+
+	}
+};
+
+/**
+ * The default SVG renderer
+ */
+var SVGRenderer = function () {
+	this.init.apply(this, arguments);
+};
+SVGRenderer.prototype = {
+
+	Element: SVGElement,
+
+	/**
+	 * Initialize the SVGRenderer
+	 * @param {Object} container
+	 * @param {Number} width
+	 * @param {Number} height
+	 * @param {Boolean} forExport
+	 */
+	init: function (container, width, height, forExport) {
+		var renderer = this,
+			loc = location,
+			boxWrapper;
+
+		boxWrapper = renderer.createElement('svg')
+			.attr({
+				xmlns: SVG_NS,
+				version: '1.1'
+			});
+		container.appendChild(boxWrapper.element);
+
+		// object properties
+		renderer.box = boxWrapper.element;
+		renderer.boxWrapper = boxWrapper;
+		renderer.alignedObjects = [];
+		renderer.url = isIE ? '' : loc.href.replace(/#.*?$/, ''); // page url used for internal references
+		renderer.defs = this.createElement('defs').add();
+		renderer.forExport = forExport;
+		renderer.gradients = []; // Array where gradient SvgElements are stored
+
+		renderer.setSize(width, height, false);
+
+	},
+
+	/**
+	 * Destroys the renderer and its allocated members.
+	 */
+	destroy: function () {
+		var renderer = this,
+			i,
+			rendererGradients = renderer.gradients,
+			rendererDefs = renderer.defs;
+		renderer.box = null;
+		renderer.boxWrapper = renderer.boxWrapper.destroy();
+
+		// Call destroy on all gradient elements
+		if (rendererGradients) { // gradients are null in VMLRenderer
+			for (i = 0; i < rendererGradients.length; i++) {
+				renderer.gradients[i] = rendererGradients[i].destroy();
+			}
+			renderer.gradients = null;
+		}
+
+		// Defs are null in VMLRenderer
+		// Otherwise, destroy them here.
+		if (rendererDefs) {
+			renderer.defs = rendererDefs.destroy();
+		}
+
+		renderer.alignedObjects = null;
+
+		return null;
+	},
+
+	/**
+	 * Create a wrapper for an SVG element
+	 * @param {Object} nodeName
+	 */
+	createElement: function (nodeName) {
+		var wrapper = new this.Element();
+		wrapper.init(this, nodeName);
+		return wrapper;
+	},
+
+
+	/**
+	 * Parse a simple HTML string into SVG tspans
+	 *
+	 * @param {Object} textNode The parent text SVG node
+	 */
+	buildText: function (wrapper) {
+		var textNode = wrapper.element,
+			lines = pick(wrapper.textStr, '').toString()
+				.replace(/<(b|strong)>/g, '<span style="font-weight:bold">')
+				.replace(/<(i|em)>/g, '<span style="font-style:italic">')
+				.replace(/<a/g, '<span')
+				.replace(/<\/(b|strong|i|em|a)>/g, '</span>')
+				.split(/<br.*?>/g),
+			childNodes = textNode.childNodes,
+			styleRegex = /style="([^"]+)"/,
+			hrefRegex = /href="([^"]+)"/,
+			parentX = attr(textNode, 'x'),
+			textStyles = wrapper.styles,
+			renderAsHtml = textStyles && wrapper.useHTML && !this.forExport,
+			htmlNode = wrapper.htmlNode,
+			//arr, issue #38 workaround
+			width = textStyles && pInt(textStyles.width),
+			textLineHeight = textStyles && textStyles.lineHeight,
+			lastLine,
+			GET_COMPUTED_STYLE = 'getComputedStyle',
+			i = childNodes.length;
+
+		// remove old text
+		while (i--) {
+			textNode.removeChild(childNodes[i]);
+		}
+
+		if (width && !wrapper.added) {
+			this.box.appendChild(textNode); // attach it to the DOM to read offset width
+		}
+
+		each(lines, function (line, lineNo) {
+			var spans, spanNo = 0, lineHeight;
+
+			line = line.replace(/<span/g, '|||<span').replace(/<\/span>/g, '</span>|||');
+			spans = line.split('|||');
+
+			each(spans, function (span) {
+				if (span !== '' || spans.length === 1) {
+					var attributes = {},
+						tspan = doc.createElementNS(SVG_NS, 'tspan');
+					if (styleRegex.test(span)) {
+						attr(
+							tspan,
+							'style',
+							span.match(styleRegex)[1].replace(/(;| |^)color([ :])/, '$1fill$2')
+						);
+					}
+					if (hrefRegex.test(span)) {
+						attr(tspan, 'onclick', 'location.href=\"' + span.match(hrefRegex)[1] + '\"');
+						css(tspan, { cursor: 'pointer' });
+					}
+
+					span = (span.replace(/<(.|\n)*?>/g, '') || ' ')
+						.replace(/&lt;/g, '<')
+						.replace(/&gt;/g, '>');
+
+					// issue #38 workaround.
+					/*if (reverse) {
+						arr = [];
+						i = span.length;
+						while (i--) {
+							arr.push(span.charAt(i));
+						}
+						span = arr.join('');
+					}*/
+
+					// add the text node
+					tspan.appendChild(doc.createTextNode(span));
+
+					if (!spanNo) { // first span in a line, align it to the left
+						attributes.x = parentX;
+					} else {
+						// Firefox ignores spaces at the front or end of the tspan
+						attributes.dx = 3; // space
+					}
+
+					// first span on subsequent line, add the line height
+					if (!spanNo) {
+						if (lineNo) {
+
+							// allow getting the right offset height in exporting in IE
+							if (!hasSVG && wrapper.renderer.forExport) {
+								css(tspan, { display: 'block' });
+							}
+
+							// Webkit and opera sometimes return 'normal' as the line height. In that
+							// case, webkit uses offsetHeight, while Opera falls back to 18
+							lineHeight = win[GET_COMPUTED_STYLE] &&
+								pInt(win[GET_COMPUTED_STYLE](lastLine, null).getPropertyValue('line-height'));
+
+							if (!lineHeight || isNaN(lineHeight)) {
+								lineHeight = textLineHeight || lastLine.offsetHeight || 18;
+							}
+							attr(tspan, 'dy', lineHeight);
+						}
+						lastLine = tspan; // record for use in next line
+					}
+
+					// add attributes
+					attr(tspan, attributes);
+
+					// append it
+					textNode.appendChild(tspan);
+
+					spanNo++;
+
+					// check width and apply soft breaks
+					if (width) {
+						var words = span.replace(/-/g, '- ').split(' '),
+							tooLong,
+							actualWidth,
+							rest = [];
+
+						while (words.length || rest.length) {
+							actualWidth = textNode.getBBox().width;
+							tooLong = actualWidth > width;
+							if (!tooLong || words.length === 1) { // new line needed
+								words = rest;
+								rest = [];
+								if (words.length) {
+									tspan = doc.createElementNS(SVG_NS, 'tspan');
+									attr(tspan, {
+										dy: textLineHeight || 16,
+										x: parentX
+									});
+									textNode.appendChild(tspan);
+
+									if (actualWidth > width) { // a single word is pressing it out
+										width = actualWidth;
+									}
+								}
+							} else { // append to existing line tspan
+								tspan.removeChild(tspan.firstChild);
+								rest.unshift(words.pop());
+							}
+							if (words.length) {
+								tspan.appendChild(doc.createTextNode(words.join(' ').replace(/- /g, '-')));
+							}
+						}
+					}
+				}
+			});
+		});
+
+		// Fix issue #38 and allow HTML in tooltips and other labels
+		if (renderAsHtml) {
+			if (!htmlNode) {
+				htmlNode = wrapper.htmlNode = createElement('span', null, extend(textStyles, {
+					position: ABSOLUTE,
+					top: 0,
+					left: 0
+				}), this.box.parentNode);
+			}
+			htmlNode.innerHTML = wrapper.textStr;
+
+			i = childNodes.length;
+			while (i--) {
+				childNodes[i].style.visibility = HIDDEN;
+			}
+		}
+	},
+
+	/**
+	 * Make a straight line crisper by not spilling out to neighbour pixels
+	 * @param {Array} points
+	 * @param {Number} width
+	 */
+	crispLine: function (points, width) {
+		// points format: [M, 0, 0, L, 100, 0]
+		// normalize to a crisp line
+		if (points[1] === points[4]) {
+			points[1] = points[4] = mathRound(points[1]) + (width % 2 / 2);
+		}
+		if (points[2] === points[5]) {
+			points[2] = points[5] = mathRound(points[2]) + (width % 2 / 2);
+		}
+		return points;
+	},
+
+
+	/**
+	 * Draw a path
+	 * @param {Array} path An SVG path in array form
+	 */
+	path: function (path) {
+		return this.createElement('path').attr({
+			d: path,
+			fill: NONE
+		});
+	},
+
+	/**
+	 * Draw and return an SVG circle
+	 * @param {Number} x The x position
+	 * @param {Number} y The y position
+	 * @param {Number} r The radius
+	 */
+	circle: function (x, y, r) {
+		var attr = isObject(x) ?
+			x :
+			{
+				x: x,
+				y: y,
+				r: r
+			};
+
+		return this.createElement('circle').attr(attr);
+	},
+
+	/**
+	 * Draw and return an arc
+	 * @param {Number} x X position
+	 * @param {Number} y Y position
+	 * @param {Number} r Radius
+	 * @param {Number} innerR Inner radius like used in donut charts
+	 * @param {Number} start Starting angle
+	 * @param {Number} end Ending angle
+	 */
+	arc: function (x, y, r, innerR, start, end) {
+		// arcs are defined as symbols for the ability to set
+		// attributes in attr and animate
+
+		if (isObject(x)) {
+			y = x.y;
+			r = x.r;
+			innerR = x.innerR;
+			start = x.start;
+			end = x.end;
+			x = x.x;
+		}
+
+		return this.symbol('arc', x || 0, y || 0, r || 0, {
+			innerR: innerR || 0,
+			start: start || 0,
+			end: end || 0
+		});
+	},
+
+	/**
+	 * Draw and return a rectangle
+	 * @param {Number} x Left position
+	 * @param {Number} y Top position
+	 * @param {Number} width
+	 * @param {Number} height
+	 * @param {Number} r Border corner radius
+	 * @param {Number} strokeWidth A stroke width can be supplied to allow crisp drawing
+	 */
+	rect: function (x, y, width, height, r, strokeWidth) {
+		if (isObject(x)) {
+			y = x.y;
+			width = x.width;
+			height = x.height;
+			r = x.r;
+			strokeWidth = x.strokeWidth;
+			x = x.x;
+		}
+		var wrapper = this.createElement('rect').attr({
+			rx: r,
+			ry: r,
+			fill: NONE
+		});
+
+		return wrapper.attr(wrapper.crisp(strokeWidth, x, y, mathMax(width, 0), mathMax(height, 0)));
+	},
+
+	/**
+	 * Resize the box and re-align all aligned elements
+	 * @param {Object} width
+	 * @param {Object} height
+	 * @param {Boolean} animate
+	 *
+	 */
+	setSize: function (width, height, animate) {
+		var renderer = this,
+			alignedObjects = renderer.alignedObjects,
+			i = alignedObjects.length;
+
+		renderer.width = width;
+		renderer.height = height;
+
+		renderer.boxWrapper[pick(animate, true) ? 'animate' : 'attr']({
+			width: width,
+			height: height
+		});
+
+		while (i--) {
+			alignedObjects[i].align();
+		}
+	},
+
+	/**
+	 * Create a group
+	 * @param {String} name The group will be given a class name of 'highcharts-{name}'.
+	 *     This can be used for styling and scripting.
+	 */
+	g: function (name) {
+		var elem = this.createElement('g');
+		return defined(name) ? elem.attr({ 'class': PREFIX + name }) : elem;
+	},
+
+	/**
+	 * Display an image
+	 * @param {String} src
+	 * @param {Number} x
+	 * @param {Number} y
+	 * @param {Number} width
+	 * @param {Number} height
+	 */
+	image: function (src, x, y, width, height) {
+		var attribs = {
+				preserveAspectRatio: NONE
+			},
+			elemWrapper;
+
+		// optional properties
+		if (arguments.length > 1) {
+			extend(attribs, {
+				x: x,
+				y: y,
+				width: width,
+				height: height
+			});
+		}
+
+		elemWrapper = this.createElement('image').attr(attribs);
+
+		// set the href in the xlink namespace
+		if (elemWrapper.element.setAttributeNS) {
+			elemWrapper.element.setAttributeNS('http://www.w3.org/1999/xlink',
+				'href', src);
+		} else {
+			// could be exporting in IE
+			// using href throws "not supported" in ie7 and under, requries regex shim to fix later
+			elemWrapper.element.setAttribute('hc-svg-href', src);
+		}
+
+		return elemWrapper;
+	},
+
+	/**
+	 * Draw a symbol out of pre-defined shape paths from the namespace 'symbol' object.
+	 *
+	 * @param {Object} symbol
+	 * @param {Object} x
+	 * @param {Object} y
+	 * @param {Object} radius
+	 * @param {Object} options
+	 */
+	symbol: function (symbol, x, y, radius, options) {
+
+		var obj,
+
+			// get the symbol definition function
+			symbolFn = this.symbols[symbol],
+
+			// check if there's a path defined for this symbol
+			path = symbolFn && symbolFn(
+				mathRound(x),
+				mathRound(y),
+				radius,
+				options
+			),
+
+			imageRegex = /^url\((.*?)\)$/,
+			imageSrc,
+			imageSize;
+
+		if (path) {
+
+			obj = this.path(path);
+			// expando properties for use in animate and attr
+			extend(obj, {
+				symbolName: symbol,
+				x: x,
+				y: y,
+				r: radius
+			});
+			if (options) {
+				extend(obj, options);
+			}
+
+
+		// image symbols
+		} else if (imageRegex.test(symbol)) {
+
+			var centerImage = function (img, size) {
+				img.attr({
+					width: size[0],
+					height: size[1]
+				}).translate(
+					-mathRound(size[0] / 2),
+					-mathRound(size[1] / 2)
+				);
+			};
+
+			imageSrc = symbol.match(imageRegex)[1];
+			imageSize = symbolSizes[imageSrc];
+
+			// create the image synchronously, add attribs async
+			obj = this.image(imageSrc)
+				.attr({
+					x: x,
+					y: y
+				});
+
+			if (imageSize) {
+				centerImage(obj, imageSize);
+			} else {
+				// initialize image to be 0 size so export will still function if there's no cached sizes
+				obj.attr({ width: 0, height: 0 });
+
+				// create a dummy JavaScript image to get the width and height
+				createElement('img', {
+					onload: function () {
+						var img = this;
+						centerImage(obj, symbolSizes[imageSrc] = [img.width, img.height]);
+					},
+					src: imageSrc
+				});
+			}
+
+		// default circles
+		} else {
+			obj = this.circle(x, y, radius);
+		}
+
+		return obj;
+	},
+
+	/**
+	 * An extendable collection of functions for defining symbol paths.
+	 */
+	symbols: {
+		'square': function (x, y, radius) {
+			var len = 0.707 * radius;
+			return [
+				M, x - len, y - len,
+				L, x + len, y - len,
+				x + len, y + len,
+				x - len, y + len,
+				'Z'
+			];
+		},
+
+		'triangle': function (x, y, radius) {
+			return [
+				M, x, y - 1.33 * radius,
+				L, x + radius, y + 0.67 * radius,
+				x - radius, y + 0.67 * radius,
+				'Z'
+			];
+		},
+
+		'triangle-down': function (x, y, radius) {
+			return [
+				M, x, y + 1.33 * radius,
+				L, x - radius, y - 0.67 * radius,
+				x + radius, y - 0.67 * radius,
+				'Z'
+			];
+		},
+		'diamond': function (x, y, radius) {
+			return [
+				M, x, y - radius,
+				L, x + radius, y,
+				x, y + radius,
+				x - radius, y,
+				'Z'
+			];
+		},
+		'arc': function (x, y, radius, options) {
+			var start = options.start,
+				end = options.end - 0.000001, // to prevent cos and sin of start and end from becoming equal on 360 arcs
+				innerRadius = options.innerR,
+				cosStart = mathCos(start),
+				sinStart = mathSin(start),
+				cosEnd = mathCos(end),
+				sinEnd = mathSin(end),
+				longArc = options.end - start < mathPI ? 0 : 1;
+
+			return [
+				M,
+				x + radius * cosStart,
+				y + radius * sinStart,
+				'A', // arcTo
+				radius, // x radius
+				radius, // y radius
+				0, // slanting
+				longArc, // long or short arc
+				1, // clockwise
+				x + radius * cosEnd,
+				y + radius * sinEnd,
+				L,
+				x + innerRadius * cosEnd,
+				y + innerRadius * sinEnd,
+				'A', // arcTo
+				innerRadius, // x radius
+				innerRadius, // y radius
+				0, // slanting
+				longArc, // long or short arc
+				0, // clockwise
+				x + innerRadius * cosStart,
+				y + innerRadius * sinStart,
+
+				'Z' // close
+			];
+		}
+	},
+
+	/**
+	 * Define a clipping rectangle
+	 * @param {String} id
+	 * @param {Number} x
+	 * @param {Number} y
+	 * @param {Number} width
+	 * @param {Number} height
+	 */
+	clipRect: function (x, y, width, height) {
+		var wrapper,
+			id = PREFIX + idCounter++,
+
+			clipPath = this.createElement('clipPath').attr({
+				id: id
+			}).add(this.defs);
+
+		wrapper = this.rect(x, y, width, height, 0).add(clipPath);
+		wrapper.id = id;
+		wrapper.clipPath = clipPath;
+
+		return wrapper;
+	},
+
+
+	/**
+	 * Take a color and return it if it's a string, make it a gradient if it's a
+	 * gradient configuration object
+	 *
+	 * @param {Object} color The color or config object
+	 */
+	color: function (color, elem, prop) {
+		var colorObject,
+			regexRgba = /^rgba/;
+		if (color && color.linearGradient) {
+			var renderer = this,
+				strLinearGradient = 'linearGradient',
+				linearGradient = color[strLinearGradient],
+				id = PREFIX + idCounter++,
+				gradientObject,
+				stopColor,
+				stopOpacity;
+			gradientObject = renderer.createElement(strLinearGradient).attr({
+				id: id,
+				gradientUnits: 'userSpaceOnUse',
+				x1: linearGradient[0],
+				y1: linearGradient[1],
+				x2: linearGradient[2],
+				y2: linearGradient[3]
+			}).add(renderer.defs);
+
+			// Keep a reference to the gradient object so it is possible to destroy it later
+			renderer.gradients.push(gradientObject);
+
+			// The gradient needs to keep a list of stops to be able to destroy them
+			gradientObject.stops = [];
+			each(color.stops, function (stop) {
+				var stopObject;
+				if (regexRgba.test(stop[1])) {
+					colorObject = Color(stop[1]);
+					stopColor = colorObject.get('rgb');
+					stopOpacity = colorObject.get('a');
+				} else {
+					stopColor = stop[1];
+					stopOpacity = 1;
+				}
+				stopObject = renderer.createElement('stop').attr({
+					offset: stop[0],
+					'stop-color': stopColor,
+					'stop-opacity': stopOpacity
+				}).add(gradientObject);
+
+				// Add the stop element to the gradient
+				gradientObject.stops.push(stopObject);
+			});
+
+			return 'url(' + this.url + '#' + id + ')';
+
+		// Webkit and Batik can't show rgba.
+		} else if (regexRgba.test(color)) {
+			colorObject = Color(color);
+			attr(elem, prop + '-opacity', colorObject.get('a'));
+
+			return colorObject.get('rgb');
+
+
+		} else {
+			// Remove the opacity attribute added above. Does not throw if the attribute is not there.
+			elem.removeAttribute(prop + '-opacity');
+
+			return color;
+		}
+
+	},
+
+
+	/**
+	 * Add text to the SVG object
+	 * @param {String} str
+	 * @param {Number} x Left position
+	 * @param {Number} y Top position
+	 * @param {Boolean} useHTML Use HTML to render the text
+	 */
+	text: function (str, x, y, useHTML) {
+
+		// declare variables
+		var defaultChartStyle = defaultOptions.chart.style,
+			wrapper;
+
+		x = mathRound(pick(x, 0));
+		y = mathRound(pick(y, 0));
+
+		wrapper = this.createElement('text')
+			.attr({
+				x: x,
+				y: y,
+				text: str
+			})
+			.css({
+				fontFamily: defaultChartStyle.fontFamily,
+				fontSize: defaultChartStyle.fontSize
+			});
+
+		wrapper.x = x;
+		wrapper.y = y;
+		wrapper.useHTML = useHTML;
+		return wrapper;
+	}
+}; // end SVGRenderer
+
+// general renderer
+Renderer = SVGRenderer;
+
+
+
+/* ****************************************************************************
+ *                                                                            *
+ * START OF INTERNET EXPLORER <= 8 SPECIFIC CODE                              *
+ *                                                                            *
+ * For applications and websites that don't need IE support, like platform    *
+ * targeted mobile apps and web apps, this code can be removed.               *
+ *                                                                            *
+ *****************************************************************************/
+var VMLRenderer;
+if (!hasSVG) {
+
+/**
+ * The VML element wrapper.
+ */
+var VMLElement = extendClass(SVGElement, {
+
+	/**
+	 * Initialize a new VML element wrapper. It builds the markup as a string
+	 * to minimize DOM traffic.
+	 * @param {Object} renderer
+	 * @param {Object} nodeName
+	 */
+	init: function (renderer, nodeName) {
+		var markup =  ['<', nodeName, ' filled="f" stroked="f"'],
+			style = ['position: ', ABSOLUTE, ';'];
+
+		// divs and shapes need size
+		if (nodeName === 'shape' || nodeName === DIV) {
+			style.push('left:0;top:0;width:10px;height:10px;');
+		}
+		if (docMode8) {
+			style.push('visibility: ', nodeName === DIV ? HIDDEN : VISIBLE);
+		}
+
+		markup.push(' style="', style.join(''), '"/>');
+
+		// create element with default attributes and style
+		if (nodeName) {
+			markup = nodeName === DIV || nodeName === 'span' || nodeName === 'img' ?
+				markup.join('')
+				: renderer.prepVML(markup);
+			this.element = createElement(markup);
+		}
+
+		this.renderer = renderer;
+	},
+
+	/**
+	 * Add the node to the given parent
+	 * @param {Object} parent
+	 */
+	add: function (parent) {
+		var wrapper = this,
+			renderer = wrapper.renderer,
+			element = wrapper.element,
+			box = renderer.box,
+			inverted = parent && parent.inverted,
+
+			// get the parent node
+			parentNode = parent ?
+				parent.element || parent :
+				box;
+
+
+		// if the parent group is inverted, apply inversion on all children
+		if (inverted) { // only on groups
+			renderer.invertChild(element, parentNode);
+		}
+
+		// issue #140 workaround - related to #61 and #74
+		if (docMode8 && parentNode.gVis === HIDDEN) {
+			css(element, { visibility: HIDDEN });
+		}
+
+		// append it
+		parentNode.appendChild(element);
+
+		// align text after adding to be able to read offset
+		wrapper.added = true;
+		if (wrapper.alignOnAdd) {
+			wrapper.updateTransform();
+		}
+
+		return wrapper;
+	},
+
+	/**
+	 * Get or set attributes
+	 */
+	attr: function (hash, val) {
+		var key,
+			value,
+			i,
+			element = this.element || {},
+			elemStyle = element.style,
+			nodeName = element.nodeName,
+			renderer = this.renderer,
+			symbolName = this.symbolName,
+			childNodes,
+			hasSetSymbolSize,
+			shadows = this.shadows,
+			skipAttr,
+			ret = this;
+
+		// single key-value pair
+		if (isString(hash) && defined(val)) {
+			key = hash;
+			hash = {};
+			hash[key] = val;
+		}
+
+		// used as a getter, val is undefined
+		if (isString(hash)) {
+			key = hash;
+			if (key === 'strokeWidth' || key === 'stroke-width') {
+				ret = this.strokeweight;
+			} else {
+				ret = this[key];
+			}
+
+		// setter
+		} else {
+			for (key in hash) {
+				value = hash[key];
+				skipAttr = false;
+
+				// prepare paths
+				// symbols
+				if (symbolName && /^(x|y|r|start|end|width|height|innerR)/.test(key)) {
+					// if one of the symbol size affecting parameters are changed,
+					// check all the others only once for each call to an element's
+					// .attr() method
+					if (!hasSetSymbolSize) {
+						this.symbolAttr(hash);
+
+						hasSetSymbolSize = true;
+					}
+
+					skipAttr = true;
+
+				} else if (key === 'd') {
+					value = value || [];
+					this.d = value.join(' '); // used in getter for animation
+
+					// convert paths
+					i = value.length;
+					var convertedPath = [];
+					while (i--) {
+
+						// Multiply by 10 to allow subpixel precision.
+						// Substracting half a pixel seems to make the coordinates
+						// align with SVG, but this hasn't been tested thoroughly
+						if (isNumber(value[i])) {
+							convertedPath[i] = mathRound(value[i] * 10) - 5;
+						} else if (value[i] === 'Z') { // close the path
+							convertedPath[i] = 'x';
+						} else {
+							convertedPath[i] = value[i];
+						}
+
+					}
+					value = convertedPath.join(' ') || 'x';
+					element.path = value;
+
+					// update shadows
+					if (shadows) {
+						i = shadows.length;
+						while (i--) {
+							shadows[i].path = value;
+						}
+					}
+					skipAttr = true;
+
+				// directly mapped to css
+				} else if (key === 'zIndex' || key === 'visibility') {
+
+					// issue 61 workaround
+					if (docMode8 && key === 'visibility' && nodeName === 'DIV') {
+						element.gVis = value;
+						childNodes = element.childNodes;
+						i = childNodes.length;
+						while (i--) {
+							css(childNodes[i], { visibility: value });
+						}
+						if (value === VISIBLE) { // issue 74
+							value = null;
+						}
+					}
+
+					if (value) {
+						elemStyle[key] = value;
+					}
+
+
+
+					skipAttr = true;
+
+				// width and height
+				} else if (/^(width|height)$/.test(key)) {
+
+					this[key] = value; // used in getter
+
+					// clipping rectangle special
+					if (this.updateClipping) {
+						this[key] = value;
+						this.updateClipping();
+
+					} else {
+						// normal
+						elemStyle[key] = value;
+					}
+
+					skipAttr = true;
+
+				// x and y
+				} else if (/^(x|y)$/.test(key)) {
+
+					this[key] = value; // used in getter
+
+					if (element.tagName === 'SPAN') {
+						this.updateTransform();
+
+					} else {
+						elemStyle[{ x: 'left', y: 'top' }[key]] = value;
+					}
+
+				// class name
+				} else if (key === 'class') {
+					// IE8 Standards mode has problems retrieving the className
+					element.className = value;
+
+				// stroke
+				} else if (key === 'stroke') {
+
+					value = renderer.color(value, element, key);
+
+					key = 'strokecolor';
+
+				// stroke width
+				} else if (key === 'stroke-width' || key === 'strokeWidth') {
+					element.stroked = value ? true : false;
+					key = 'strokeweight';
+					this[key] = value; // used in getter, issue #113
+					if (isNumber(value)) {
+						value += PX;
+					}
+
+				// dashStyle
+				} else if (key === 'dashstyle') {
+					var strokeElem = element.getElementsByTagName('stroke')[0] ||
+						createElement(renderer.prepVML(['<stroke/>']), null, null, element);
+					strokeElem[key] = value || 'solid';
+					this.dashstyle = value; /* because changing stroke-width will change the dash length
+						and cause an epileptic effect */
+					skipAttr = true;
+
+				// fill
+				} else if (key === 'fill') {
+
+					if (nodeName === 'SPAN') { // text color
+						elemStyle.color = value;
+					} else {
+						element.filled = value !== NONE ? true : false;
+
+						value = renderer.color(value, element, key);
+
+						key = 'fillcolor';
+					}
+
+				// translation for animation
+				} else if (key === 'translateX' || key === 'translateY' || key === 'rotation' || key === 'align') {
+					if (key === 'align') {
+						key = 'textAlign';
+					}
+					this[key] = value;
+					this.updateTransform();
+
+					skipAttr = true;
+				} else if (key === 'text') { // text for rotated and non-rotated elements
+					this.bBox = null;
+					element.innerHTML = value;
+					skipAttr = true;
+				}
+
+
+				// let the shadow follow the main element
+				if (shadows && key === 'visibility') {
+					i = shadows.length;
+					while (i--) {
+						shadows[i].style[key] = value;
+					}
+				}
+
+
+
+				if (!skipAttr) {
+					if (docMode8) { // IE8 setAttribute bug
+						element[key] = value;
+					} else {
+						attr(element, key, value);
+					}
+				}
+			}
+		}
+		return ret;
+	},
+
+	/**
+	 * Set the element's clipping to a predefined rectangle
+	 *
+	 * @param {String} id The id of the clip rectangle
+	 */
+	clip: function (clipRect) {
+		var wrapper = this,
+			clipMembers = clipRect.members;
+
+		clipMembers.push(wrapper);
+		wrapper.destroyClip = function () {
+			erase(clipMembers, wrapper);
+		};
+		return wrapper.css(clipRect.getCSS(wrapper.inverted));
+	},
+
+	/**
+	 * Set styles for the element
+	 * @param {Object} styles
+	 */
+	css: function (styles) {
+		var wrapper = this,
+			element = wrapper.element,
+			textWidth = styles && element.tagName === 'SPAN' && styles.width;
+
+		/*if (textWidth) {
+			extend(styles, {
+				display: 'block',
+				whiteSpace: 'normal'
+			});
+		}*/
+		if (textWidth) {
+			delete styles.width;
+			wrapper.textWidth = textWidth;
+			wrapper.updateTransform();
+		}
+
+		wrapper.styles = extend(wrapper.styles, styles);
+		css(wrapper.element, styles);
+
+		return wrapper;
+	},
+
+	/**
+	 * Removes a child either by removeChild or move to garbageBin.
+	 * Issue 490; in VML removeChild results in Orphaned nodes according to sIEve, discardElement does not.
+	 */
+	safeRemoveChild: function (element) {
+		// discardElement will detach the node from its parent before attaching it
+		// to the garbage bin. Therefore it is important that the node is attached and have parent.
+		var parentNode = element.parentNode;
+		if (parentNode) {
+			discardElement(element);
+		}
+	},
+
+	/**
+	 * Extend element.destroy by removing it from the clip members array
+	 */
+	destroy: function () {
+		var wrapper = this;
+
+		if (wrapper.destroyClip) {
+			wrapper.destroyClip();
+		}
+
+		return SVGElement.prototype.destroy.apply(wrapper);
+	},
+
+	/**
+	 * Remove all child nodes of a group, except the v:group element
+	 */
+	empty: function () {
+		var element = this.element,
+			childNodes = element.childNodes,
+			i = childNodes.length,
+			node;
+
+		while (i--) {
+			node = childNodes[i];
+			node.parentNode.removeChild(node);
+		}
+	},
+
+	/**
+	 * VML override for calculating the bounding box based on offsets
+	 *
+	 * @return {Object} A hash containing values for x, y, width and height
+	 */
+
+	getBBox: function () {
+		var wrapper = this,
+			element = wrapper.element,
+			bBox = wrapper.bBox;
+
+		if (!bBox) {
+			// faking getBBox in exported SVG in legacy IE
+			if (element.nodeName === 'text') {
+				element.style.position = ABSOLUTE;
+			}
+
+			bBox = wrapper.bBox = {
+				x: element.offsetLeft,
+				y: element.offsetTop,
+				width: element.offsetWidth,
+				height: element.offsetHeight
+			};
+		}
+		return bBox;
+
+	},
+
+	/**
+	 * Add an event listener. VML override for normalizing event parameters.
+	 * @param {String} eventType
+	 * @param {Function} handler
+	 */
+	on: function (eventType, handler) {
+		// simplest possible event model for internal use
+		this.element['on' + eventType] = function () {
+			var evt = win.event;
+			evt.target = evt.srcElement;
+			handler(evt);
+		};
+		return this;
+	},
+
+
+	/**
+	 * VML override private method to update elements based on internal
+	 * properties based on SVG transform
+	 */
+	updateTransform: function () {
+		// aligning non added elements is expensive
+		if (!this.added) {
+			this.alignOnAdd = true;
+			return;
+		}
+
+		var wrapper = this,
+			elem = wrapper.element,
+			translateX = wrapper.translateX || 0,
+			translateY = wrapper.translateY || 0,
+			x = wrapper.x || 0,
+			y = wrapper.y || 0,
+			align = wrapper.textAlign || 'left',
+			alignCorrection = { left: 0, center: 0.5, right: 1 }[align],
+			nonLeft = align && align !== 'left';
+
+		// apply translate
+		if (translateX || translateY) {
+			wrapper.css({
+				marginLeft: translateX,
+				marginTop: translateY
+			});
+		}
+
+		// apply inversion
+		if (wrapper.inverted) { // wrapper is a group
+			each(elem.childNodes, function (child) {
+				wrapper.renderer.invertChild(child, elem);
+			});
+		}
+
+		if (elem.tagName === 'SPAN') {
+
+			var width, height,
+				rotation = wrapper.rotation,
+				lineHeight,
+				radians = 0,
+				costheta = 1,
+				sintheta = 0,
+				quad,
+				textWidth = pInt(wrapper.textWidth),
+				xCorr = wrapper.xCorr || 0,
+				yCorr = wrapper.yCorr || 0,
+				currentTextTransform = [rotation, align, elem.innerHTML, wrapper.textWidth].join(',');
+
+			if (currentTextTransform !== wrapper.cTT) { // do the calculations and DOM access only if properties changed
+
+				if (defined(rotation)) {
+					radians = rotation * deg2rad; // deg to rad
+					costheta = mathCos(radians);
+					sintheta = mathSin(radians);
+
+					// Adjust for alignment and rotation.
+					// Test case: http://highcharts.com/tests/?file=text-rotation
+					css(elem, {
+						filter: rotation ? ['progid:DXImageTransform.Microsoft.Matrix(M11=', costheta,
+							', M12=', -sintheta, ', M21=', sintheta, ', M22=', costheta,
+							', sizingMethod=\'auto expand\')'].join('') : NONE
+					});
+				}
+
+				width = elem.offsetWidth;
+				height = elem.offsetHeight;
+
+				// update textWidth
+				if (width > textWidth) {
+					css(elem, {
+						width: textWidth + PX,
+						display: 'block',
+						whiteSpace: 'normal'
+					});
+					width = textWidth;
+				}
+
+				// correct x and y
+				lineHeight = mathRound((pInt(elem.style.fontSize) || 12) * 1.2);
+				xCorr = costheta < 0 && -width;
+				yCorr = sintheta < 0 && -height;
+
+				// correct for lineHeight and corners spilling out after rotation
+				quad = costheta * sintheta < 0;
+				xCorr += sintheta * lineHeight * (quad ? 1 - alignCorrection : alignCorrection);
+				yCorr -= costheta * lineHeight * (rotation ? (quad ? alignCorrection : 1 - alignCorrection) : 1);
+
+				// correct for the length/height of the text
+				if (nonLeft) {
+					xCorr -= width * alignCorrection * (costheta < 0 ? -1 : 1);
+					if (rotation) {
+						yCorr -= height * alignCorrection * (sintheta < 0 ? -1 : 1);
+					}
+					css(elem, {
+						textAlign: align
+					});
+				}
+
+				// record correction
+				wrapper.xCorr = xCorr;
+				wrapper.yCorr = yCorr;
+			}
+
+			// apply position with correction
+			css(elem, {
+				left: x + xCorr,
+				top: y + yCorr
+			});
+
+			// record current text transform
+			wrapper.cTT = currentTextTransform;
+		}
+	},
+
+	/**
+	 * Apply a drop shadow by copying elements and giving them different strokes
+	 * @param {Boolean} apply
+	 */
+	shadow: function (apply, group) {
+		var shadows = [],
+			i,
+			element = this.element,
+			renderer = this.renderer,
+			shadow,
+			elemStyle = element.style,
+			markup,
+			path = element.path;
+
+		// some times empty paths are not strings
+		if (path && typeof path.value !== 'string') {
+			path = 'x';
+		}
+
+		if (apply) {
+			for (i = 1; i <= 3; i++) {
+				markup = ['<shape isShadow="true" strokeweight="', (7 - 2 * i),
+					'" filled="false" path="', path,
+					'" coordsize="100,100" style="', element.style.cssText, '" />'];
+				shadow = createElement(renderer.prepVML(markup),
+					null, {
+						left: pInt(elemStyle.left) + 1,
+						top: pInt(elemStyle.top) + 1
+					}
+				);
+
+				// apply the opacity
+				markup = ['<stroke color="black" opacity="', (0.05 * i), '"/>'];
+				createElement(renderer.prepVML(markup), null, null, shadow);
+
+
+				// insert it
+				if (group) {
+					group.element.appendChild(shadow);
+				} else {
+					element.parentNode.insertBefore(shadow, element);
+				}
+
+				// record it
+				shadows.push(shadow);
+
+			}
+
+			this.shadows = shadows;
+		}
+		return this;
+
+	}
+});
+
+/**
+ * The VML renderer
+ */
+VMLRenderer = function () {
+	this.init.apply(this, arguments);
+};
+VMLRenderer.prototype = merge(SVGRenderer.prototype, { // inherit SVGRenderer
+
+	Element: VMLElement,
+	isIE8: userAgent.indexOf('MSIE 8.0') > -1,
+
+
+	/**
+	 * Initialize the VMLRenderer
+	 * @param {Object} container
+	 * @param {Number} width
+	 * @param {Number} height
+	 */
+	init: function (container, width, height) {
+		var renderer = this,
+			boxWrapper;
+
+		renderer.alignedObjects = [];
+
+		boxWrapper = renderer.createElement(DIV);
+		container.appendChild(boxWrapper.element);
+
+
+		// generate the containing box
+		renderer.box = boxWrapper.element;
+		renderer.boxWrapper = boxWrapper;
+
+
+		renderer.setSize(width, height, false);
+
+		// The only way to make IE6 and IE7 print is to use a global namespace. However,
+		// with IE8 the only way to make the dynamic shapes visible in screen and print mode
+		// seems to be to add the xmlns attribute and the behaviour style inline.
+		if (!doc.namespaces.hcv) {
+
+			doc.namespaces.add('hcv', 'urn:schemas-microsoft-com:vml');
+
+			// setup default css
+			doc.createStyleSheet().cssText =
+				'hcv\\:fill, hcv\\:path, hcv\\:shape, hcv\\:stroke' +
+				'{ behavior:url(#default#VML); display: inline-block; } ';
+
+		}
+	},
+
+	/**
+	 * Define a clipping rectangle. In VML it is accomplished by storing the values
+	 * for setting the CSS style to all associated members.
+	 *
+	 * @param {Number} x
+	 * @param {Number} y
+	 * @param {Number} width
+	 * @param {Number} height
+	 */
+	clipRect: function (x, y, width, height) {
+
+		// create a dummy element
+		var clipRect = this.createElement();
+
+		// mimic a rectangle with its style object for automatic updating in attr
+		return extend(clipRect, {
+			members: [],
+			left: x,
+			top: y,
+			width: width,
+			height: height,
+			getCSS: function (inverted) {
+				var rect = this,//clipRect.element.style,
+					top = rect.top,
+					left = rect.left,
+					right = left + rect.width,
+					bottom = top + rect.height,
+					ret = {
+						clip: 'rect(' +
+							mathRound(inverted ? left : top) + 'px,' +
+							mathRound(inverted ? bottom : right) + 'px,' +
+							mathRound(inverted ? right : bottom) + 'px,' +
+							mathRound(inverted ? top : left) + 'px)'
+					};
+
+				// issue 74 workaround
+				if (!inverted && docMode8) {
+					extend(ret, {
+						width: right + PX,
+						height: bottom + PX
+					});
+				}
+				return ret;
+			},
+
+			// used in attr and animation to update the clipping of all members
+			updateClipping: function () {
+				each(clipRect.members, function (member) {
+					member.css(clipRect.getCSS(member.inverted));
+				});
+			}
+		});
+
+	},
+
+
+	/**
+	 * Take a color and return it if it's a string, make it a gradient if it's a
+	 * gradient configuration object, and apply opacity.
+	 *
+	 * @param {Object} color The color or config object
+	 */
+	color: function (color, elem, prop) {
+		var colorObject,
+			regexRgba = /^rgba/,
+			markup;
+
+		if (color && color.linearGradient) {
+
+			var stopColor,
+				stopOpacity,
+				linearGradient = color.linearGradient,
+				angle,
+				color1,
+				opacity1,
+				color2,
+				opacity2;
+
+			each(color.stops, function (stop, i) {
+				if (regexRgba.test(stop[1])) {
+					colorObject = Color(stop[1]);
+					stopColor = colorObject.get('rgb');
+					stopOpacity = colorObject.get('a');
+				} else {
+					stopColor = stop[1];
+					stopOpacity = 1;
+				}
+
+				if (!i) { // first
+					color1 = stopColor;
+					opacity1 = stopOpacity;
+				} else {
+					color2 = stopColor;
+					opacity2 = stopOpacity;
+				}
+			});
+
+
+
+			// calculate the angle based on the linear vector
+			angle = 90  - math.atan(
+				(linearGradient[3] - linearGradient[1]) / // y vector
+				(linearGradient[2] - linearGradient[0]) // x vector
+				) * 180 / mathPI;
+
+			// when colors attribute is used, the meanings of opacity and o:opacity2
+			// are reversed.
+			markup = ['<', prop, ' colors="0% ', color1, ',100% ', color2, '" angle="', angle,
+				'" opacity="', opacity2, '" o:opacity2="', opacity1,
+				'" type="gradient" focus="100%" />'];
+			createElement(this.prepVML(markup), null, null, elem);
+
+
+
+		// if the color is an rgba color, split it and add a fill node
+		// to hold the opacity component
+		} else if (regexRgba.test(color) && elem.tagName !== 'IMG') {
+
+			colorObject = Color(color);
+
+			markup = ['<', prop, ' opacity="', colorObject.get('a'), '"/>'];
+			createElement(this.prepVML(markup), null, null, elem);
+
+			return colorObject.get('rgb');
+
+
+		} else {
+			var strokeNodes = elem.getElementsByTagName(prop);
+			if (strokeNodes.length) {
+				strokeNodes[0].opacity = 1;
+			}
+			return color;
+		}
+
+	},
+
+	/**
+	 * Take a VML string and prepare it for either IE8 or IE6/IE7.
+	 * @param {Array} markup A string array of the VML markup to prepare
+	 */
+	prepVML: function (markup) {
+		var vmlStyle = 'display:inline-block;behavior:url(#default#VML);',
+			isIE8 = this.isIE8;
+
+		markup = markup.join('');
+
+		if (isIE8) { // add xmlns and style inline
+			markup = markup.replace('/>', ' xmlns="urn:schemas-microsoft-com:vml" />');
+			if (markup.indexOf('style="') === -1) {
+				markup = markup.replace('/>', ' style="' + vmlStyle + '" />');
+			} else {
+				markup = markup.replace('style="', 'style="' + vmlStyle);
+			}
+
+		} else { // add namespace
+			markup = markup.replace('<', '<hcv:');
+		}
+
+		return markup;
+	},
+
+	/**
+	 * Create rotated and aligned text
+	 * @param {String} str
+	 * @param {Number} x
+	 * @param {Number} y
+	 */
+	text: function (str, x, y) {
+
+		var defaultChartStyle = defaultOptions.chart.style;
+
+		return this.createElement('span')
+			.attr({
+				text: str,
+				x: mathRound(x),
+				y: mathRound(y)
+			})
+			.css({
+				whiteSpace: 'nowrap',
+				fontFamily: defaultChartStyle.fontFamily,
+				fontSize: defaultChartStyle.fontSize
+			});
+	},
+
+	/**
+	 * Create and return a path element
+	 * @param {Array} path
+	 */
+	path: function (path) {
+		// create the shape
+		return this.createElement('shape').attr({
+			// subpixel precision down to 0.1 (width and height = 10px)
+			coordsize: '100 100',
+			d: path
+		});
+	},
+
+	/**
+	 * Create and return a circle element. In VML circles are implemented as
+	 * shapes, which is faster than v:oval
+	 * @param {Number} x
+	 * @param {Number} y
+	 * @param {Number} r
+	 */
+	circle: function (x, y, r) {
+		return this.symbol('circle').attr({ x: x, y: y, r: r});
+	},
+
+	/**
+	 * Create a group using an outer div and an inner v:group to allow rotating
+	 * and flipping. A simple v:group would have problems with positioning
+	 * child HTML elements and CSS clip.
+	 *
+	 * @param {String} name The name of the group
+	 */
+	g: function (name) {
+		var wrapper,
+			attribs;
+
+		// set the class name
+		if (name) {
+			attribs = { 'className': PREFIX + name, 'class': PREFIX + name };
+		}
+
+		// the div to hold HTML and clipping
+		wrapper = this.createElement(DIV).attr(attribs);
+
+		return wrapper;
+	},
+
+	/**
+	 * VML override to create a regular HTML image
+	 * @param {String} src
+	 * @param {Number} x
+	 * @param {Number} y
+	 * @param {Number} width
+	 * @param {Number} height
+	 */
+	image: function (src, x, y, width, height) {
+		var obj = this.createElement('img')
+			.attr({ src: src });
+
+		if (arguments.length > 1) {
+			obj.css({
+				left: x,
+				top: y,
+				width: width,
+				height: height
+			});
+		}
+		return obj;
+	},
+
+	/**
+	 * VML uses a shape for rect to overcome bugs and rotation problems
+	 */
+	rect: function (x, y, width, height, r, strokeWidth) {
+
+		if (isObject(x)) {
+			y = x.y;
+			width = x.width;
+			height = x.height;
+			r = x.r;
+			strokeWidth = x.strokeWidth;
+			x = x.x;
+		}
+		var wrapper = this.symbol('rect');
+		wrapper.r = r;
+
+		return wrapper.attr(wrapper.crisp(strokeWidth, x, y, mathMax(width, 0), mathMax(height, 0)));
+	},
+
+	/**
+	 * In the VML renderer, each child of an inverted div (group) is inverted
+	 * @param {Object} element
+	 * @param {Object} parentNode
+	 */
+	invertChild: function (element, parentNode) {
+		var parentStyle = parentNode.style;
+
+		css(element, {
+			flip: 'x',
+			left: pInt(parentStyle.width) - 10,
+			top: pInt(parentStyle.height) - 10,
+			rotation: -90
+		});
+	},
+
+	/**
+	 * Symbol definitions that override the parent SVG renderer's symbols
+	 *
+	 */
+	symbols: {
+		// VML specific arc function
+		arc: function (x, y, radius, options) {
+			var start = options.start,
+				end = options.end,
+				cosStart = mathCos(start),
+				sinStart = mathSin(start),
+				cosEnd = mathCos(end),
+				sinEnd = mathSin(end),
+				innerRadius = options.innerR,
+				circleCorrection = 0.07 / radius,
+				innerCorrection = (innerRadius && 0.1 / innerRadius) || 0;
+
+			if (end - start === 0) { // no angle, don't show it.
+				return ['x'];
+
+			//} else if (end - start == 2 * mathPI) { // full circle
+			} else if (2 * mathPI - end + start < circleCorrection) { // full circle
+				// empirical correction found by trying out the limits for different radii
+				cosEnd = -circleCorrection;
+			} else if (end - start < innerCorrection) { // issue #186, another mysterious VML arc problem
+				cosEnd = mathCos(start + innerCorrection);
+			}
+
+			return [
+				'wa', // clockwise arc to
+				x - radius, // left
+				y - radius, // top
+				x + radius, // right
+				y + radius, // bottom
+				x + radius * cosStart, // start x
+				y + radius * sinStart, // start y
+				x + radius * cosEnd, // end x
+				y + radius * sinEnd, // end y
+
+
+				'at', // anti clockwise arc to
+				x - innerRadius, // left
+				y - innerRadius, // top
+				x + innerRadius, // right
+				y + innerRadius, // bottom
+				x + innerRadius * cosEnd, // start x
+				y + innerRadius * sinEnd, // start y
+				x + innerRadius * cosStart, // end x
+				y + innerRadius * sinStart, // end y
+
+				'x', // finish path
+				'e' // close
+			];
+
+		},
+		// Add circle symbol path. This performs significantly faster than v:oval.
+		circle: function (x, y, r) {
+			return [
+				'wa', // clockwisearcto
+				x - r, // left
+				y - r, // top
+				x + r, // right
+				y + r, // bottom
+				x + r, // start x
+				y,     // start y
+				x + r, // end x
+				y,     // end y
+				//'x', // finish path
+				'e' // close
+			];
+		},
+		/**
+		 * Add rectangle symbol path which eases rotation and omits arcsize problems
+		 * compared to the built-in VML roundrect shape
+		 *
+		 * @param {Number} left Left position
+		 * @param {Number} top Top position
+		 * @param {Number} r Border radius
+		 * @param {Object} options Width and height
+		 */
+
+		rect: function (left, top, r, options) {
+			if (!defined(options)) {
+				return [];
+			}
+			var width = options.width,
+				height = options.height,
+				right = left + width,
+				bottom = top + height;
+
+			r = mathMin(r, width, height);
+
+			return [
+				M,
+				left + r, top,
+
+				L,
+				right - r, top,
+				'wa',
+				right - 2 * r, top,
+				right, top + 2 * r,
+				right - r, top,
+				right, top + r,
+
+				L,
+				right, bottom - r,
+				'wa',
+				right - 2 * r, bottom - 2 * r,
+				right, bottom,
+				right, bottom - r,
+				right - r, bottom,
+
+				L,
+				left + r, bottom,
+				'wa',
+				left, bottom - 2 * r,
+				left + 2 * r, bottom,
+				left + r, bottom,
+				left, bottom - r,
+
+				L,
+				left, top + r,
+				'wa',
+				left, top,
+				left + 2 * r, top + 2 * r,
+				left, top + r,
+				left + r, top,
+
+
+				'x',
+				'e'
+			];
+
+		}
+	}
+});
+
+// general renderer
+Renderer = VMLRenderer;
+}
+/* ****************************************************************************
+ *                                                                            *
+ * END OF INTERNET EXPLORER <= 8 SPECIFIC CODE                                *
+ *                                                                            *
+ *****************************************************************************/
+
+
+/**
+ * The chart class
+ * @param {Object} options
+ * @param {Function} callback Function to run when the chart has loaded
+ */
+function Chart(options, callback) {
+
+	defaultXAxisOptions = merge(defaultXAxisOptions, defaultOptions.xAxis);
+	defaultYAxisOptions = merge(defaultYAxisOptions, defaultOptions.yAxis);
+	defaultOptions.xAxis = defaultOptions.yAxis = null;
+
+	// Handle regular options
+	options = merge(defaultOptions, options);
+
+	// Define chart variables
+	var optionsChart = options.chart,
+		optionsMargin = optionsChart.margin,
+		margin = isObject(optionsMargin) ?
+			optionsMargin :
+			[optionsMargin, optionsMargin, optionsMargin, optionsMargin],
+		optionsMarginTop = pick(optionsChart.marginTop, margin[0]),
+		optionsMarginRight = pick(optionsChart.marginRight, margin[1]),
+		optionsMarginBottom = pick(optionsChart.marginBottom, margin[2]),
+		optionsMarginLeft = pick(optionsChart.marginLeft, margin[3]),
+		spacingTop = optionsChart.spacingTop,
+		spacingRight = optionsChart.spacingRight,
+		spacingBottom = optionsChart.spacingBottom,
+		spacingLeft = optionsChart.spacingLeft,
+		spacingBox,
+		chartTitleOptions,
+		chartSubtitleOptions,
+		plotTop,
+		marginRight,
+		marginBottom,
+		plotLeft,
+		axisOffset,
+		renderTo,
+		renderToClone,
+		container,
+		containerId,
+		containerWidth,
+		containerHeight,
+		chartWidth,
+		chartHeight,
+		oldChartWidth,
+		oldChartHeight,
+		chartBackground,
+		plotBackground,
+		plotBGImage,
+		plotBorder,
+		chart = this,
+		chartEvents = optionsChart.events,
+		runChartClick = chartEvents && !!chartEvents.click,
+		eventType,
+		isInsidePlot, // function
+		tooltip,
+		mouseIsDown,
+		loadingDiv,
+		loadingSpan,
+		loadingShown,
+		plotHeight,
+		plotWidth,
+		tracker,
+		trackerGroup,
+		placeTrackerGroup,
+		legend,
+		legendWidth,
+		legendHeight,
+		chartPosition,// = getPosition(container),
+		hasCartesianSeries = optionsChart.showAxes,
+		isResizing = 0,
+		axes = [],
+		maxTicks, // handle the greatest amount of ticks on grouped axes
+		series = [],
+		inverted,
+		renderer,
+		tooltipTick,
+		tooltipInterval,
+		hoverX,
+		drawChartBox, // function
+		getMargins, // function
+		resetMargins, // function
+		setChartSize, // function
+		resize,
+		zoom, // function
+		zoomOut; // function
+
+
+	/**
+	 * Create a new axis object
+	 * @param {Object} options
+	 */
+	function Axis(userOptions) {
+
+		// Define variables
+		var isXAxis = userOptions.isX,
+			opposite = userOptions.opposite, // needed in setOptions
+			horiz = inverted ? !isXAxis : isXAxis,
+			side = horiz ?
+				(opposite ? 0 : 2) : // top : bottom
+				(opposite ? 1 : 3),  // right : left
+			stacks = {},
+
+			options = merge(
+				isXAxis ? defaultXAxisOptions : defaultYAxisOptions,
+				[defaultTopAxisOptions, defaultRightAxisOptions,
+					defaultBottomAxisOptions, defaultLeftAxisOptions][side],
+				userOptions
+			),
+
+			axis = this,
+			axisTitle,
+			type = options.type,
+			isDatetimeAxis = type === 'datetime',
+			isLog = type === 'logarithmic',
+			offset = options.offset || 0,
+			xOrY = isXAxis ? 'x' : 'y',
+			axisLength,
+			transA, // translation factor
+			oldTransA, // used for prerendering
+			transB = horiz ? plotLeft : marginBottom, // translation addend
+			translate, // fn
+			getPlotLinePath, // fn
+			axisGroup,
+			gridGroup,
+			axisLine,
+			dataMin,
+			dataMax,
+			associatedSeries,
+			userMin,
+			userMax,
+			max = null,
+			min = null,
+			oldMin,
+			oldMax,
+			minPadding = options.minPadding,
+			maxPadding = options.maxPadding,
+			isLinked = defined(options.linkedTo),
+			ignoreMinPadding, // can be set to true by a column or bar series
+			ignoreMaxPadding,
+			usePercentage,
+			events = options.events,
+			eventType,
+			plotLinesAndBands = [],
+			tickInterval,
+			minorTickInterval,
+			magnitude,
+			tickPositions, // array containing predefined positions
+			ticks = {},
+			minorTicks = {},
+			alternateBands = {},
+			tickAmount,
+			labelOffset,
+			axisTitleMargin,// = options.title.margin,
+			dateTimeLabelFormat,
+			categories = options.categories,
+			labelFormatter = options.labels.formatter ||  // can be overwritten by dynamic format
+				function () {
+					var value = this.value,
+						ret;
+
+					if (dateTimeLabelFormat) { // datetime axis
+						ret = dateFormat(dateTimeLabelFormat, value);
+
+					} else if (tickInterval % 1000000 === 0) { // use M abbreviation
+						ret = (value / 1000000) + 'M';
+
+					} else if (tickInterval % 1000 === 0) { // use k abbreviation
+						ret = (value / 1000) + 'k';
+
+					} else if (!categories && value >= 1000) { // add thousands separators
+						ret = numberFormat(value, 0);
+
+					} else { // strings (categories) and small numbers
+						ret = value;
+					}
+					return ret;
+				},
+
+			staggerLines = horiz && options.labels.staggerLines,
+			reversed = options.reversed,
+			tickmarkOffset = (categories && options.tickmarkPlacement === 'between') ? 0.5 : 0;
+
+		/**
+		 * The Tick class
+		 */
+		function Tick(pos, minor) {
+			var tick = this;
+			tick.pos = pos;
+			tick.minor = minor;
+			tick.isNew = true;
+
+			if (!minor) {
+				tick.addLabel();
+			}
+		}
+		Tick.prototype = {
+			/**
+			 * Write the tick label
+			 */
+			addLabel: function () {
+				var pos = this.pos,
+					labelOptions = options.labels,
+					str,
+					withLabel = !((pos === min && !pick(options.showFirstLabel, 1)) ||
+						(pos === max && !pick(options.showLastLabel, 0))),
+					width = (categories && horiz && categories.length &&
+						!labelOptions.step && !labelOptions.staggerLines &&
+						!labelOptions.rotation &&
+						plotWidth / categories.length) ||
+						(!horiz && plotWidth / 2),
+					css,
+					value = categories && defined(categories[pos]) ? categories[pos] : pos,
+					label = this.label;
+
+
+				// get the string
+				str = labelFormatter.call({
+						isFirst: pos === tickPositions[0],
+						isLast: pos === tickPositions[tickPositions.length - 1],
+						dateTimeLabelFormat: dateTimeLabelFormat,
+						value: isLog ? lin2log(value) : value
+					});
+
+
+				// prepare CSS
+				css = width && { width: mathMax(1, mathRound(width - 2 * (labelOptions.padding || 10))) + PX };
+				css = extend(css, labelOptions.style);
+
+				// first call
+				if (label === UNDEFINED) {
+					this.label =
+						defined(str) && withLabel && labelOptions.enabled ?
+							renderer.text(
+									str,
+									0,
+									0,
+									labelOptions.useHTML
+								)
+								.attr({
+									align: labelOptions.align,
+									rotation: labelOptions.rotation
+								})
+								// without position absolute, IE export sometimes is wrong
+								.css(css)
+								.add(axisGroup) :
+							null;
+
+				// update
+				} else if (label) {
+					label.attr({ text: str })
+						.css(css);
+				}
+			},
+			/**
+			 * Get the offset height or width of the label
+			 */
+			getLabelSize: function () {
+				var label = this.label;
+				return label ?
+					((this.labelBBox = label.getBBox()))[horiz ? 'height' : 'width'] :
+					0;
+				},
+			/**
+			 * Put everything in place
+			 *
+			 * @param index {Number}
+			 * @param old {Boolean} Use old coordinates to prepare an animation into new position
+			 */
+			render: function (index, old) {
+				var tick = this,
+					major = !tick.minor,
+					label = tick.label,
+					pos = tick.pos,
+					labelOptions = options.labels,
+					gridLine = tick.gridLine,
+					gridLineWidth = major ? options.gridLineWidth : options.minorGridLineWidth,
+					gridLineColor = major ? options.gridLineColor : options.minorGridLineColor,
+					dashStyle = major ?
+						options.gridLineDashStyle :
+						options.minorGridLineDashStyle,
+					gridLinePath,
+					mark = tick.mark,
+					markPath,
+					tickLength = major ? options.tickLength : options.minorTickLength,
+					tickWidth = major ? options.tickWidth : (options.minorTickWidth || 0),
+					tickColor = major ? options.tickColor : options.minorTickColor,
+					tickPosition = major ? options.tickPosition : options.minorTickPosition,
+					step = labelOptions.step,
+					cHeight = (old && oldChartHeight) || chartHeight,
+					attribs,
+					x,
+					y;
+
+				// get x and y position for ticks and labels
+				x = horiz ?
+					translate(pos + tickmarkOffset, null, null, old) + transB :
+					plotLeft + offset + (opposite ? ((old && oldChartWidth) || chartWidth) - marginRight - plotLeft : 0);
+
+				y = horiz ?
+					cHeight - marginBottom + offset - (opposite ? plotHeight : 0) :
+					cHeight - translate(pos + tickmarkOffset, null, null, old) - transB;
+
+				// create the grid line
+				if (gridLineWidth) {
+					gridLinePath = getPlotLinePath(pos + tickmarkOffset, gridLineWidth, old);
+
+					if (gridLine === UNDEFINED) {
+						attribs = {
+							stroke: gridLineColor,
+							'stroke-width': gridLineWidth
+						};
+						if (dashStyle) {
+							attribs.dashstyle = dashStyle;
+						}
+						if (major) {
+							attribs.zIndex = 1;
+						}
+						tick.gridLine = gridLine =
+							gridLineWidth ?
+								renderer.path(gridLinePath)
+									.attr(attribs).add(gridGroup) :
+								null;
+					}
+
+					// If the parameter 'old' is set, the current call will be followed
+					// by another call, therefore do not do any animations this time
+					if (!old && gridLine && gridLinePath) {
+						gridLine.animate({
+							d: gridLinePath
+						});
+					}
+				}
+
+				// create the tick mark
+				if (tickWidth) {
+
+					// negate the length
+					if (tickPosition === 'inside') {
+						tickLength = -tickLength;
+					}
+					if (opposite) {
+						tickLength = -tickLength;
+					}
+
+					markPath = renderer.crispLine([
+						M,
+						x,
+						y,
+						L,
+						x + (horiz ? 0 : -tickLength),
+						y + (horiz ? tickLength : 0)
+					], tickWidth);
+
+					if (mark) { // updating
+						mark.animate({
+							d: markPath
+						});
+					} else { // first time
+						tick.mark = renderer.path(
+							markPath
+						).attr({
+							stroke: tickColor,
+							'stroke-width': tickWidth
+						}).add(axisGroup);
+					}
+				}
+
+				// the label is created on init - now move it into place
+				if (label && !isNaN(x)) {
+					x = x + labelOptions.x - (tickmarkOffset && horiz ?
+						tickmarkOffset * transA * (reversed ? -1 : 1) : 0);
+					y = y + labelOptions.y - (tickmarkOffset && !horiz ?
+						tickmarkOffset * transA * (reversed ? 1 : -1) : 0);
+
+					// vertically centered
+					if (!defined(labelOptions.y)) {
+						y += pInt(label.styles.lineHeight) * 0.9 - label.getBBox().height / 2;
+					}
+
+
+					// correct for staggered labels
+					if (staggerLines) {
+						y += (index / (step || 1) % staggerLines) * 16;
+					}
+					// apply step
+					if (step) {
+						// show those indices dividable by step
+						label[index % step ? 'hide' : 'show']();
+					}
+
+					label[tick.isNew ? 'attr' : 'animate']({
+						x: x,
+						y: y
+					});
+				}
+
+				tick.isNew = false;
+			},
+			/**
+			 * Destructor for the tick prototype
+			 */
+			destroy: function () {
+				destroyObjectProperties(this);
+			}
+		};
+
+		/**
+		 * The object wrapper for plot lines and plot bands
+		 * @param {Object} options
+		 */
+		function PlotLineOrBand(options) {
+			var plotLine = this;
+			if (options) {
+				plotLine.options = options;
+				plotLine.id = options.id;
+			}
+
+			//plotLine.render()
+			return plotLine;
+		}
+
+		PlotLineOrBand.prototype = {
+
+		/**
+		 * Render the plot line or plot band. If it is already existing,
+		 * move it.
+		 */
+		render: function () {
+			var plotLine = this,
+				options = plotLine.options,
+				optionsLabel = options.label,
+				label = plotLine.label,
+				width = options.width,
+				to = options.to,
+				from = options.from,
+				value = options.value,
+				toPath, // bands only
+				dashStyle = options.dashStyle,
+				svgElem = plotLine.svgElem,
+				path = [],
+				addEvent,
+				eventType,
+				xs,
+				ys,
+				x,
+				y,
+				color = options.color,
+				zIndex = options.zIndex,
+				events = options.events,
+				attribs;
+
+			// logarithmic conversion
+			if (isLog) {
+				from = log2lin(from);
+				to = log2lin(to);
+				value = log2lin(value);
+			}
+
+			// plot line
+			if (width) {
+				path = getPlotLinePath(value, width);
+				attribs = {
+					stroke: color,
+					'stroke-width': width
+				};
+				if (dashStyle) {
+					attribs.dashstyle = dashStyle;
+				}
+			} else if (defined(from) && defined(to)) { // plot band
+				// keep within plot area
+				from = mathMax(from, min);
+				to = mathMin(to, max);
+
+				toPath = getPlotLinePath(to);
+				path = getPlotLinePath(from);
+				if (path && toPath) {
+					path.push(
+						toPath[4],
+						toPath[5],
+						toPath[1],
+						toPath[2]
+					);
+				} else { // outside the axis area
+					path = null;
+				}
+				attribs = {
+					fill: color
+				};
+			} else {
+				return;
+			}
+			// zIndex
+			if (defined(zIndex)) {
+				attribs.zIndex = zIndex;
+			}
+
+			// common for lines and bands
+			if (svgElem) {
+				if (path) {
+					svgElem.animate({
+						d: path
+					}, null, svgElem.onGetPath);
+				} else {
+					svgElem.hide();
+					svgElem.onGetPath = function () {
+						svgElem.show();
+					};
+				}
+			} else if (path && path.length) {
+				plotLine.svgElem = svgElem = renderer.path(path)
+					.attr(attribs).add();
+
+				// events
+				if (events) {
+					addEvent = function (eventType) {
+						svgElem.on(eventType, function (e) {
+							events[eventType].apply(plotLine, [e]);
+						});
+					};
+					for (eventType in events) {
+						addEvent(eventType);
+					}
+				}
+			}
+
+			// the plot band/line label
+			if (optionsLabel && defined(optionsLabel.text) && path && path.length && plotWidth > 0 && plotHeight > 0) {
+				// apply defaults
+				optionsLabel = merge({
+					align: horiz && toPath && 'center',
+					x: horiz ? !toPath && 4 : 10,
+					verticalAlign : !horiz && toPath && 'middle',
+					y: horiz ? toPath ? 16 : 10 : toPath ? 6 : -4,
+					rotation: horiz && !toPath && 90
+				}, optionsLabel);
+
+				// add the SVG element
+				if (!label) {
+					plotLine.label = label = renderer.text(
+							optionsLabel.text,
+							0,
+							0
+						)
+						.attr({
+							align: optionsLabel.textAlign || optionsLabel.align,
+							rotation: optionsLabel.rotation,
+							zIndex: zIndex
+						})
+						.css(optionsLabel.style)
+						.add();
+				}
+
+				// get the bounding box and align the label
+				xs = [path[1], path[4], pick(path[6], path[1])];
+				ys = [path[2], path[5], pick(path[7], path[2])];
+				x = mathMin.apply(math, xs);
+				y = mathMin.apply(math, ys);
+
+				label.align(optionsLabel, false, {
+					x: x,
+					y: y,
+					width: mathMax.apply(math, xs) - x,
+					height: mathMax.apply(math, ys) - y
+				});
+				label.show();
+
+			} else if (label) { // move out of sight
+				label.hide();
+			}
+
+			// chainable
+			return plotLine;
+		},
+
+		/**
+		 * Remove the plot line or band
+		 */
+		destroy: function () {
+			var obj = this;
+
+			destroyObjectProperties(obj);
+
+			// remove it from the lookup
+			erase(plotLinesAndBands, obj);
+		}
+		};
+
+		/**
+		 * The class for stack items
+		 */
+		function StackItem(options, isNegative, x, stackOption) {
+			var stackItem = this;
+
+			// Tells if the stack is negative
+			stackItem.isNegative = isNegative;
+
+			// Save the options to be able to style the label
+			stackItem.options = options;
+
+			// Save the x value to be able to position the label later
+			stackItem.x = x;
+
+			// Save the stack option on the series configuration object
+			stackItem.stack = stackOption;
+
+			// The align options and text align varies on whether the stack is negative and
+			// if the chart is inverted or not.
+			// First test the user supplied value, then use the dynamic.
+			stackItem.alignOptions = {
+				align: options.align || (inverted ? (isNegative ? 'left' : 'right') : 'center'),
+				verticalAlign: options.verticalAlign || (inverted ? 'middle' : (isNegative ? 'bottom' : 'top')),
+				y: pick(options.y, inverted ? 4 : (isNegative ? 14 : -6)),
+				x: pick(options.x, inverted ? (isNegative ? -6 : 6) : 0)
+			};
+
+			stackItem.textAlign = options.textAlign || (inverted ? (isNegative ? 'right' : 'left') : 'center');
+		}
+
+		StackItem.prototype = {
+			destroy: function () {
+				destroyObjectProperties(this);
+			},
+
+			/**
+			 * Sets the total of this stack. Should be called when a serie is hidden or shown
+			 * since that will affect the total of other stacks.
+			 */
+			setTotal: function (total) {
+				this.total = total;
+				this.cum = total;
+			},
+
+			/**
+			 * Renders the stack total label and adds it to the stack label group.
+			 */
+			render: function (group) {
+				var stackItem = this,									// aliased this
+					str = stackItem.options.formatter.call(stackItem);	// format the text in the label
+
+				// Change the text to reflect the new total and set visibility to hidden in case the serie is hidden
+				if (stackItem.label) {
+					stackItem.label.attr({text: str, visibility: HIDDEN});
+				// Create new label
+				} else {
+					stackItem.label =
+						chart.renderer.text(str, 0, 0)				// dummy positions, actual position updated with setOffset method in columnseries
+							.css(stackItem.options.style)			// apply style
+							.attr({align: stackItem.textAlign,			// fix the text-anchor
+								rotation: stackItem.options.rotation,	// rotation
+								visibility: HIDDEN })					// hidden until setOffset is called
+							.add(group);							// add to the labels-group
+				}
+			},
+
+			/**
+			 * Sets the offset that the stack has from the x value and repositions the label.
+			 */
+			setOffset: function (xOffset, xWidth) {
+				var stackItem = this,										// aliased this
+					neg = stackItem.isNegative,								// special treatment is needed for negative stacks
+					y = axis.translate(stackItem.total),					// stack value translated mapped to chart coordinates
+					yZero = axis.translate(0),								// stack origin
+					h = mathAbs(y - yZero),									// stack height
+					x = chart.xAxis[0].translate(stackItem.x) + xOffset,	// stack x position
+					plotHeight = chart.plotHeight,
+					stackBox = {	// this is the box for the complete stack
+							x: inverted ? (neg ? y : y - h) : x,
+							y: inverted ? plotHeight - x - xWidth : (neg ? (plotHeight - y - h) : plotHeight - y),
+							width: inverted ? h : xWidth,
+							height: inverted ? xWidth : h
+					};
+
+				if (stackItem.label) {
+					stackItem.label
+						.align(stackItem.alignOptions, null, stackBox)	// align the label to the box
+						.attr({visibility: VISIBLE});					// set visibility
+				}
+			}
+		};
+
+		/**
+		 * Get the minimum and maximum for the series of each axis
+		 */
+		function getSeriesExtremes() {
+			var posStack = [],
+				negStack = [],
+				run;
+
+			// reset dataMin and dataMax in case we're redrawing
+			dataMin = dataMax = null;
+
+			// get an overview of what series are associated with this axis
+			associatedSeries = [];
+
+			each(series, function (serie) {
+				run = false;
+
+
+				// match this axis against the series' given or implicated axis
+				each(['xAxis', 'yAxis'], function (strAxis) {
+					if (
+						// the series is a cartesian type, and...
+						serie.isCartesian &&
+						// we're in the right x or y dimension, and...
+						((strAxis === 'xAxis' && isXAxis) || (strAxis === 'yAxis' && !isXAxis)) && (
+							// the axis number is given in the options and matches this axis index, or
+							(serie.options[strAxis] === options.index) ||
+							// the axis index is not given
+							(serie.options[strAxis] === UNDEFINED && options.index === 0)
+						)
+					) {
+						serie[strAxis] = axis;
+						associatedSeries.push(serie);
+
+						// the series is visible, run the min/max detection
+						run = true;
+					}
+				});
+				// ignore hidden series if opted
+				if (!serie.visible && optionsChart.ignoreHiddenSeries) {
+					run = false;
+				}
+
+				if (run) {
+
+					var stacking,
+						posPointStack,
+						negPointStack,
+						stackKey,
+						stackOption,
+						negKey;
+
+					if (!isXAxis) {
+						stacking = serie.options.stacking;
+						usePercentage = stacking === 'percent';
+
+						// create a stack for this particular series type
+						if (stacking) {
+							stackOption = serie.options.stack;
+							stackKey = serie.type + pick(stackOption, '');
+							negKey = '-' + stackKey;
+							serie.stackKey = stackKey; // used in translate
+
+							posPointStack = posStack[stackKey] || []; // contains the total values for each x
+							posStack[stackKey] = posPointStack;
+
+							negPointStack = negStack[negKey] || [];
+							negStack[negKey] = negPointStack;
+						}
+						if (usePercentage) {
+							dataMin = 0;
+							dataMax = 99;
+						}
+					}
+					if (serie.isCartesian) { // line, column etc. need axes, pie doesn't
+						each(serie.data, function (point) {
+							var pointX = point.x,
+								pointY = point.y,
+								isNegative = pointY < 0,
+								pointStack = isNegative ? negPointStack : posPointStack,
+								key = isNegative ? negKey : stackKey,
+								totalPos,
+								pointLow;
+
+							// initial values
+							if (dataMin === null) {
+
+								// start out with the first point
+								dataMin = dataMax = point[xOrY];
+							}
+
+							// x axis
+							if (isXAxis) {
+								if (pointX > dataMax) {
+									dataMax = pointX;
+								} else if (pointX < dataMin) {
+									dataMin = pointX;
+								}
+							} else if (defined(pointY)) { // y axis
+								if (stacking) {
+									pointStack[pointX] =
+										defined(pointStack[pointX]) ?
+										pointStack[pointX] + pointY : pointY;
+								}
+								totalPos = pointStack ? pointStack[pointX] : pointY;
+								pointLow = pick(point.low, totalPos);
+								if (!usePercentage) {
+									if (totalPos > dataMax) {
+										dataMax = totalPos;
+									} else if (pointLow < dataMin) {
+										dataMin = pointLow;
+									}
+								}
+								if (stacking) {
+									// add the series
+									if (!stacks[key]) {
+										stacks[key] = {};
+									}
+
+									// If the StackItem is there, just update the values,
+									// if not, create one first
+									if (!stacks[key][pointX]) {
+										stacks[key][pointX] = new StackItem(options.stackLabels, isNegative, pointX, stackOption);
+									}
+									stacks[key][pointX].setTotal(totalPos);
+								}
+							}
+						});
+
+
+						// For column, areas and bars, set the minimum automatically to zero
+						// and prevent that minPadding is added in setScale
+						if (/(area|column|bar)/.test(serie.type) && !isXAxis) {
+							var threshold = 0; // use series.options.threshold?
+							if (dataMin >= threshold) {
+								dataMin = threshold;
+								ignoreMinPadding = true;
+							} else if (dataMax < threshold) {
+								dataMax = threshold;
+								ignoreMaxPadding = true;
+							}
+						}
+					}
+				}
+			});
+
+		}
+
+		/**
+		 * Translate from axis value to pixel position on the chart, or back
+		 *
+		 */
+		translate = function (val, backwards, cvsCoord, old, handleLog) {
+			var sign = 1,
+				cvsOffset = 0,
+				localA = old ? oldTransA : transA,
+				localMin = old ? oldMin : min,
+				returnValue;
+
+			if (!localA) {
+				localA = transA;
+			}
+
+			if (cvsCoord) {
+				sign *= -1; // canvas coordinates inverts the value
+				cvsOffset = axisLength;
+			}
+			if (reversed) { // reversed axis
+				sign *= -1;
+				cvsOffset -= sign * axisLength;
+			}
+
+			if (backwards) { // reverse translation
+				if (reversed) {
+					val = axisLength - val;
+				}
+				returnValue = val / localA + localMin; // from chart pixel to value
+				if (isLog && handleLog) {
+					returnValue = lin2log(returnValue);
+				}
+
+			} else { // normal translation
+				if (isLog && handleLog) {
+					val = log2lin(val);
+				}
+				returnValue = sign * (val - localMin) * localA + cvsOffset; // from value to chart pixel
+			}
+
+			return returnValue;
+		};
+
+		/**
+		 * Create the path for a plot line that goes from the given value on
+		 * this axis, across the plot to the opposite side
+		 * @param {Number} value
+		 * @param {Number} lineWidth Used for calculation crisp line
+		 * @param {Number] old Use old coordinates (for resizing and rescaling)
+		 */
+		getPlotLinePath = function (value, lineWidth, old) {
+			var x1,
+				y1,
+				x2,
+				y2,
+				translatedValue = translate(value, null, null, old),
+				cHeight = (old && oldChartHeight) || chartHeight,
+				cWidth = (old && oldChartWidth) || chartWidth,
+				skip;
+
+			x1 = x2 = mathRound(translatedValue + transB);
+			y1 = y2 = mathRound(cHeight - translatedValue - transB);
+
+			if (isNaN(translatedValue)) { // no min or max
+				skip = true;
+
+			} else if (horiz) {
+				y1 = plotTop;
+				y2 = cHeight - marginBottom;
+				if (x1 < plotLeft || x1 > plotLeft + plotWidth) {
+					skip = true;
+				}
+			} else {
+				x1 = plotLeft;
+				x2 = cWidth - marginRight;
+				if (y1 < plotTop || y1 > plotTop + plotHeight) {
+					skip = true;
+				}
+			}
+			return skip ?
+				null :
+				renderer.crispLine([M, x1, y1, L, x2, y2], lineWidth || 0);
+		};
+
+
+		/**
+		 * Take an interval and normalize it to multiples of 1, 2, 2.5 and 5
+		 * @param {Number} interval
+		 */
+		function normalizeTickInterval(interval, multiples) {
+			var normalized, i;
+
+			// round to a tenfold of 1, 2, 2.5 or 5
+			magnitude = multiples ? 1 : math.pow(10, mathFloor(math.log(interval) / math.LN10));
+			normalized = interval / magnitude;
+
+			// multiples for a linear scale
+			if (!multiples) {
+				multiples = [1, 2, 2.5, 5, 10];
+				//multiples = [1, 2, 2.5, 4, 5, 7.5, 10];
+
+				// the allowDecimals option
+				if (options.allowDecimals === false || isLog) {
+					if (magnitude === 1) {
+						multiples = [1, 2, 5, 10];
+					} else if (magnitude <= 0.1) {
+						multiples = [1 / magnitude];
+					}
+				}
+			}
+
+			// normalize the interval to the nearest multiple
+			for (i = 0; i < multiples.length; i++) {
+				interval = multiples[i];
+				if (normalized <= (multiples[i] + (multiples[i + 1] || multiples[i])) / 2) {
+					break;
+				}
+			}
+
+			// multiply back to the correct magnitude
+			interval *= magnitude;
+
+			return interval;
+		}
+
+		/**
+		 * Set the tick positions to a time unit that makes sense, for example
+		 * on the first of each month or on every Monday.
+		 */
+		function setDateTimeTickPositions() {
+			tickPositions = [];
+			var i,
+				useUTC = defaultOptions.global.useUTC,
+				oneSecond = 1000 / timeFactor,
+				oneMinute = 60000 / timeFactor,
+				oneHour = 3600000 / timeFactor,
+				oneDay = 24 * 3600000 / timeFactor,
+				oneWeek = 7 * 24 * 3600000 / timeFactor,
+				oneMonth = 30 * 24 * 3600000 / timeFactor,
+				oneYear = 31556952000 / timeFactor,
+
+				units = [[
+					'second',						// unit name
+					oneSecond,						// fixed incremental unit
+					[1, 2, 5, 10, 15, 30]			// allowed multiples
+				], [
+					'minute',						// unit name
+					oneMinute,						// fixed incremental unit
+					[1, 2, 5, 10, 15, 30]			// allowed multiples
+				], [
+					'hour',							// unit name
+					oneHour,						// fixed incremental unit
+					[1, 2, 3, 4, 6, 8, 12]			// allowed multiples
+				], [
+					'day',							// unit name
+					oneDay,							// fixed incremental unit
+					[1, 2]							// allowed multiples
+				], [
+					'week',							// unit name
+					oneWeek,						// fixed incremental unit
+					[1, 2]							// allowed multiples
+				], [
+					'month',
+					oneMonth,
+					[1, 2, 3, 4, 6]
+				], [
+					'year',
+					oneYear,
+					null
+				]],
+
+				unit = units[6], // default unit is years
+				interval = unit[1],
+				multiples = unit[2];
+
+			// loop through the units to find the one that best fits the tickInterval
+			for (i = 0; i < units.length; i++) {
+				unit = units[i];
+				interval = unit[1];
+				multiples = unit[2];
+
+
+				if (units[i + 1]) {
+					// lessThan is in the middle between the highest multiple and the next unit.
+					var lessThan = (interval * multiples[multiples.length - 1] +
+								units[i + 1][1]) / 2;
+
+					// break and keep the current unit
+					if (tickInterval <= lessThan) {
+						break;
+					}
+				}
+			}
+
+			// prevent 2.5 years intervals, though 25, 250 etc. are allowed
+			if (interval === oneYear && tickInterval < 5 * interval) {
+				multiples = [1, 2, 5];
+			}
+
+			// get the minimum value by flooring the date
+			var multitude = normalizeTickInterval(tickInterval / interval, multiples),
+				minYear, // used in months and years as a basis for Date.UTC()
+				minDate = new Date(min * timeFactor);
+
+			minDate.setMilliseconds(0);
+
+			if (interval >= oneSecond) { // second
+				minDate.setSeconds(interval >= oneMinute ? 0 :
+					multitude * mathFloor(minDate.getSeconds() / multitude));
+			}
+
+			if (interval >= oneMinute) { // minute
+				minDate[setMinutes](interval >= oneHour ? 0 :
+					multitude * mathFloor(minDate[getMinutes]() / multitude));
+			}
+
+			if (interval >= oneHour) { // hour
+				minDate[setHours](interval >= oneDay ? 0 :
+					multitude * mathFloor(minDate[getHours]() / multitude));
+			}
+
+			if (interval >= oneDay) { // day
+				minDate[setDate](interval >= oneMonth ? 1 :
+					multitude * mathFloor(minDate[getDate]() / multitude));
+			}
+
+			if (interval >= oneMonth) { // month
+				minDate[setMonth](interval >= oneYear ? 0 :
+					multitude * mathFloor(minDate[getMonth]() / multitude));
+				minYear = minDate[getFullYear]();
+			}
+
+			if (interval >= oneYear) { // year
+				minYear -= minYear % multitude;
+				minDate[setFullYear](minYear);
+			}
+
+			// week is a special case that runs outside the hierarchy
+			if (interval === oneWeek) {
+				// get start of current week, independent of multitude
+				minDate[setDate](minDate[getDate]() - minDate[getDay]() +
+					options.startOfWeek);
+			}
+
+
+			// get tick positions
+			i = 1; // prevent crash just in case
+			minYear = minDate[getFullYear]();
+			var time = minDate.getTime() / timeFactor,
+				minMonth = minDate[getMonth](),
+				minDateDate = minDate[getDate]();
+
+			// iterate and add tick positions at appropriate values
+			while (time < max && i < plotWidth) {
+				tickPositions.push(time);
+
+				// if the interval is years, use Date.UTC to increase years
+				if (interval === oneYear) {
+					time = makeTime(minYear + i * multitude, 0) / timeFactor;
+
+				// if the interval is months, use Date.UTC to increase months
+				} else if (interval === oneMonth) {
+					time = makeTime(minYear, minMonth + i * multitude) / timeFactor;
+
+				// if we're using global time, the interval is not fixed as it jumps
+				// one hour at the DST crossover
+				} else if (!useUTC && (interval === oneDay || interval === oneWeek)) {
+					time = makeTime(minYear, minMonth, minDateDate +
+						i * multitude * (interval === oneDay ? 1 : 7));
+
+				// else, the interval is fixed and we use simple addition
+				} else {
+					time += interval * multitude;
+				}
+
+				i++;
+			}
+			// push the last time
+			tickPositions.push(time);
+
+
+			// dynamic label formatter
+			dateTimeLabelFormat = options.dateTimeLabelFormats[unit[0]];
+		}
+
+		/**
+		 * Fix JS round off float errors
+		 * @param {Number} num
+		 */
+		function correctFloat(num) {
+			var invMag, ret = num;
+			magnitude = pick(magnitude, math.pow(10, mathFloor(math.log(tickInterval) / math.LN10)));
+
+			if (magnitude < 1) {
+				invMag = mathRound(1 / magnitude)  * 10;
+				ret = mathRound(num * invMag) / invMag;
+			}
+			return ret;
+		}
+
+		/**
+		 * Set the tick positions of a linear axis to round values like whole tens or every five.
+		 */
+		function setLinearTickPositions() {
+
+			var i,
+				roundedMin = correctFloat(mathFloor(min / tickInterval) * tickInterval),
+				roundedMax = correctFloat(mathCeil(max / tickInterval) * tickInterval);
+
+			tickPositions = [];
+
+			// populate the intermediate values
+			i = correctFloat(roundedMin);
+			while (i <= roundedMax) {
+				tickPositions.push(i);
+				i = correctFloat(i + tickInterval);
+			}
+
+		}
+
+		/**
+		 * Set the tick positions to round values and optionally extend the extremes
+		 * to the nearest tick
+		 */
+		function setTickPositions() {
+			var length,
+				catPad,
+				linkedParent,
+				linkedParentExtremes,
+				tickIntervalOption = options.tickInterval,
+				tickPixelIntervalOption = options.tickPixelInterval,
+				maxZoom = options.maxZoom || (
+					isXAxis && !defined(options.min) && !defined(options.max) ?
+						mathMin(chart.smallestInterval * 5, dataMax - dataMin) :
+						null
+				),
+				zoomOffset;
+
+
+			axisLength = horiz ? plotWidth : plotHeight;
+
+			// linked axis gets the extremes from the parent axis
+			if (isLinked) {
+				linkedParent = chart[isXAxis ? 'xAxis' : 'yAxis'][options.linkedTo];
+				linkedParentExtremes = linkedParent.getExtremes();
+				min = pick(linkedParentExtremes.min, linkedParentExtremes.dataMin);
+				max = pick(linkedParentExtremes.max, linkedParentExtremes.dataMax);
+			} else { // initial min and max from the extreme data values
+				min = pick(userMin, options.min, dataMin);
+				max = pick(userMax, options.max, dataMax);
+			}
+
+			if (isLog) {
+				min = log2lin(min);
+				max = log2lin(max);
+			}
+
+			// maxZoom exceeded, just center the selection
+			if (max - min < maxZoom) {
+				zoomOffset = (maxZoom - max + min) / 2;
+				// if min and max options have been set, don't go beyond it
+				min = mathMax(min - zoomOffset, pick(options.min, min - zoomOffset), dataMin);
+				max = mathMin(min + maxZoom, pick(options.max, min + maxZoom), dataMax);
+			}
+
+			// pad the values to get clear of the chart's edges
+			if (!categories && !usePercentage && !isLinked && defined(min) && defined(max)) {
+				length = (max - min) || 1;
+				if (!defined(options.min) && !defined(userMin) && minPadding && (dataMin < 0 || !ignoreMinPadding)) {
+					min -= length * minPadding;
+				}
+				if (!defined(options.max) && !defined(userMax)  && maxPadding && (dataMax > 0 || !ignoreMaxPadding)) {
+					max += length * maxPadding;
+				}
+			}
+
+			// get tickInterval
+			if (min === max) {
+				tickInterval = 1;
+			} else if (isLinked && !tickIntervalOption &&
+					tickPixelIntervalOption === linkedParent.options.tickPixelInterval) {
+				tickInterval = linkedParent.tickInterval;
+			} else {
+				tickInterval = pick(
+					tickIntervalOption,
+					categories ? // for categoried axis, 1 is default, for linear axis use tickPix
+						1 :
+						(max - min) * tickPixelIntervalOption / axisLength
+				);
+			}
+
+			if (!isDatetimeAxis && !defined(options.tickInterval)) { // linear
+				tickInterval = normalizeTickInterval(tickInterval);
+			}
+			axis.tickInterval = tickInterval; // record for linked axis
+
+			// get minorTickInterval
+			minorTickInterval = options.minorTickInterval === 'auto' && tickInterval ?
+					tickInterval / 5 : options.minorTickInterval;
+
+			// find the tick positions
+			if (isDatetimeAxis) {
+				setDateTimeTickPositions();
+			} else {
+				setLinearTickPositions();
+			}
+
+			if (!isLinked) {
+				// pad categorised axis to nearest half unit
+				if (categories || (isXAxis && chart.hasColumn)) {
+					catPad = (categories ? 1 : tickInterval) * 0.5;
+					if (categories || !defined(pick(options.min, userMin))) {
+						min -= catPad;
+					}
+					if (categories || !defined(pick(options.max, userMax))) {
+						max += catPad;
+					}
+				}
+
+				// reset min/max or remove extremes based on start/end on tick
+				var roundedMin = tickPositions[0],
+					roundedMax = tickPositions[tickPositions.length - 1];
+
+				if (options.startOnTick) {
+					min = roundedMin;
+				} else if (min > roundedMin) {
+					tickPositions.shift();
+				}
+
+				if (options.endOnTick) {
+					max = roundedMax;
+				} else if (max < roundedMax) {
+					tickPositions.pop();
+				}
+
+				// record the greatest number of ticks for multi axis
+				if (!maxTicks) { // first call, or maxTicks have been reset after a zoom operation
+					maxTicks = {
+						x: 0,
+						y: 0
+					};
+				}
+
+				if (!isDatetimeAxis && tickPositions.length > maxTicks[xOrY]) {
+					maxTicks[xOrY] = tickPositions.length;
+				}
+			}
+
+
+		}
+
+		/**
+		 * When using multiple axes, adjust the number of ticks to match the highest
+		 * number of ticks in that group
+		 */
+		function adjustTickAmount() {
+
+			if (maxTicks && !isDatetimeAxis && !categories && !isLinked) { // only apply to linear scale
+				var oldTickAmount = tickAmount,
+					calculatedTickAmount = tickPositions.length;
+
+				// set the axis-level tickAmount to use below
+				tickAmount = maxTicks[xOrY];
+
+				if (calculatedTickAmount < tickAmount) {
+					while (tickPositions.length < tickAmount) {
+						tickPositions.push(correctFloat(
+							tickPositions[tickPositions.length - 1] + tickInterval
+						));
+					}
+					transA *= (calculatedTickAmount - 1) / (tickAmount - 1);
+					max = tickPositions[tickPositions.length - 1];
+
+				}
+				if (defined(oldTickAmount) && tickAmount !== oldTickAmount) {
+					axis.isDirty = true;
+				}
+			}
+
+		}
+
+		/**
+		 * Set the scale based on data min and max, user set min and max or options
+		 *
+		 */
+		function setScale() {
+			var type,
+				i;
+
+			oldMin = min;
+			oldMax = max;
+
+			// get data extremes if needed
+			getSeriesExtremes();
+
+			// get fixed positions based on tickInterval
+			setTickPositions();
+
+			// the translation factor used in translate function
+			oldTransA = transA;
+			transA = axisLength / ((max - min) || 1);
+
+			// reset stacks
+			if (!isXAxis) {
+				for (type in stacks) {
+					for (i in stacks[type]) {
+						stacks[type][i].cum = stacks[type][i].total;
+					}
+				}
+			}
+
+			// mark as dirty if it is not already set to dirty and extremes have changed
+			if (!axis.isDirty) {
+				axis.isDirty = (min !== oldMin || max !== oldMax);
+			}
+
+		}
+
+		/**
+		 * Set the extremes and optionally redraw
+		 * @param {Number} newMin
+		 * @param {Number} newMax
+		 * @param {Boolean} redraw
+		 * @param {Boolean|Object} animation Whether to apply animation, and optionally animation
+		 *    configuration
+		 *
+		 */
+		function setExtremes(newMin, newMax, redraw, animation) {
+
+			redraw = pick(redraw, true); // defaults to true
+
+			fireEvent(axis, 'setExtremes', { // fire an event to enable syncing of multiple charts
+				min: newMin,
+				max: newMax
+			}, function () { // the default event handler
+
+				userMin = newMin;
+				userMax = newMax;
+
+
+				// redraw
+				if (redraw) {
+					chart.redraw(animation);
+				}
+			});
+
+		}
+
+		/**
+		 * Get the actual axis extremes
+		 */
+		function getExtremes() {
+			return {
+				min: min,
+				max: max,
+				dataMin: dataMin,
+				dataMax: dataMax,
+				userMin: userMin,
+				userMax: userMax
+			};
+		}
+
+		/**
+		 * Get the zero plane either based on zero or on the min or max value.
+		 * Used in bar and area plots
+		 */
+		function getThreshold(threshold) {
+			if (min > threshold) {
+				threshold = min;
+			} else if (max < threshold) {
+				threshold = max;
+			}
+
+			return translate(threshold, 0, 1);
+		}
+
+		/**
+		 * Add a plot band or plot line after render time
+		 *
+		 * @param options {Object} The plotBand or plotLine configuration object
+		 */
+		function addPlotBandOrLine(options) {
+			var obj = new PlotLineOrBand(options).render();
+			plotLinesAndBands.push(obj);
+			return obj;
+		}
+
+		/**
+		 * Render the tick labels to a preliminary position to get their sizes
+		 */
+		function getOffset() {
+
+			var hasData = associatedSeries.length && defined(min) && defined(max),
+				titleOffset = 0,
+				titleMargin = 0,
+				axisTitleOptions = options.title,
+				labelOptions = options.labels,
+				directionFactor = [-1, 1, 1, -1][side],
+				n;
+
+			if (!axisGroup) {
+				axisGroup = renderer.g('axis')
+					.attr({ zIndex: 7 })
+					.add();
+				gridGroup = renderer.g('grid')
+					.attr({ zIndex: 1 })
+					.add();
+			}
+
+			labelOffset = 0; // reset
+
+			if (hasData || isLinked) {
+				each(tickPositions, function (pos) {
+					if (!ticks[pos]) {
+						ticks[pos] = new Tick(pos);
+					} else {
+						ticks[pos].addLabel(); // update labels depending on tick interval
+					}
+
+					// left side must be align: right and right side must have align: left for labels
+					if (side === 0 || side === 2 || { 1: 'left', 3: 'right' }[side] === labelOptions.align) {
+
+						// get the highest offset
+						labelOffset = mathMax(
+							ticks[pos].getLabelSize(),
+							labelOffset
+						);
+					}
+
+				});
+
+				if (staggerLines) {
+					labelOffset += (staggerLines - 1) * 16;
+				}
+
+			} else { // doesn't have data
+				for (n in ticks) {
+					ticks[n].destroy();
+					delete ticks[n];
+				}
+			}
+
+			if (axisTitleOptions && axisTitleOptions.text) {
+				if (!axisTitle) {
+					axisTitle = axis.axisTitle = renderer.text(
+						axisTitleOptions.text,
+						0,
+						0,
+						axisTitleOptions.useHTML
+					)
+					.attr({
+						zIndex: 7,
+						rotation: axisTitleOptions.rotation || 0,
+						align:
+							axisTitleOptions.textAlign ||
+							{ low: 'left', middle: 'center', high: 'right' }[axisTitleOptions.align]
+					})
+					.css(axisTitleOptions.style)
+					.add();
+					axisTitle.isNew = true;
+				}
+
+				titleOffset = axisTitle.getBBox()[horiz ? 'height' : 'width'];
+				titleMargin = pick(axisTitleOptions.margin, horiz ? 5 : 10);
+
+			}
+
+			// handle automatic or user set offset
+			offset = directionFactor * (options.offset || axisOffset[side]);
+
+			axisTitleMargin =
+				labelOffset +
+				(side !== 2 && labelOffset && directionFactor * options.labels[horiz ? 'y' : 'x']) +
+				titleMargin;
+
+			axisOffset[side] = mathMax(
+				axisOffset[side],
+				axisTitleMargin + titleOffset + directionFactor * offset
+			);
+
+		}
+
+		/**
+		 * Render the axis
+		 */
+		function render() {
+			var axisTitleOptions = options.title,
+				stackLabelOptions = options.stackLabels,
+				alternateGridColor = options.alternateGridColor,
+				lineWidth = options.lineWidth,
+				lineLeft,
+				lineTop,
+				linePath,
+				hasRendered = chart.hasRendered,
+				slideInTicks = hasRendered && defined(oldMin) && !isNaN(oldMin),
+				hasData = associatedSeries.length && defined(min) && defined(max);
+
+			// update metrics
+			axisLength = horiz ? plotWidth : plotHeight;
+			transA = axisLength / ((max - min) || 1);
+			transB = horiz ? plotLeft : marginBottom; // translation addend
+
+			// If the series has data draw the ticks. Else only the line and title
+			if (hasData || isLinked) {
+
+				// minor ticks
+				if (minorTickInterval && !categories) {
+					var pos = min + (tickPositions[0] - min) % minorTickInterval;
+					for (; pos <= max; pos += minorTickInterval) {
+						if (!minorTicks[pos]) {
+							minorTicks[pos] = new Tick(pos, true);
+						}
+
+						// render new ticks in old position
+						if (slideInTicks && minorTicks[pos].isNew) {
+							minorTicks[pos].render(null, true);
+						}
+
+
+						minorTicks[pos].isActive = true;
+						minorTicks[pos].render();
+					}
+				}
+
+				// major ticks
+				each(tickPositions, function (pos, i) {
+					// linked axes need an extra check to find out if
+					if (!isLinked || (pos >= min && pos <= max)) {
+
+						// render new ticks in old position
+						if (slideInTicks && ticks[pos].isNew) {
+							ticks[pos].render(i, true);
+						}
+
+						ticks[pos].isActive = true;
+						ticks[pos].render(i);
+					}
+				});
+
+				// alternate grid color
+				if (alternateGridColor) {
+					each(tickPositions, function (pos, i) {
+						if (i % 2 === 0 && pos < max) {
+							/*plotLinesAndBands.push(new PlotLineOrBand({
+								from: pos,
+								to: tickPositions[i + 1] !== UNDEFINED ? tickPositions[i + 1] : max,
+								color: alternateGridColor
+							}));*/
+
+							if (!alternateBands[pos]) {
+								alternateBands[pos] = new PlotLineOrBand();
+							}
+							alternateBands[pos].options = {
+								from: pos,
+								to: tickPositions[i + 1] !== UNDEFINED ? tickPositions[i + 1] : max,
+								color: alternateGridColor
+							};
+							alternateBands[pos].render();
+							alternateBands[pos].isActive = true;
+						}
+					});
+				}
+
+				// custom plot bands (behind grid lines)
+				/*if (!hasRendered) { // only first time
+					each(options.plotBands || [], function(plotBandOptions) {
+						plotLinesAndBands.push(new PlotLineOrBand(
+							extend({ zIndex: 1 }, plotBandOptions)
+						).render());
+					});
+				}*/
+
+
+
+
+				// custom plot lines and bands
+				if (!hasRendered) { // only first time
+					each((options.plotLines || []).concat(options.plotBands || []), function (plotLineOptions) {
+						plotLinesAndBands.push(new PlotLineOrBand(plotLineOptions).render());
+					});
+				}
+
+
+
+			} // end if hasData
+
+			// remove inactive ticks
+			each([ticks, minorTicks, alternateBands], function (coll) {
+				var pos;
+				for (pos in coll) {
+					if (!coll[pos].isActive) {
+						coll[pos].destroy();
+						delete coll[pos];
+					} else {
+						coll[pos].isActive = false; // reset
+					}
+				}
+			});
+
+
+
+
+			// Static items. As the axis group is cleared on subsequent calls
+			// to render, these items are added outside the group.
+			// axis line
+			if (lineWidth) {
+				lineLeft = plotLeft + (opposite ? plotWidth : 0) + offset;
+				lineTop = chartHeight - marginBottom - (opposite ? plotHeight : 0) + offset;
+
+				linePath = renderer.crispLine([
+						M,
+						horiz ?
+							plotLeft :
+							lineLeft,
+						horiz ?
+							lineTop :
+							plotTop,
+						L,
+						horiz ?
+							chartWidth - marginRight :
+							lineLeft,
+						horiz ?
+							lineTop :
+							chartHeight - marginBottom
+					], lineWidth);
+				if (!axisLine) {
+					axisLine = renderer.path(linePath)
+						.attr({
+							stroke: options.lineColor,
+							'stroke-width': lineWidth,
+							zIndex: 7
+						})
+						.add();
+				} else {
+					axisLine.animate({ d: linePath });
+				}
+
+			}
+
+			if (axisTitle) {
+				// compute anchor points for each of the title align options
+				var margin = horiz ? plotLeft : plotTop,
+					fontSize = pInt(axisTitleOptions.style.fontSize || 12),
+				// the position in the length direction of the axis
+				alongAxis = {
+					low: margin + (horiz ? 0 : axisLength),
+					middle: margin + axisLength / 2,
+					high: margin + (horiz ? axisLength : 0)
+				}[axisTitleOptions.align],
+
+				// the position in the perpendicular direction of the axis
+				offAxis = (horiz ? plotTop + plotHeight : plotLeft) +
+					(horiz ? 1 : -1) * // horizontal axis reverses the margin
+					(opposite ? -1 : 1) * // so does opposite axes
+					axisTitleMargin +
+					//(isIE ? fontSize / 3 : 0)+ // preliminary fix for vml's centerline
+					(side === 2 ? fontSize : 0);
+
+				axisTitle[axisTitle.isNew ? 'attr' : 'animate']({
+					x: horiz ?
+						alongAxis :
+						offAxis + (opposite ? plotWidth : 0) + offset +
+							(axisTitleOptions.x || 0), // x
+					y: horiz ?
+						offAxis - (opposite ? plotHeight : 0) + offset :
+						alongAxis + (axisTitleOptions.y || 0) // y
+				});
+				axisTitle.isNew = false;
+			}
+
+			// Stacked totals:
+			if (stackLabelOptions && stackLabelOptions.enabled) {
+				var stackKey, oneStack, stackCategory,
+					stackTotalGroup = axis.stackTotalGroup;
+
+				// Create a separate group for the stack total labels
+				if (!stackTotalGroup) {
+					axis.stackTotalGroup = stackTotalGroup =
+						renderer.g('stack-labels')
+							.attr({
+								visibility: VISIBLE,
+								zIndex: 6
+							})
+							.translate(plotLeft, plotTop)
+							.add();
+				}
+
+				// Render each stack total
+				for (stackKey in stacks) {
+					oneStack = stacks[stackKey];
+					for (stackCategory in oneStack) {
+						oneStack[stackCategory].render(stackTotalGroup);
+					}
+				}
+			}
+			// End stacked totals
+
+			axis.isDirty = false;
+		}
+
+		/**
+		 * Remove a plot band or plot line from the chart by id
+		 * @param {Object} id
+		 */
+		function removePlotBandOrLine(id) {
+			var i = plotLinesAndBands.length;
+			while (i--) {
+				if (plotLinesAndBands[i].id === id) {
+					plotLinesAndBands[i].destroy();
+				}
+			}
+		}
+
+		/**
+		 * Redraw the axis to reflect changes in the data or axis extremes
+		 */
+		function redraw() {
+
+			// hide tooltip and hover states
+			if (tracker.resetTracker) {
+				tracker.resetTracker();
+			}
+
+			// render the axis
+			render();
+
+			// move plot lines and bands
+			each(plotLinesAndBands, function (plotLine) {
+				plotLine.render();
+			});
+
+			// mark associated series as dirty and ready for redraw
+			each(associatedSeries, function (series) {
+				series.isDirty = true;
+			});
+
+		}
+
+		/**
+		 * Set new axis categories and optionally redraw
+		 * @param {Array} newCategories
+		 * @param {Boolean} doRedraw
+		 */
+		function setCategories(newCategories, doRedraw) {
+				// set the categories
+				axis.categories = userOptions.categories = categories = newCategories;
+
+				// force reindexing tooltips
+				each(associatedSeries, function (series) {
+					series.translate();
+					series.setTooltipPoints(true);
+				});
+
+
+				// optionally redraw
+				axis.isDirty = true;
+
+				if (pick(doRedraw, true)) {
+					chart.redraw();
+				}
+		}
+
+		/**
+		 * Destroys an Axis instance.
+		 */
+		function destroy() {
+			var stackKey;
+
+			// Remove the events
+			removeEvent(axis);
+
+			// Destroy each stack total
+			for (stackKey in stacks) {
+				destroyObjectProperties(stacks[stackKey]);
+
+				stacks[stackKey] = null;
+			}
+
+			// Destroy stack total group
+			if (axis.stackTotalGroup) {
+				axis.stackTotalGroup = axis.stackTotalGroup.destroy();
+			}
+
+			// Destroy collections
+			each([ticks, minorTicks, alternateBands, plotLinesAndBands], function (coll) {
+				destroyObjectProperties(coll);
+			});
+
+			// Destroy local variables
+			each([axisLine, axisGroup, gridGroup, axisTitle], function (obj) {
+				if (obj) {
+					obj.destroy();
+				}
+			});
+			axisLine = axisGroup = gridGroup = axisTitle = null;
+		}
+
+
+		// Run Axis
+
+		// inverted charts have reversed xAxes as default
+		if (inverted && isXAxis && reversed === UNDEFINED) {
+			reversed = true;
+		}
+
+
+		// expose some variables
+		extend(axis, {
+			addPlotBand: addPlotBandOrLine,
+			addPlotLine: addPlotBandOrLine,
+			adjustTickAmount: adjustTickAmount,
+			categories: categories,
+			getExtremes: getExtremes,
+			getPlotLinePath: getPlotLinePath,
+			getThreshold: getThreshold,
+			isXAxis: isXAxis,
+			options: options,
+			plotLinesAndBands: plotLinesAndBands,
+			getOffset: getOffset,
+			render: render,
+			setCategories: setCategories,
+			setExtremes: setExtremes,
+			setScale: setScale,
+			setTickPositions: setTickPositions,
+			translate: translate,
+			redraw: redraw,
+			removePlotBand: removePlotBandOrLine,
+			removePlotLine: removePlotBandOrLine,
+			reversed: reversed,
+			stacks: stacks,
+			destroy: destroy
+		});
+
+		// register event listeners
+		for (eventType in events) {
+			addEvent(axis, eventType, events[eventType]);
+		}
+
+		// set min and max
+		setScale();
+
+	} // end Axis
+
+
+	/**
+	 * The toolbar object
+	 */
+	function Toolbar() {
+		var buttons = {};
+
+		/*jslint unparam: true*//* allow the unused param title until Toolbar rewrite*/
+		function add(id, text, title, fn) {
+			if (!buttons[id]) {
+				var button = renderer.text(
+					text,
+					0,
+					0
+				)
+				.css(options.toolbar.itemStyle)
+				.align({
+					align: 'right',
+					x: -marginRight - 20,
+					y: plotTop + 30
+				})
+				.on('click', fn)
+				/*.on('touchstart', function(e) {
+					e.stopPropagation(); // don't fire the container event
+					fn();
+				})*/
+				.attr({
+					align: 'right',
+					zIndex: 20
+				})
+				.add();
+				buttons[id] = button;
+			}
+		}
+		/*jslint unparam: false*/
+
+		function remove(id) {
+			discardElement(buttons[id].element);
+			buttons[id] = null;
+		}
+
+		// public
+		return {
+			add: add,
+			remove: remove
+		};
+	}
+
+	/**
+	 * The tooltip object
+	 * @param {Object} options Tooltip options
+	 */
+	function Tooltip(options) {
+		var currentSeries,
+			borderWidth = options.borderWidth,
+			crosshairsOptions = options.crosshairs,
+			crosshairs = [],
+			style = options.style,
+			shared = options.shared,
+			padding = pInt(style.padding),
+			boxOffLeft = borderWidth + padding, // off left/top position as IE can't
+				//properly handle negative positioned shapes
+			tooltipIsHidden = true,
+			boxWidth,
+			boxHeight,
+			currentX = 0,
+			currentY = 0;
+
+		// remove padding CSS and apply padding on box instead
+		style.padding = 0;
+
+		// create the elements
+		var group = renderer.g('tooltip')
+			.attr({	zIndex: 8 })
+			.add(),
+
+			box = renderer.rect(boxOffLeft, boxOffLeft, 0, 0, options.borderRadius, borderWidth)
+				.attr({
+					fill: options.backgroundColor,
+					'stroke-width': borderWidth
+				})
+				.add(group)
+				.shadow(options.shadow),
+			label = renderer.text('', padding + boxOffLeft, pInt(style.fontSize) + padding + boxOffLeft, options.useHTML)
+				.attr({ zIndex: 1 })
+				.css(style)
+				.add(group);
+
+		group.hide();
+
+		/**
+		 * Destroy the tooltip and its elements.
+		 */
+		function destroy() {
+			each(crosshairs, function (crosshair) {
+				if (crosshair) {
+					crosshair.destroy();
+				}
+			});
+
+			// Destroy and clear local variables
+			each([box, label, group], function (obj) {
+				if (obj) {
+					obj.destroy();
+				}
+			});
+			box = label = group = null;
+		}
+
+		/**
+		 * In case no user defined formatter is given, this will be used
+		 */
+		function defaultFormatter() {
+			var pThis = this,
+				items = pThis.points || splat(pThis),
+				xAxis = items[0].series.xAxis,
+				x = pThis.x,
+				isDateTime = xAxis && xAxis.options.type === 'datetime',
+				useHeader = isString(x) || isDateTime,
+				s;
+
+			// build the header
+			s = useHeader ?
+				['<span style="font-size: 10px">' +
+				(isDateTime ? dateFormat('%A, %b %e, %Y', x) :  x) +
+				'</span>'] : [];
+
+			// build the values
+			each(items, function (item) {
+				s.push(item.point.tooltipFormatter(useHeader));
+			});
+			return s.join('<br/>');
+		}
+
+		/**
+		 * Provide a soft movement for the tooltip
+		 *
+		 * @param {Number} finalX
+		 * @param {Number} finalY
+		 */
+		function move(finalX, finalY) {
+
+			currentX = tooltipIsHidden ? finalX : (2 * currentX + finalX) / 3;
+			currentY = tooltipIsHidden ? finalY : (currentY + finalY) / 2;
+
+			group.translate(currentX, currentY);
+
+
+			// run on next tick of the mouse tracker
+			if (mathAbs(finalX - currentX) > 1 || mathAbs(finalY - currentY) > 1) {
+				tooltipTick = function () {
+					move(finalX, finalY);
+				};
+			} else {
+				tooltipTick = null;
+			}
+		}
+
+		/**
+		 * Hide the tooltip
+		 */
+		function hide() {
+			if (!tooltipIsHidden) {
+				var hoverPoints = chart.hoverPoints;
+
+				group.hide();
+
+				each(crosshairs, function (crosshair) {
+					if (crosshair) {
+						crosshair.hide();
+					}
+				});
+
+				// hide previous hoverPoints and set new
+				if (hoverPoints) {
+					each(hoverPoints, function (point) {
+						point.setState();
+					});
+				}
+				chart.hoverPoints = null;
+
+
+				tooltipIsHidden = true;
+			}
+
+		}
+
+		/**
+		 * Refresh the tooltip's text and position.
+		 * @param {Object} point
+		 *
+		 */
+		function refresh(point) {
+			var x,
+				y,
+				show,
+				bBox,
+				plotX,
+				plotY = 0,
+				textConfig = {},
+				text,
+				pointConfig = [],
+				tooltipPos = point.tooltipPos,
+				formatter = options.formatter || defaultFormatter,
+				hoverPoints = chart.hoverPoints,
+				placedTooltipPoint;
+
+			// shared tooltip, array is sent over
+			if (shared) {
+
+				// hide previous hoverPoints and set new
+				if (hoverPoints) {
+					each(hoverPoints, function (point) {
+						point.setState();
+					});
+				}
+				chart.hoverPoints = point;
+
+				each(point, function (item) {
+					/*var series = item.series,
+						hoverPoint = series.hoverPoint;
+					if (hoverPoint) {
+						hoverPoint.setState();
+					}
+					series.hoverPoint = item;*/
+					item.setState(HOVER_STATE);
+					plotY += item.plotY; // for average
+
+					pointConfig.push(item.getLabelConfig());
+				});
+
+				plotX = point[0].plotX;
+				plotY = mathRound(plotY) / point.length; // mathRound because Opera 10 has problems here
+
+				textConfig = {
+					x: point[0].category
+				};
+				textConfig.points = pointConfig;
+				point = point[0];
+
+			// single point tooltip
+			} else {
+				textConfig = point.getLabelConfig();
+			}
+			text = formatter.call(textConfig);
+
+			// register the current series
+			currentSeries = point.series;
+
+			// get the reference point coordinates (pie charts use tooltipPos)
+			plotX = shared ? plotX : point.plotX;
+			plotY = shared ? plotY : point.plotY;
+			x = mathRound(tooltipPos ? tooltipPos[0] : (inverted ? plotWidth - plotY : plotX));
+			y = mathRound(tooltipPos ? tooltipPos[1] : (inverted ? plotHeight - plotX : plotY));
+
+
+			// hide tooltip if the point falls outside the plot
+			show = shared || !point.series.isCartesian || isInsidePlot(x, y);
+
+			// update the inner HTML
+			if (text === false || !show) {
+				hide();
+			} else {
+
+				// show it
+				if (tooltipIsHidden) {
+					group.show();
+					tooltipIsHidden = false;
+				}
+
+				// update text
+				label.attr({
+					text: text
+				});
+
+				// get the bounding box
+				bBox = label.getBBox();
+				boxWidth = bBox.width + 2 * padding;
+				boxHeight = bBox.height + 2 * padding;
+
+				// set the size of the box
+				box.attr({
+					width: boxWidth,
+					height: boxHeight,
+					stroke: options.borderColor || point.color || currentSeries.color || '#606060'
+				});
+
+				placedTooltipPoint = placeBox(boxWidth, boxHeight, plotLeft, plotTop, plotWidth, plotHeight, {x: x, y: y});
+
+				// do the move
+				move(mathRound(placedTooltipPoint.x - boxOffLeft), mathRound(placedTooltipPoint.y - boxOffLeft));
+			}
+
+
+			// crosshairs
+			if (crosshairsOptions) {
+				crosshairsOptions = splat(crosshairsOptions); // [x, y]
+
+				var path,
+					i = crosshairsOptions.length,
+					attribs,
+					axis;
+
+				while (i--) {
+					axis = point.series[i ? 'yAxis' : 'xAxis'];
+					if (crosshairsOptions[i] && axis) {
+						path = axis
+							.getPlotLinePath(point[i ? 'y' : 'x'], 1);
+						if (crosshairs[i]) {
+							crosshairs[i].attr({ d: path, visibility: VISIBLE });
+
+						} else {
+							attribs = {
+								'stroke-width': crosshairsOptions[i].width || 1,
+								stroke: crosshairsOptions[i].color || '#C0C0C0',
+								zIndex: 2
+							};
+							if (crosshairsOptions[i].dashStyle) {
+								attribs.dashstyle = crosshairsOptions[i].dashStyle;
+							}
+							crosshairs[i] = renderer.path(path)
+								.attr(attribs)
+								.add();
+						}
+					}
+				}
+			}
+		}
+
+
+
+		// public members
+		return {
+			shared: shared,
+			refresh: refresh,
+			hide: hide,
+			destroy: destroy
+		};
+	}
+
+	/**
+	 * The mouse tracker object
+	 * @param {Object} options
+	 */
+	function MouseTracker(options) {
+
+
+		var mouseDownX,
+			mouseDownY,
+			hasDragged,
+			selectionMarker,
+			zoomType = optionsChart.zoomType,
+			zoomX = /x/.test(zoomType),
+			zoomY = /y/.test(zoomType),
+			zoomHor = (zoomX && !inverted) || (zoomY && inverted),
+			zoomVert = (zoomY && !inverted) || (zoomX && inverted);
+
+		/**
+		 * Add crossbrowser support for chartX and chartY
+		 * @param {Object} e The event object in standard browsers
+		 */
+		function normalizeMouseEvent(e) {
+			var ePos,
+				pageZoomFix = isWebKit &&
+					doc.width / doc.body.scrollWidth -
+					1, // #224, #348
+				chartPosLeft,
+				chartPosTop,
+				chartX,
+				chartY;
+
+			// common IE normalizing
+			e = e || win.event;
+			if (!e.target) {
+				e.target = e.srcElement;
+			}
+
+			// iOS
+			ePos = e.touches ? e.touches.item(0) : e;
+
+			// in certain cases, get mouse position
+			if (e.type !== 'mousemove' || win.opera || pageZoomFix) { // only Opera needs position on mouse move, see below
+				chartPosition = getPosition(container);
+				chartPosLeft = chartPosition.left;
+				chartPosTop = chartPosition.top;
+			}
+
+			// chartX and chartY
+			if (isIE) { // IE including IE9 that has chartX but in a different meaning
+				chartX = e.x;
+				chartY = e.y;
+			} else {
+				if (ePos.layerX === UNDEFINED) { // Opera and iOS
+					chartX = ePos.pageX - chartPosLeft;
+					chartY = ePos.pageY - chartPosTop;
+				} else {
+					chartX = e.layerX;
+					chartY = e.layerY;
+				}
+			}
+
+			// correct for page zoom bug in WebKit
+			if (pageZoomFix) {
+				chartX += mathRound((pageZoomFix + 1) * chartPosLeft - chartPosLeft);
+				chartY += mathRound((pageZoomFix + 1) * chartPosTop - chartPosTop);
+			}
+
+			return extend(e, {
+				chartX: chartX,
+				chartY: chartY
+			});
+		}
+
+		/**
+		 * Get the click position in terms of axis values.
+		 *
+		 * @param {Object} e A mouse event
+		 */
+		function getMouseCoordinates(e) {
+			var coordinates = {
+				xAxis: [],
+				yAxis: []
+			};
+			each(axes, function (axis) {
+				var translate = axis.translate,
+					isXAxis = axis.isXAxis,
+					isHorizontal = inverted ? !isXAxis : isXAxis;
+
+				coordinates[isXAxis ? 'xAxis' : 'yAxis'].push({
+					axis: axis,
+					value: translate(
+						isHorizontal ?
+							e.chartX - plotLeft  :
+							plotHeight - e.chartY + plotTop,
+						true
+					)
+				});
+			});
+			return coordinates;
+		}
+
+		/**
+		 * With line type charts with a single tracker, get the point closest to the mouse
+		 */
+		function onmousemove(e) {
+			var point,
+				points,
+				hoverPoint = chart.hoverPoint,
+				hoverSeries = chart.hoverSeries,
+				i,
+				j,
+				distance = chartWidth,
+				index = inverted ? e.chartY : e.chartX - plotLeft; // wtf?
+
+			// shared tooltip
+			if (tooltip && options.shared) {
+				points = [];
+
+				// loop over all series and find the ones with points closest to the mouse
+				i = series.length;
+				for (j = 0; j < i; j++) {
+					if (series[j].visible && series[j].tooltipPoints.length) {
+						point = series[j].tooltipPoints[index];
+						point._dist = mathAbs(index - point.plotX);
+						distance = mathMin(distance, point._dist);
+						points.push(point);
+					}
+				}
+				// remove furthest points
+				i = points.length;
+				while (i--) {
+					if (points[i]._dist > distance) {
+						points.splice(i, 1);
+					}
+				}
+				// refresh the tooltip if necessary
+				if (points.length && (points[0].plotX !== hoverX)) {
+					tooltip.refresh(points);
+					hoverX = points[0].plotX;
+				}
+			}
+
+			// separate tooltip and general mouse events
+			if (hoverSeries && hoverSeries.tracker) { // only use for line-type series with common tracker
+
+				// get the point
+				point = hoverSeries.tooltipPoints[index];
+
+				// a new point is hovered, refresh the tooltip
+				if (point && point !== hoverPoint) {
+
+					// trigger the events
+					point.onMouseOver();
+
+				}
+			}
+		}
+
+
+
+		/**
+		 * Reset the tracking by hiding the tooltip, the hover series state and the hover point
+		 */
+		function resetTracker() {
+			var hoverSeries = chart.hoverSeries,
+				hoverPoint = chart.hoverPoint;
+
+			if (hoverPoint) {
+				hoverPoint.onMouseOut();
+			}
+
+			if (hoverSeries) {
+				hoverSeries.onMouseOut();
+			}
+
+			if (tooltip) {
+				tooltip.hide();
+			}
+
+			hoverX = null;
+		}
+
+		/**
+		 * Mouse up or outside the plot area
+		 */
+		function drop() {
+			if (selectionMarker) {
+				var selectionData = {
+						xAxis: [],
+						yAxis: []
+					},
+					selectionBox = selectionMarker.getBBox(),
+					selectionLeft = selectionBox.x - plotLeft,
+					selectionTop = selectionBox.y - plotTop;
+
+
+				// a selection has been made
+				if (hasDragged) {
+
+					// record each axis' min and max
+					each(axes, function (axis) {
+						var translate = axis.translate,
+							isXAxis = axis.isXAxis,
+							isHorizontal = inverted ? !isXAxis : isXAxis,
+							selectionMin = translate(
+								isHorizontal ?
+									selectionLeft :
+									plotHeight - selectionTop - selectionBox.height,
+								true,
+								0,
+								0,
+								1
+							),
+							selectionMax = translate(
+								isHorizontal ?
+									selectionLeft + selectionBox.width :
+									plotHeight - selectionTop,
+								true,
+								0,
+								0,
+								1
+							);
+
+							selectionData[isXAxis ? 'xAxis' : 'yAxis'].push({
+								axis: axis,
+								min: mathMin(selectionMin, selectionMax), // for reversed axes,
+								max: mathMax(selectionMin, selectionMax)
+							});
+
+					});
+					fireEvent(chart, 'selection', selectionData, zoom);
+
+				}
+				selectionMarker = selectionMarker.destroy();
+			}
+
+			chart.mouseIsDown = mouseIsDown = hasDragged = false;
+			removeEvent(doc, hasTouch ? 'touchend' : 'mouseup', drop);
+
+		}
+
+		/**
+		 * Special handler for mouse move that will hide the tooltip when the mouse leaves the plotarea.
+		 */
+		function hideTooltipOnMouseMove(e) {
+			var pageX = defined(e.pageX) ? e.pageX : e.page.x, // In mootools the event is wrapped and the page x/y position is named e.page.x
+				pageY = defined(e.pageX) ? e.pageY : e.page.y; // Ref: http://mootools.net/docs/core/Types/DOMEvent
+
+			if (chartPosition &&
+					!isInsidePlot(pageX - chartPosition.left - plotLeft,
+						pageY - chartPosition.top - plotTop)) {
+				resetTracker();
+			}
+		}
+
+		/**
+		 * Set the JS events on the container element
+		 */
+		function setDOMEvents() {
+			var lastWasOutsidePlot = true;
+			/*
+			 * Record the starting position of a dragoperation
+			 */
+			container.onmousedown = function (e) {
+				e = normalizeMouseEvent(e);
+
+				// issue #295, dragging not always working in Firefox
+				if (!hasTouch && e.preventDefault) {
+					e.preventDefault();
+				}
+
+				// record the start position
+				chart.mouseIsDown = mouseIsDown = true;
+				mouseDownX = e.chartX;
+				mouseDownY = e.chartY;
+
+				addEvent(doc, hasTouch ? 'touchend' : 'mouseup', drop);
+			};
+
+			// The mousemove, touchmove and touchstart event handler
+			var mouseMove = function (e) {
+
+				// let the system handle multitouch operations like two finger scroll
+				// and pinching
+				if (e && e.touches && e.touches.length > 1) {
+					return;
+				}
+
+				// normalize
+				e = normalizeMouseEvent(e);
+				if (!hasTouch) { // not for touch devices
+					e.returnValue = false;
+				}
+
+				var chartX = e.chartX,
+					chartY = e.chartY,
+					isOutsidePlot = !isInsidePlot(chartX - plotLeft, chartY - plotTop);
+
+				// cache chart position for issue #149 fix
+				if (!chartPosition) {
+					chartPosition = getPosition(container);
+				}
+
+				// on touch devices, only trigger click if a handler is defined
+				if (hasTouch && e.type === 'touchstart') {
+					if (attr(e.target, 'isTracker')) {
+						if (!chart.runTrackerClick) {
+							e.preventDefault();
+						}
+					} else if (!runChartClick && !isOutsidePlot) {
+						e.preventDefault();
+					}
+				}
+
+				// cancel on mouse outside
+				if (isOutsidePlot) {
+
+					/*if (!lastWasOutsidePlot) {
+						// reset the tracker
+						resetTracker();
+					}*/
+
+					// drop the selection if any and reset mouseIsDown and hasDragged
+					//drop();
+					if (chartX < plotLeft) {
+						chartX = plotLeft;
+					} else if (chartX > plotLeft + plotWidth) {
+						chartX = plotLeft + plotWidth;
+					}
+
+					if (chartY < plotTop) {
+						chartY = plotTop;
+					} else if (chartY > plotTop + plotHeight) {
+						chartY = plotTop + plotHeight;
+					}
+
+				}
+
+				if (mouseIsDown && e.type !== 'touchstart') { // make selection
+
+					// determine if the mouse has moved more than 10px
+					hasDragged = Math.sqrt(
+						Math.pow(mouseDownX - chartX, 2) +
+						Math.pow(mouseDownY - chartY, 2)
+					);
+					if (hasDragged > 10) {
+
+						// make a selection
+						if (hasCartesianSeries && (zoomX || zoomY) &&
+								isInsidePlot(mouseDownX - plotLeft, mouseDownY - plotTop)) {
+							if (!selectionMarker) {
+								selectionMarker = renderer.rect(
+									plotLeft,
+									plotTop,
+									zoomHor ? 1 : plotWidth,
+									zoomVert ? 1 : plotHeight,
+									0
+								)
+								.attr({
+									fill: optionsChart.selectionMarkerFill || 'rgba(69,114,167,0.25)',
+									zIndex: 7
+								})
+								.add();
+							}
+						}
+
+						// adjust the width of the selection marker
+						if (selectionMarker && zoomHor) {
+							var xSize = chartX - mouseDownX;
+							selectionMarker.attr({
+								width: mathAbs(xSize),
+								x: (xSize > 0 ? 0 : xSize) + mouseDownX
+							});
+						}
+						// adjust the height of the selection marker
+						if (selectionMarker && zoomVert) {
+							var ySize = chartY - mouseDownY;
+							selectionMarker.attr({
+								height: mathAbs(ySize),
+								y: (ySize > 0 ? 0 : ySize) + mouseDownY
+							});
+						}
+					}
+
+				} else if (!isOutsidePlot) {
+					// show the tooltip
+					onmousemove(e);
+				}
+
+				lastWasOutsidePlot = isOutsidePlot;
+
+				// when outside plot, allow touch-drag by returning true
+				return isOutsidePlot || !hasCartesianSeries;
+			};
+
+			/*
+			 * When the mouse enters the container, run mouseMove
+			 */
+			container.onmousemove = mouseMove;
+
+			/*
+			 * When the mouse leaves the container, hide the tracking (tooltip).
+			 */
+			addEvent(container, 'mouseleave', resetTracker);
+
+			// issue #149 workaround
+			// The mouseleave event above does not always fire. Whenever the mouse is moving
+			// outside the plotarea, hide the tooltip
+			addEvent(doc, 'mousemove', hideTooltipOnMouseMove);
+
+			container.ontouchstart = function (e) {
+				// For touch devices, use touchmove to zoom
+				if (zoomX || zoomY) {
+					container.onmousedown(e);
+				}
+				// Show tooltip and prevent the lower mouse pseudo event
+				mouseMove(e);
+			};
+
+			/*
+			 * Allow dragging the finger over the chart to read the values on touch
+			 * devices
+			 */
+			container.ontouchmove = mouseMove;
+
+			/*
+			 * Allow dragging the finger over the chart to read the values on touch
+			 * devices
+			 */
+			container.ontouchend = function () {
+				if (hasDragged) {
+					resetTracker();
+				}
+			};
+
+
+			// MooTools 1.2.3 doesn't fire this in IE when using addEvent
+			container.onclick = function (e) {
+				var hoverPoint = chart.hoverPoint;
+				e = normalizeMouseEvent(e);
+
+				e.cancelBubble = true; // IE specific
+
+
+				if (!hasDragged) {
+					if (hoverPoint && attr(e.target, 'isTracker')) {
+						var plotX = hoverPoint.plotX,
+							plotY = hoverPoint.plotY;
+
+						// add page position info
+						extend(hoverPoint, {
+							pageX: chartPosition.left + plotLeft +
+								(inverted ? plotWidth - plotY : plotX),
+							pageY: chartPosition.top + plotTop +
+								(inverted ? plotHeight - plotX : plotY)
+						});
+
+						// the series click event
+						fireEvent(hoverPoint.series, 'click', extend(e, {
+							point: hoverPoint
+						}));
+
+						// the point click event
+						hoverPoint.firePointEvent('click', e);
+
+					} else {
+						extend(e, getMouseCoordinates(e));
+
+						// fire a click event in the chart
+						if (isInsidePlot(e.chartX - plotLeft, e.chartY - plotTop)) {
+							fireEvent(chart, 'click', e);
+						}
+					}
+
+
+				}
+				// reset mouseIsDown and hasDragged
+				hasDragged = false;
+			};
+
+		}
+
+		/**
+		 * Destroys the MouseTracker object and disconnects DOM events.
+		 */
+		function destroy() {
+			// Destroy the tracker group element
+			if (chart.trackerGroup) {
+				chart.trackerGroup = trackerGroup = chart.trackerGroup.destroy();
+			}
+
+			removeEvent(doc, 'mousemove', hideTooltipOnMouseMove);
+			container.onclick = container.onmousedown = container.onmousemove = container.ontouchstart = container.ontouchend = container.ontouchmove = null;
+		}
+
+		/**
+		 * Create the image map that listens for mouseovers
+		 */
+		placeTrackerGroup = function () {
+
+			// first create - plot positions is not final at this stage
+			if (!trackerGroup) {
+				chart.trackerGroup = trackerGroup = renderer.g('tracker')
+					.attr({ zIndex: 9 })
+					.add();
+
+			// then position - this happens on load and after resizing and changing
+			// axis or box positions
+			} else {
+				trackerGroup.translate(plotLeft, plotTop);
+				if (inverted) {
+					trackerGroup.attr({
+						width: chart.plotWidth,
+						height: chart.plotHeight
+					}).invert();
+				}
+			}
+		};
+
+
+		// Run MouseTracker
+		placeTrackerGroup();
+		if (options.enabled) {
+			chart.tooltip = tooltip = Tooltip(options);
+		}
+
+		setDOMEvents();
+
+		// set the fixed interval ticking for the smooth tooltip
+		tooltipInterval = setInterval(function () {
+			if (tooltipTick) {
+				tooltipTick();
+			}
+		}, 32);
+
+		// expose properties
+		extend(this, {
+			zoomX: zoomX,
+			zoomY: zoomY,
+			resetTracker: resetTracker,
+			destroy: destroy
+		});
+	}
+
+
+
+	/**
+	 * The overview of the chart's series
+	 */
+	var Legend = function () {
+
+		var options = chart.options.legend;
+
+		if (!options.enabled) {
+			return;
+		}
+
+		var horizontal = options.layout === 'horizontal',
+			symbolWidth = options.symbolWidth,
+			symbolPadding = options.symbolPadding,
+			allItems,
+			style = options.style,
+			itemStyle = options.itemStyle,
+			itemHoverStyle = options.itemHoverStyle,
+			itemHiddenStyle = options.itemHiddenStyle,
+			padding = pInt(style.padding),
+			y = 18,
+			initialItemX = 4 + padding + symbolWidth + symbolPadding,
+			itemX,
+			itemY,
+			lastItemY,
+			itemHeight = 0,
+			box,
+			legendBorderWidth = options.borderWidth,
+			legendBackgroundColor = options.backgroundColor,
+			legendGroup,
+			offsetWidth,
+			widthOption = options.width,
+			series = chart.series,
+			reversedLegend = options.reversed;
+
+
+
+		/**
+		 * Set the colors for the legend item
+		 * @param {Object} item A Series or Point instance
+		 * @param {Object} visible Dimmed or colored
+		 */
+		function colorizeItem(item, visible) {
+			var legendItem = item.legendItem,
+				legendLine = item.legendLine,
+				legendSymbol = item.legendSymbol,
+				hiddenColor = itemHiddenStyle.color,
+				textColor = visible ? options.itemStyle.color : hiddenColor,
+				lineColor = visible ? item.color : hiddenColor,
+				symbolAttr = visible ? item.pointAttr[NORMAL_STATE] : {
+					stroke: hiddenColor,
+					fill: hiddenColor
+				};
+
+			if (legendItem) {
+				legendItem.css({ fill: textColor });
+			}
+			if (legendLine) {
+				legendLine.attr({ stroke: lineColor });
+			}
+			if (legendSymbol) {
+				legendSymbol.attr(symbolAttr);
+			}
+
+		}
+
+		/**
+		 * Position the legend item
+		 * @param {Object} item A Series or Point instance
+		 * @param {Object} visible Dimmed or colored
+		 */
+		function positionItem(item, itemX, itemY) {
+			var legendItem = item.legendItem,
+				legendLine = item.legendLine,
+				legendSymbol = item.legendSymbol,
+				checkbox = item.checkbox;
+			if (legendItem) {
+				legendItem.attr({
+					x: itemX,
+					y: itemY
+				});
+			}
+			if (legendLine) {
+				legendLine.translate(itemX, itemY - 4);
+			}
+			if (legendSymbol) {
+				legendSymbol.attr({
+					x: itemX + legendSymbol.xOff,
+					y: itemY + legendSymbol.yOff
+				});
+			}
+			if (checkbox) {
+				checkbox.x = itemX;
+				checkbox.y = itemY;
+			}
+		}
+
+		/**
+		 * Destroy a single legend item
+		 * @param {Object} item The series or point
+		 */
+		function destroyItem(item) {
+			var checkbox = item.checkbox;
+
+			// pull out from the array
+			//erase(allItems, item);
+
+			// destroy SVG elements
+			each(['legendItem', 'legendLine', 'legendSymbol'], function (key) {
+				if (item[key]) {
+					item[key].destroy();
+				}
+			});
+
+			if (checkbox) {
+				discardElement(item.checkbox);
+			}
+
+
+		}
+
+		/**
+		 * Destroys the legend.
+		 */
+		function destroy() {
+			if (box) {
+				box = box.destroy();
+			}
+
+			if (legendGroup) {
+				legendGroup = legendGroup.destroy();
+			}
+		}
+
+		/**
+		 * Position the checkboxes after the width is determined
+		 */
+		function positionCheckboxes() {
+			each(allItems, function (item) {
+				var checkbox = item.checkbox,
+					alignAttr = legendGroup.alignAttr;
+				if (checkbox) {
+					css(checkbox, {
+						left: (alignAttr.translateX + item.legendItemWidth + checkbox.x - 40) + PX,
+						top: (alignAttr.translateY + checkbox.y - 11) + PX
+					});
+				}
+			});
+		}
+
+		/**
+		 * Render a single specific legend item
+		 * @param {Object} item A series or point
+		 */
+		function renderItem(item) {
+			var bBox,
+				itemWidth,
+				legendSymbol,
+				symbolX,
+				symbolY,
+				simpleSymbol,
+				li = item.legendItem,
+				series = item.series || item,
+				itemOptions = series.options,
+				strokeWidth = (itemOptions && itemOptions.borderWidth) || 0;
+
+			if (!li) { // generate it once, later move it
+
+				// let these series types use a simple symbol
+				simpleSymbol = /^(bar|pie|area|column)$/.test(series.type);
+
+				// generate the list item text
+				item.legendItem = li = renderer.text(
+						options.labelFormatter.call(item),
+						0,
+						0
+					)
+					.css(item.visible ? itemStyle : itemHiddenStyle)
+					.on('mouseover', function () {
+						item.setState(HOVER_STATE);
+						li.css(itemHoverStyle);
+					})
+					.on('mouseout', function () {
+						li.css(item.visible ? itemStyle : itemHiddenStyle);
+						item.setState();
+					})
+					.on('click', function () {
+						var strLegendItemClick = 'legendItemClick',
+							fnLegendItemClick = function () {
+								item.setVisible();
+							};
+
+						// click the name or symbol
+						if (item.firePointEvent) { // point
+							item.firePointEvent(strLegendItemClick, null, fnLegendItemClick);
+						} else {
+							fireEvent(item, strLegendItemClick, null, fnLegendItemClick);
+						}
+					})
+					.attr({ zIndex: 2 })
+					.add(legendGroup);
+
+				// draw the line
+				if (!simpleSymbol && itemOptions && itemOptions.lineWidth) {
+					var attrs = {
+							'stroke-width': itemOptions.lineWidth,
+							zIndex: 2
+						};
+					if (itemOptions.dashStyle) {
+						attrs.dashstyle = itemOptions.dashStyle;
+					}
+					item.legendLine = renderer.path([
+						M,
+						-symbolWidth - symbolPadding,
+						0,
+						L,
+						-symbolPadding,
+						0
+					])
+					.attr(attrs)
+					.add(legendGroup);
+				}
+
+				// draw a simple symbol
+				if (simpleSymbol) { // bar|pie|area|column
+
+					legendSymbol = renderer.rect(
+						(symbolX = -symbolWidth - symbolPadding),
+						(symbolY = -11),
+						symbolWidth,
+						12,
+						2
+					).attr({
+						//'stroke-width': 0,
+						zIndex: 3
+					}).add(legendGroup);
+
+				// draw the marker
+				} else if (itemOptions && itemOptions.marker && itemOptions.marker.enabled) {
+					legendSymbol = renderer.symbol(
+						item.symbol,
+						(symbolX = -symbolWidth / 2 - symbolPadding),
+						(symbolY = -4),
+						itemOptions.marker.radius
+					)
+					//.attr(item.pointAttr[NORMAL_STATE])
+					.attr({ zIndex: 3 })
+					.add(legendGroup);
+
+				}
+				if (legendSymbol) {
+					legendSymbol.xOff = symbolX + (strokeWidth % 2 / 2);
+					legendSymbol.yOff = symbolY + (strokeWidth % 2 / 2);
+				}
+
+				item.legendSymbol = legendSymbol;
+
+				// colorize the items
+				colorizeItem(item, item.visible);
+
+
+				// add the HTML checkbox on top
+				if (itemOptions && itemOptions.showCheckbox) {
+					item.checkbox = createElement('input', {
+						type: 'checkbox',
+						checked: item.selected,
+						defaultChecked: item.selected // required by IE7
+					}, options.itemCheckboxStyle, container);
+
+					addEvent(item.checkbox, 'click', function (event) {
+						var target = event.target;
+						fireEvent(item, 'checkboxClick', {
+								checked: target.checked
+							},
+							function () {
+								item.select();
+							}
+						);
+					});
+				}
+			}
+
+
+			// calculate the positions for the next line
+			bBox = li.getBBox();
+
+			itemWidth = item.legendItemWidth =
+				options.itemWidth || symbolWidth + symbolPadding + bBox.width + padding;
+			itemHeight = bBox.height;
+
+			// if the item exceeds the width, start a new line
+			if (horizontal && itemX - initialItemX + itemWidth >
+					(widthOption || (chartWidth - 2 * padding - initialItemX))) {
+				itemX = initialItemX;
+				itemY += itemHeight;
+			}
+			lastItemY = itemY;
+
+			// position the newly generated or reordered items
+			positionItem(item, itemX, itemY);
+
+			// advance
+			if (horizontal) {
+				itemX += itemWidth;
+			} else {
+				itemY += itemHeight;
+			}
+
+			// the width of the widest item
+			offsetWidth = widthOption || mathMax(
+				horizontal ? itemX - initialItemX : itemWidth,
+				offsetWidth
+			);
+
+
+
+			// add it all to an array to use below
+			//allItems.push(item);
+		}
+
+		/**
+		 * Render the legend. This method can be called both before and after
+		 * chart.render. If called after, it will only rearrange items instead
+		 * of creating new ones.
+		 */
+		function renderLegend() {
+			itemX = initialItemX;
+			itemY = y;
+			offsetWidth = 0;
+			lastItemY = 0;
+
+			if (!legendGroup) {
+				legendGroup = renderer.g('legend')
+					.attr({ zIndex: 7 })
+					.add();
+			}
+
+
+			// add each series or point
+			allItems = [];
+			each(series, function (serie) {
+				var seriesOptions = serie.options;
+
+				if (!seriesOptions.showInLegend) {
+					return;
+				}
+
+				// use points or series for the legend item depending on legendType
+				allItems = allItems.concat(seriesOptions.legendType === 'point' ?
+					serie.data :
+					serie
+				);
+
+			});
+
+			// sort by legendIndex
+			stableSort(allItems, function (a, b) {
+				return (a.options.legendIndex || 0) - (b.options.legendIndex || 0);
+			});
+
+			// reversed legend
+			if (reversedLegend) {
+				allItems.reverse();
+			}
+
+			// render the items
+			each(allItems, renderItem);
+
+
+
+			// Draw the border
+			legendWidth = widthOption || offsetWidth;
+			legendHeight = lastItemY - y + itemHeight;
+
+			if (legendBorderWidth || legendBackgroundColor) {
+				legendWidth += 2 * padding;
+				legendHeight += 2 * padding;
+
+				if (!box) {
+					box = renderer.rect(
+						0,
+						0,
+						legendWidth,
+						legendHeight,
+						options.borderRadius,
+						legendBorderWidth || 0
+					).attr({
+						stroke: options.borderColor,
+						'stroke-width': legendBorderWidth || 0,
+						fill: legendBackgroundColor || NONE
+					})
+					.add(legendGroup)
+					.shadow(options.shadow);
+					box.isNew = true;
+
+				} else if (legendWidth > 0 && legendHeight > 0) {
+					box[box.isNew ? 'attr' : 'animate'](
+						box.crisp(null, null, null, legendWidth, legendHeight)
+					);
+					box.isNew = false;
+				}
+
+				// hide the border if no items
+				box[allItems.length ? 'show' : 'hide']();
+			}
+
+			// 1.x compatibility: positioning based on style
+			var props = ['left', 'right', 'top', 'bottom'],
+				prop,
+				i = 4;
+			while (i--) {
+				prop = props[i];
+				if (style[prop] && style[prop] !== 'auto') {
+					options[i < 2 ? 'align' : 'verticalAlign'] = prop;
+					options[i < 2 ? 'x' : 'y'] = pInt(style[prop]) * (i % 2 ? -1 : 1);
+				}
+			}
+
+			if (allItems.length) {
+				legendGroup.align(extend(options, {
+					width: legendWidth,
+					height: legendHeight
+				}), true, spacingBox);
+			}
+
+			if (!isResizing) {
+				positionCheckboxes();
+			}
+		}
+
+
+		// run legend
+		renderLegend();
+
+		// move checkboxes
+		addEvent(chart, 'endResize', positionCheckboxes);
+
+		// expose
+		return {
+			colorizeItem: colorizeItem,
+			destroyItem: destroyItem,
+			renderLegend: renderLegend,
+			destroy: destroy
+		};
+	};
+
+
+
+
+
+
+	/**
+	 * Initialize an individual series, called internally before render time
+	 */
+	function initSeries(options) {
+		var type = options.type || optionsChart.type || optionsChart.defaultSeriesType,
+			typeClass = seriesTypes[type],
+			serie,
+			hasRendered = chart.hasRendered;
+
+		// an inverted chart can't take a column series and vice versa
+		if (hasRendered) {
+			if (inverted && type === 'column') {
+				typeClass = seriesTypes.bar;
+			} else if (!inverted && type === 'bar') {
+				typeClass = seriesTypes.column;
+			}
+		}
+
+		serie = new typeClass();
+
+		serie.init(chart, options);
+
+		// set internal chart properties
+		if (!hasRendered && serie.inverted) {
+			inverted = true;
+		}
+		if (serie.isCartesian) {
+			hasCartesianSeries = serie.isCartesian;
+		}
+
+		series.push(serie);
+
+		return serie;
+	}
+
+	/**
+	 * Add a series dynamically after  time
+	 *
+	 * @param {Object} options The config options
+	 * @param {Boolean} redraw Whether to redraw the chart after adding. Defaults to true.
+	 * @param {Boolean|Object} animation Whether to apply animation, and optionally animation
+	 *    configuration
+	 *
+	 * @return {Object} series The newly created series object
+	 */
+	function addSeries(options, redraw, animation) {
+		var series;
+
+		if (options) {
+			setAnimation(animation, chart);
+			redraw = pick(redraw, true); // defaults to true
+
+			fireEvent(chart, 'addSeries', { options: options }, function () {
+				series = initSeries(options);
+				series.isDirty = true;
+
+				chart.isDirtyLegend = true; // the series array is out of sync with the display
+				if (redraw) {
+					chart.redraw();
+				}
+			});
+		}
+
+		return series;
+	}
+
+	/**
+	 * Check whether a given point is within the plot area
+	 *
+	 * @param {Number} x Pixel x relative to the coordinateSystem
+	 * @param {Number} y Pixel y relative to the coordinateSystem
+	 */
+	isInsidePlot = function (x, y) {
+		return x >= 0 &&
+			x <= plotWidth &&
+			y >= 0 &&
+			y <= plotHeight;
+	};
+
+	/**
+	 * Adjust all axes tick amounts
+	 */
+	function adjustTickAmounts() {
+		if (optionsChart.alignTicks !== false) {
+			each(axes, function (axis) {
+				axis.adjustTickAmount();
+			});
+		}
+		maxTicks = null;
+	}
+
+	/**
+	 * Redraw legend, axes or series based on updated data
+	 *
+	 * @param {Boolean|Object} animation Whether to apply animation, and optionally animation
+	 *    configuration
+	 */
+	function redraw(animation) {
+		var redrawLegend = chart.isDirtyLegend,
+			hasStackedSeries,
+			isDirtyBox = chart.isDirtyBox, // todo: check if it has actually changed?
+			seriesLength = series.length,
+			i = seriesLength,
+			clipRect = chart.clipRect,
+			serie;
+
+		setAnimation(animation, chart);
+
+		// link stacked series
+		while (i--) {
+			serie = series[i];
+			if (serie.isDirty && serie.options.stacking) {
+				hasStackedSeries = true;
+				break;
+			}
+		}
+		if (hasStackedSeries) { // mark others as dirty
+			i = seriesLength;
+			while (i--) {
+				serie = series[i];
+				if (serie.options.stacking) {
+					serie.isDirty = true;
+				}
+			}
+		}
+
+		// handle updated data in the series
+		each(series, function (serie) {
+			if (serie.isDirty) { // prepare the data so axis can read it
+				serie.cleanData();
+				serie.getSegments();
+
+				if (serie.options.legendType === 'point') {
+					redrawLegend = true;
+				}
+			}
+		});
+
+		// handle added or removed series
+		if (redrawLegend && legend.renderLegend) { // series or pie points are added or removed
+			// draw legend graphics
+			legend.renderLegend();
+
+			chart.isDirtyLegend = false;
+		}
+
+		if (hasCartesianSeries) {
+			if (!isResizing) {
+
+				// reset maxTicks
+				maxTicks = null;
+
+				// set axes scales
+				each(axes, function (axis) {
+					axis.setScale();
+				});
+			}
+			adjustTickAmounts();
+			getMargins();
+
+			// redraw axes
+			each(axes, function (axis) {
+				if (axis.isDirty || isDirtyBox) {
+					axis.redraw();
+					isDirtyBox = true; // always redraw box to reflect changes in the axis labels
+				}
+			});
+
+
+		}
+
+		// the plot areas size has changed
+		if (isDirtyBox) {
+			drawChartBox();
+			placeTrackerGroup();
+
+			// move clip rect
+			if (clipRect) {
+				stop(clipRect);
+				clipRect.animate({ // for chart resize
+					width: chart.plotSizeX,
+					height: chart.plotSizeY
+				});
+			}
+
+		}
+
+
+		// redraw affected series
+		each(series, function (serie) {
+			if (serie.isDirty && serie.visible &&
+					(!serie.isCartesian || serie.xAxis)) { // issue #153
+				serie.redraw();
+			}
+		});
+
+
+		// hide tooltip and hover states
+		if (tracker && tracker.resetTracker) {
+			tracker.resetTracker();
+		}
+
+		// fire the event
+		fireEvent(chart, 'redraw');
+	}
+
+
+
+	/**
+	 * Dim the chart and show a loading text or symbol
+	 * @param {String} str An optional text to show in the loading label instead of the default one
+	 */
+	function showLoading(str) {
+		var loadingOptions = options.loading;
+
+		// create the layer at the first call
+		if (!loadingDiv) {
+			loadingDiv = createElement(DIV, {
+				className: 'highcharts-loading'
+			}, extend(loadingOptions.style, {
+				left: plotLeft + PX,
+				top: plotTop + PX,
+				width: plotWidth + PX,
+				height: plotHeight + PX,
+				zIndex: 10,
+				display: NONE
+			}), container);
+
+			loadingSpan = createElement(
+				'span',
+				null,
+				loadingOptions.labelStyle,
+				loadingDiv
+			);
+
+		}
+
+		// update text
+		loadingSpan.innerHTML = str || options.lang.loading;
+
+		// show it
+		if (!loadingShown) {
+			css(loadingDiv, { opacity: 0, display: '' });
+			animate(loadingDiv, {
+				opacity: loadingOptions.style.opacity
+			}, {
+				duration: loadingOptions.showDuration
+			});
+			loadingShown = true;
+		}
+	}
+	/**
+	 * Hide the loading layer
+	 */
+	function hideLoading() {
+		animate(loadingDiv, {
+			opacity: 0
+		}, {
+			duration: options.loading.hideDuration,
+			complete: function () {
+				css(loadingDiv, { display: NONE });
+			}
+		});
+		loadingShown = false;
+	}
+
+	/**
+	 * Get an axis, series or point object by id.
+	 * @param id {String} The id as given in the configuration options
+	 */
+	function get(id) {
+		var i,
+			j,
+			data;
+
+		// search axes
+		for (i = 0; i < axes.length; i++) {
+			if (axes[i].options.id === id) {
+				return axes[i];
+			}
+		}
+
+		// search series
+		for (i = 0; i < series.length; i++) {
+			if (series[i].options.id === id) {
+				return series[i];
+			}
+		}
+
+		// search points
+		for (i = 0; i < series.length; i++) {
+			data = series[i].data;
+			for (j = 0; j < data.length; j++) {
+				if (data[j].id === id) {
+					return data[j];
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Create the Axis instances based on the config options
+	 */
+	function getAxes() {
+		var xAxisOptions = options.xAxis || {},
+			yAxisOptions = options.yAxis || {},
+			axis;
+
+		// make sure the options are arrays and add some members
+		xAxisOptions = splat(xAxisOptions);
+		each(xAxisOptions, function (axis, i) {
+			axis.index = i;
+			axis.isX = true;
+		});
+
+		yAxisOptions = splat(yAxisOptions);
+		each(yAxisOptions, function (axis, i) {
+			axis.index = i;
+		});
+
+		// concatenate all axis options into one array
+		axes = xAxisOptions.concat(yAxisOptions);
+
+		// loop the options and construct axis objects
+		chart.xAxis = [];
+		chart.yAxis = [];
+		axes = map(axes, function (axisOptions) {
+			axis = new Axis(axisOptions);
+			chart[axis.isXAxis ? 'xAxis' : 'yAxis'].push(axis);
+
+			return axis;
+		});
+
+		adjustTickAmounts();
+	}
+
+
+	/**
+	 * Get the currently selected points from all series
+	 */
+	function getSelectedPoints() {
+		var points = [];
+		each(series, function (serie) {
+			points = points.concat(grep(serie.data, function (point) {
+				return point.selected;
+			}));
+		});
+		return points;
+	}
+
+	/**
+	 * Get the currently selected series
+	 */
+	function getSelectedSeries() {
+		return grep(series, function (serie) {
+			return serie.selected;
+		});
+	}
+
+	/**
+	 * Zoom out to 1:1
+	 */
+	zoomOut = function () {
+		fireEvent(chart, 'selection', { resetSelection: true }, zoom);
+		chart.toolbar.remove('zoom');
+
+	};
+	/**
+	 * Zoom into a given portion of the chart given by axis coordinates
+	 * @param {Object} event
+	 */
+	zoom = function (event) {
+
+		// add button to reset selection
+		var lang = defaultOptions.lang,
+			animate = chart.pointCount < 100;
+		chart.toolbar.add('zoom', lang.resetZoom, lang.resetZoomTitle, zoomOut);
+
+		// if zoom is called with no arguments, reset the axes
+		if (!event || event.resetSelection) {
+			each(axes, function (axis) {
+				axis.setExtremes(null, null, false, animate);
+			});
+		} else { // else, zoom in on all axes
+			each(event.xAxis.concat(event.yAxis), function (axisData) {
+				var axis = axisData.axis;
+
+				// don't zoom more than maxZoom
+				if (chart.tracker[axis.isXAxis ? 'zoomX' : 'zoomY']) {
+					axis.setExtremes(axisData.min, axisData.max, false, animate);
+				}
+			});
+		}
+
+		// redraw chart
+		redraw();
+	};
+
+	/**
+	 * Show the title and subtitle of the chart
+	 *
+	 * @param titleOptions {Object} New title options
+	 * @param subtitleOptions {Object} New subtitle options
+	 *
+	 */
+	function setTitle(titleOptions, subtitleOptions) {
+
+		chartTitleOptions = merge(options.title, titleOptions);
+		chartSubtitleOptions = merge(options.subtitle, subtitleOptions);
+
+		// add title and subtitle
+		each([
+			['title', titleOptions, chartTitleOptions],
+			['subtitle', subtitleOptions, chartSubtitleOptions]
+		], function (arr) {
+			var name = arr[0],
+				title = chart[name],
+				titleOptions = arr[1],
+				chartTitleOptions = arr[2];
+
+			if (title && titleOptions) {
+				title = title.destroy(); // remove old
+			}
+			if (chartTitleOptions && chartTitleOptions.text && !title) {
+				chart[name] = renderer.text(
+					chartTitleOptions.text,
+					0,
+					0,
+					chartTitleOptions.useHTML
+				)
+				.attr({
+					align: chartTitleOptions.align,
+					'class': 'highcharts-' + name,
+					zIndex: 1
+				})
+				.css(chartTitleOptions.style)
+				.add()
+				.align(chartTitleOptions, false, spacingBox);
+			}
+		});
+
+	}
+
+	/**
+	 * Get chart width and height according to options and container size
+	 */
+	function getChartSize() {
+
+		containerWidth = (renderToClone || renderTo).offsetWidth;
+		containerHeight = (renderToClone || renderTo).offsetHeight;
+		chart.chartWidth = chartWidth = optionsChart.width || containerWidth || 600;
+		chart.chartHeight = chartHeight = optionsChart.height ||
+			// the offsetHeight of an empty container is 0 in standard browsers, but 19 in IE7:
+			(containerHeight > 19 ? containerHeight : 400);
+	}
+
+
+	/**
+	 * Get the containing element, determine the size and create the inner container
+	 * div to hold the chart
+	 */
+	function getContainer() {
+		renderTo = optionsChart.renderTo;
+		containerId = PREFIX + idCounter++;
+
+		if (isString(renderTo)) {
+			renderTo = doc.getElementById(renderTo);
+		}
+
+		// remove previous chart
+		renderTo.innerHTML = '';
+
+		// If the container doesn't have an offsetWidth, it has or is a child of a node
+		// that has display:none. We need to temporarily move it out to a visible
+		// state to determine the size, else the legend and tooltips won't render
+		// properly
+		if (!renderTo.offsetWidth) {
+			renderToClone = renderTo.cloneNode(0);
+			css(renderToClone, {
+				position: ABSOLUTE,
+				top: '-9999px',
+				display: ''
+			});
+			doc.body.appendChild(renderToClone);
+		}
+
+		// get the width and height
+		getChartSize();
+
+		// create the inner container
+		chart.container = container = createElement(DIV, {
+				className: 'highcharts-container' +
+					(optionsChart.className ? ' ' + optionsChart.className : ''),
+				id: containerId
+			}, extend({
+				position: RELATIVE,
+				overflow: HIDDEN, // needed for context menu (avoid scrollbars) and
+					// content overflow in IE
+				width: chartWidth + PX,
+				height: chartHeight + PX,
+				textAlign: 'left'
+			}, optionsChart.style),
+			renderToClone || renderTo
+		);
+
+		chart.renderer = renderer =
+			optionsChart.forExport ? // force SVG, used for SVG export
+				new SVGRenderer(container, chartWidth, chartHeight, true) :
+				new Renderer(container, chartWidth, chartHeight);
+
+		// Issue 110 workaround:
+		// In Firefox, if a div is positioned by percentage, its pixel position may land
+		// between pixels. The container itself doesn't display this, but an SVG element
+		// inside this container will be drawn at subpixel precision. In order to draw
+		// sharp lines, this must be compensated for. This doesn't seem to work inside
+		// iframes though (like in jsFiddle).
+		var subPixelFix, rect;
+		if (isFirefox && container.getBoundingClientRect) {
+			subPixelFix = function () {
+				css(container, { left: 0, top: 0 });
+				rect = container.getBoundingClientRect();
+				css(container, {
+					left: (-(rect.left - pInt(rect.left))) + PX,
+					top: (-(rect.top - pInt(rect.top))) + PX
+				});
+			};
+
+			// run the fix now
+			subPixelFix();
+
+			// run it on resize
+			addEvent(win, 'resize', subPixelFix);
+
+			// remove it on chart destroy
+			addEvent(chart, 'destroy', function () {
+				removeEvent(win, 'resize', subPixelFix);
+			});
+		}
+	}
+
+	/**
+	 * Calculate margins by rendering axis labels in a preliminary position. Title,
+	 * subtitle and legend have already been rendered at this stage, but will be
+	 * moved into their final positions
+	 */
+	getMargins = function () {
+		var legendOptions = options.legend,
+			legendMargin = pick(legendOptions.margin, 10),
+			legendX = legendOptions.x,
+			legendY = legendOptions.y,
+			align = legendOptions.align,
+			verticalAlign = legendOptions.verticalAlign,
+			titleOffset;
+
+		resetMargins();
+
+		// adjust for title and subtitle
+		if ((chart.title || chart.subtitle) && !defined(optionsMarginTop)) {
+			titleOffset = mathMax(
+				(chart.title && !chartTitleOptions.floating && !chartTitleOptions.verticalAlign && chartTitleOptions.y) || 0,
+				(chart.subtitle && !chartSubtitleOptions.floating && !chartSubtitleOptions.verticalAlign && chartSubtitleOptions.y) || 0
+			);
+			if (titleOffset) {
+				plotTop = mathMax(plotTop, titleOffset + pick(chartTitleOptions.margin, 15) + spacingTop);
+			}
+		}
+		// adjust for legend
+		if (legendOptions.enabled && !legendOptions.floating) {
+			if (align === 'right') { // horizontal alignment handled first
+				if (!defined(optionsMarginRight)) {
+					marginRight = mathMax(
+						marginRight,
+						legendWidth - legendX + legendMargin + spacingRight
+					);
+				}
+			} else if (align === 'left') {
+				if (!defined(optionsMarginLeft)) {
+					plotLeft = mathMax(
+						plotLeft,
+						legendWidth + legendX + legendMargin + spacingLeft
+					);
+				}
+
+			} else if (verticalAlign === 'top') {
+				if (!defined(optionsMarginTop)) {
+					plotTop = mathMax(
+						plotTop,
+						legendHeight + legendY + legendMargin + spacingTop
+					);
+				}
+
+			} else if (verticalAlign === 'bottom') {
+				if (!defined(optionsMarginBottom)) {
+					marginBottom = mathMax(
+						marginBottom,
+						legendHeight - legendY + legendMargin + spacingBottom
+					);
+				}
+			}
+		}
+
+		// pre-render axes to get labels offset width
+		if (hasCartesianSeries) {
+			each(axes, function (axis) {
+				axis.getOffset();
+			});
+		}
+
+		if (!defined(optionsMarginLeft)) {
+			plotLeft += axisOffset[3];
+		}
+		if (!defined(optionsMarginTop)) {
+			plotTop += axisOffset[0];
+		}
+		if (!defined(optionsMarginBottom)) {
+			marginBottom += axisOffset[2];
+		}
+		if (!defined(optionsMarginRight)) {
+			marginRight += axisOffset[1];
+		}
+
+		setChartSize();
+
+	};
+
+	/**
+	 * Add the event handlers necessary for auto resizing
+	 *
+	 */
+	function initReflow() {
+		var reflowTimeout;
+		function reflow() {
+			var width = optionsChart.width || renderTo.offsetWidth,
+				height = optionsChart.height || renderTo.offsetHeight;
+
+			if (width && height) { // means container is display:none
+				if (width !== containerWidth || height !== containerHeight) {
+					clearTimeout(reflowTimeout);
+					reflowTimeout = setTimeout(function () {
+						resize(width, height, false);
+					}, 100);
+				}
+				containerWidth = width;
+				containerHeight = height;
+			}
+		}
+		addEvent(win, 'resize', reflow);
+		addEvent(chart, 'destroy', function () {
+			removeEvent(win, 'resize', reflow);
+		});
+	}
+
+	/**
+	 * Fires endResize event on chart instance.
+	 */
+	function fireEndResize() {
+		fireEvent(chart, 'endResize', null, function () {
+			isResizing -= 1;
+		});
+	}
+
+	/**
+	 * Resize the chart to a given width and height
+	 * @param {Number} width
+	 * @param {Number} height
+	 * @param {Object|Boolean} animation
+	 */
+	resize = function (width, height, animation) {
+		var chartTitle = chart.title,
+			chartSubtitle = chart.subtitle;
+
+		isResizing += 1;
+
+		// set the animation for the current process
+		setAnimation(animation, chart);
+
+		oldChartHeight = chartHeight;
+		oldChartWidth = chartWidth;
+		chart.chartWidth = chartWidth = mathRound(width);
+		chart.chartHeight = chartHeight = mathRound(height);
+
+		css(container, {
+			width: chartWidth + PX,
+			height: chartHeight + PX
+		});
+		renderer.setSize(chartWidth, chartHeight, animation);
+
+		// update axis lengths for more correct tick intervals:
+		plotWidth = chartWidth - plotLeft - marginRight;
+		plotHeight = chartHeight - plotTop - marginBottom;
+
+		// handle axes
+		maxTicks = null;
+		each(axes, function (axis) {
+			axis.isDirty = true;
+			axis.setScale();
+		});
+
+		// make sure non-cartesian series are also handled
+		each(series, function (serie) {
+			serie.isDirty = true;
+		});
+
+		chart.isDirtyLegend = true; // force legend redraw
+		chart.isDirtyBox = true; // force redraw of plot and chart border
+
+		getMargins();
+
+		// move titles
+		if (chartTitle) {
+			chartTitle.align(null, null, spacingBox);
+		}
+		if (chartSubtitle) {
+			chartSubtitle.align(null, null, spacingBox);
+		}
+
+		redraw(animation);
+
+
+		oldChartHeight = null;
+		fireEvent(chart, 'resize');
+
+		// fire endResize and set isResizing back
+		// If animation is disabled, fire without delay
+		if (globalAnimation === false) {
+			fireEndResize();
+		} else { // else set a timeout with the animation duration
+			setTimeout(fireEndResize, (globalAnimation && globalAnimation.duration) || 500);
+		}
+	};
+
+	/**
+	 * Set the public chart properties. This is done before and after the pre-render
+	 * to determine margin sizes
+	 */
+	setChartSize = function () {
+
+		chart.plotLeft = plotLeft = mathRound(plotLeft);
+		chart.plotTop = plotTop = mathRound(plotTop);
+		chart.plotWidth = plotWidth = mathRound(chartWidth - plotLeft - marginRight);
+		chart.plotHeight = plotHeight = mathRound(chartHeight - plotTop - marginBottom);
+
+		chart.plotSizeX = inverted ? plotHeight : plotWidth;
+		chart.plotSizeY = inverted ? plotWidth : plotHeight;
+
+		spacingBox = {
+			x: spacingLeft,
+			y: spacingTop,
+			width: chartWidth - spacingLeft - spacingRight,
+			height: chartHeight - spacingTop - spacingBottom
+		};
+	};
+
+	/**
+	 * Initial margins before auto size margins are applied
+	 */
+	resetMargins = function () {
+		plotTop = pick(optionsMarginTop, spacingTop);
+		marginRight = pick(optionsMarginRight, spacingRight);
+		marginBottom = pick(optionsMarginBottom, spacingBottom);
+		plotLeft = pick(optionsMarginLeft, spacingLeft);
+		axisOffset = [0, 0, 0, 0]; // top, right, bottom, left
+	};
+
+	/**
+	 * Draw the borders and backgrounds for chart and plot area
+	 */
+	drawChartBox = function () {
+		var chartBorderWidth = optionsChart.borderWidth || 0,
+			chartBackgroundColor = optionsChart.backgroundColor,
+			plotBackgroundColor = optionsChart.plotBackgroundColor,
+			plotBackgroundImage = optionsChart.plotBackgroundImage,
+			mgn,
+			plotSize = {
+				x: plotLeft,
+				y: plotTop,
+				width: plotWidth,
+				height: plotHeight
+			};
+
+		// Chart area
+		mgn = chartBorderWidth + (optionsChart.shadow ? 8 : 0);
+
+		if (chartBorderWidth || chartBackgroundColor) {
+			if (!chartBackground) {
+				chartBackground = renderer.rect(mgn / 2, mgn / 2, chartWidth - mgn, chartHeight - mgn,
+						optionsChart.borderRadius, chartBorderWidth)
+					.attr({
+						stroke: optionsChart.borderColor,
+						'stroke-width': chartBorderWidth,
+						fill: chartBackgroundColor || NONE
+					})
+					.add()
+					.shadow(optionsChart.shadow);
+			} else { // resize
+				chartBackground.animate(
+					chartBackground.crisp(null, null, null, chartWidth - mgn, chartHeight - mgn)
+				);
+			}
+		}
+
+
+		// Plot background
+		if (plotBackgroundColor) {
+			if (!plotBackground) {
+				plotBackground = renderer.rect(plotLeft, plotTop, plotWidth, plotHeight, 0)
+					.attr({
+						fill: plotBackgroundColor
+					})
+					.add()
+					.shadow(optionsChart.plotShadow);
+			} else {
+				plotBackground.animate(plotSize);
+			}
+		}
+		if (plotBackgroundImage) {
+			if (!plotBGImage) {
+				plotBGImage = renderer.image(plotBackgroundImage, plotLeft, plotTop, plotWidth, plotHeight)
+					.add();
+			} else {
+				plotBGImage.animate(plotSize);
+			}
+		}
+
+		// Plot area border
+		if (optionsChart.plotBorderWidth) {
+			if (!plotBorder) {
+				plotBorder = renderer.rect(plotLeft, plotTop, plotWidth, plotHeight, 0, optionsChart.plotBorderWidth)
+					.attr({
+						stroke: optionsChart.plotBorderColor,
+						'stroke-width': optionsChart.plotBorderWidth,
+						zIndex: 4
+					})
+					.add();
+			} else {
+				plotBorder.animate(
+					plotBorder.crisp(null, plotLeft, plotTop, plotWidth, plotHeight)
+				);
+			}
+		}
+
+		// reset
+		chart.isDirtyBox = false;
+	};
+
+	/**
+	 * Render all graphics for the chart
+	 */
+	function render() {
+		var labels = options.labels,
+			credits = options.credits,
+			creditsHref;
+
+		// Title
+		setTitle();
+
+
+		// Legend
+		legend = chart.legend = new Legend();
+
+		// Get margins by pre-rendering axes
+		getMargins();
+		each(axes, function (axis) {
+			axis.setTickPositions(true); // update to reflect the new margins
+		});
+		adjustTickAmounts();
+		getMargins(); // second pass to check for new labels
+
+
+		// Draw the borders and backgrounds
+		drawChartBox();
+
+		// Axes
+		if (hasCartesianSeries) {
+			each(axes, function (axis) {
+				axis.render();
+			});
+		}
+
+
+		// The series
+		if (!chart.seriesGroup) {
+			chart.seriesGroup = renderer.g('series-group')
+				.attr({ zIndex: 3 })
+				.add();
+		}
+		each(series, function (serie) {
+			serie.translate();
+			serie.setTooltipPoints();
+			serie.render();
+		});
+
+
+		// Labels
+		if (labels.items) {
+			each(labels.items, function () {
+				var style = extend(labels.style, this.style),
+					x = pInt(style.left) + plotLeft,
+					y = pInt(style.top) + plotTop + 12;
+
+				// delete to prevent rewriting in IE
+				delete style.left;
+				delete style.top;
+
+				renderer.text(
+					this.html,
+					x,
+					y
+				)
+				.attr({ zIndex: 2 })
+				.css(style)
+				.add();
+
+			});
+		}
+
+		// Toolbar (don't redraw)
+		if (!chart.toolbar) {
+			chart.toolbar = Toolbar();
+		}
+
+		// Credits
+		if (credits.enabled && !chart.credits) {
+			creditsHref = credits.href;
+			chart.credits = renderer.text(
+				credits.text,
+				0,
+				0
+			)
+			.on('click', function () {
+				if (creditsHref) {
+					location.href = creditsHref;
+				}
+			})
+			.attr({
+				align: credits.position.align,
+				zIndex: 8
+			})
+			.css(credits.style)
+			.add()
+			.align(credits.position);
+		}
+
+		placeTrackerGroup();
+
+		// Set flag
+		chart.hasRendered = true;
+
+		// If the chart was rendered outside the top container, put it back in
+		if (renderToClone) {
+			renderTo.appendChild(container);
+			discardElement(renderToClone);
+			//updatePosition(container);
+		}
+	}
+
+	/**
+	 * Clean up memory usage
+	 */
+	function destroy() {
+		var i,
+			parentNode = container && container.parentNode;
+
+		// If the chart is destroyed already, do nothing.
+		// This will happen if if a script invokes chart.destroy and
+		// then it will be called again on win.unload
+		if (chart === null) {
+			return;
+		}
+
+		// fire the chart.destoy event
+		fireEvent(chart, 'destroy');
+
+		// remove events
+		removeEvent(win, 'unload', destroy);
+		removeEvent(chart);
+
+		// ==== Destroy collections:
+		// Destroy axes
+		i = axes.length;
+		while (i--) {
+			axes[i] = axes[i].destroy();
+		}
+
+		// Destroy each series
+		i = series.length;
+		while (i--) {
+			series[i] = series[i].destroy();
+		}
+
+		// ==== Destroy chart properties:
+		each(['title', 'subtitle', 'seriesGroup', 'clipRect', 'credits', 'tracker'], function (name) {
+			var prop = chart[name];
+
+			if (prop) {
+				chart[name] = prop.destroy();
+			}
+		});
+
+		// ==== Destroy local variables:
+		each([chartBackground, plotBorder, plotBackground, legend, tooltip, renderer, tracker], function (obj) {
+			if (obj && obj.destroy) {
+				obj.destroy();
+			}
+		});
+		chartBackground = plotBorder = plotBackground = legend = tooltip = renderer = tracker = null;
+
+		// remove container and all SVG
+		if (container) { // can break in IE when destroyed before finished loading
+			container.innerHTML = '';
+			removeEvent(container);
+			if (parentNode) {
+				discardElement(container);
+			}
+
+			// IE6 leak
+			container = null;
+		}
+
+		// memory and CPU leak
+		clearInterval(tooltipInterval);
+
+		// clean it all up
+		for (i in chart) {
+			delete chart[i];
+		}
+
+		chart = null;
+	}
+	/**
+	 * Prepare for first rendering after all data are loaded
+	 */
+	function firstRender() {
+
+		// VML namespaces can't be added until after complete. Listening
+		// for Perini's doScroll hack is not enough.
+		var ONREADYSTATECHANGE = 'onreadystatechange',
+			COMPLETE = 'complete';
+		// Note: in spite of JSLint's complaints, win == win.top is required
+		/*jslint eqeq: true*/
+		if (!hasSVG && win == win.top && doc.readyState !== COMPLETE) {
+		/*jslint eqeq: false*/
+			doc.attachEvent(ONREADYSTATECHANGE, function () {
+				doc.detachEvent(ONREADYSTATECHANGE, firstRender);
+				if (doc.readyState === COMPLETE) {
+					firstRender();
+				}
+			});
+			return;
+		}
+
+		// create the container
+		getContainer();
+
+		resetMargins();
+		setChartSize();
+
+		// Initialize the series
+		each(options.series || [], function (serieOptions) {
+			initSeries(serieOptions);
+		});
+
+		// Set the common inversion and transformation for inverted series after initSeries
+		chart.inverted = inverted = pick(inverted, options.chart.inverted);
+
+
+		getAxes();
+
+
+		chart.render = render;
+
+		// depends on inverted and on margins being set
+		chart.tracker = tracker = new MouseTracker(options.tooltip);
+
+		//globalAnimation = false;
+		render();
+
+		fireEvent(chart, 'load');
+
+		//globalAnimation = true;
+
+		// run callbacks
+		if (callback) {
+			callback.apply(chart, [chart]);
+		}
+		each(chart.callbacks, function (fn) {
+			fn.apply(chart, [chart]);
+		});
+	}
+
+	// Run chart
+
+
+	// Destroy the chart and free up memory.
+	addEvent(win, 'unload', destroy);
+
+	// Set up auto resize
+	if (optionsChart.reflow !== false) {
+		addEvent(chart, 'load', initReflow);
+	}
+
+	// Chart event handlers
+	if (chartEvents) {
+		for (eventType in chartEvents) {
+			addEvent(chart, eventType, chartEvents[eventType]);
+		}
+	}
+
+
+	chart.options = options;
+	chart.series = series;
+
+
+
+
+
+	// Expose methods and variables
+	chart.addSeries = addSeries;
+	chart.animation = pick(optionsChart.animation, true);
+	chart.destroy = destroy;
+	chart.get = get;
+	chart.getSelectedPoints = getSelectedPoints;
+	chart.getSelectedSeries = getSelectedSeries;
+	chart.hideLoading = hideLoading;
+	chart.isInsidePlot = isInsidePlot;
+	chart.redraw = redraw;
+	chart.setSize = resize;
+	chart.setTitle = setTitle;
+	chart.showLoading = showLoading;
+	chart.pointCount = 0;
+	chart.counters = new ChartCounters();
+	/*
+	if ($) $(function() {
+		$container = $('#container');
+		var origChartWidth,
+			origChartHeight;
+		if ($container) {
+			$('<button>+</button>')
+				.insertBefore($container)
+				.click(function() {
+					if (origChartWidth === UNDEFINED) {
+						origChartWidth = chartWidth;
+						origChartHeight = chartHeight;
+					}
+					chart.resize(chartWidth *= 1.1, chartHeight *= 1.1);
+				});
+			$('<button>-</button>')
+				.insertBefore($container)
+				.click(function() {
+					if (origChartWidth === UNDEFINED) {
+						origChartWidth = chartWidth;
+						origChartHeight = chartHeight;
+					}
+					chart.resize(chartWidth *= 0.9, chartHeight *= 0.9);
+				});
+			$('<button>1:1</button>')
+				.insertBefore($container)
+				.click(function() {
+					if (origChartWidth === UNDEFINED) {
+						origChartWidth = chartWidth;
+						origChartHeight = chartHeight;
+					}
+					chart.resize(origChartWidth, origChartHeight);
+				});
+		}
+	})
+	*/
+
+
+
+
+	firstRender();
+
+
+} // end Chart
+
+// Hook for exporting module
+Chart.prototype.callbacks = [];
+/**
+ * The Point object and prototype. Inheritable and used as base for PiePoint
+ */
+var Point = function () {};
+Point.prototype = {
+
+	/**
+	 * Initialize the point
+	 * @param {Object} series The series object containing this point
+	 * @param {Object} options The data in either number, array or object format
+	 */
+	init: function (series, options) {
+		var point = this,
+			counters = series.chart.counters,
+			defaultColors;
+		point.series = series;
+		point.applyOptions(options);
+		point.pointAttr = {};
+
+		if (series.options.colorByPoint) {
+			defaultColors = series.chart.options.colors;
+			if (!point.options) {
+				point.options = {};
+			}
+			point.color = point.options.color = point.color || defaultColors[counters.color++];
+
+			// loop back to zero
+			counters.wrapColor(defaultColors.length);
+		}
+
+		series.chart.pointCount++;
+		return point;
+	},
+	/**
+	 * Apply the options containing the x and y data and possible some extra properties.
+	 * This is called on point init or from point.update.
+	 *
+	 * @param {Object} options
+	 */
+	applyOptions: function (options) {
+		var point = this,
+			series = point.series;
+
+		point.config = options;
+
+		// onedimensional array input
+		if (isNumber(options) || options === null) {
+			point.y = options;
+		} else if (isObject(options) && !isNumber(options.length)) { // object input
+			// copy options directly to point
+			extend(point, options);
+			point.options = options;
+		} else if (isString(options[0])) { // categorized data with name in first position
+			point.name = options[0];
+			point.y = options[1];
+		} else if (isNumber(options[0])) { // two-dimentional array
+			point.x = options[0];
+			point.y = options[1];
+		}
+
+		/*
+		 * If no x is set by now, get auto incremented value. All points must have an
+		 * x value, however the y value can be null to create a gap in the series
+		 */
+		if (point.x === UNDEFINED) {
+			point.x = series.autoIncrement();
+		}
+
+	},
+
+	/**
+	 * Destroy a point to clear memory. Its reference still stays in series.data.
+	 */
+	destroy: function () {
+		var point = this,
+			series = point.series,
+			hoverPoints = series.chart.hoverPoints,
+			prop;
+
+		series.chart.pointCount--;
+
+		if (hoverPoints) {
+			point.setState();
+			erase(hoverPoints, point);
+		}
+		if (point === series.chart.hoverPoint) {
+			point.onMouseOut();
+		}
+
+
+		// remove all events
+		removeEvent(point);
+
+		each(['graphic', 'tracker', 'group', 'dataLabel', 'connector', 'shadowGroup'], function (prop) {
+			if (point[prop]) {
+				point[prop].destroy();
+			}
+		});
+
+		if (point.legendItem) { // pies have legend items
+			point.series.chart.legend.destroyItem(point);
+		}
+
+		for (prop in point) {
+			point[prop] = null;
+		}
+
+
+	},
+
+	/**
+	 * Return the configuration hash needed for the data label and tooltip formatters
+	 */
+	getLabelConfig: function () {
+		var point = this;
+		return {
+			x: point.category,
+			y: point.y,
+			series: point.series,
+			point: point,
+			percentage: point.percentage,
+			total: point.total || point.stackTotal
+		};
+	},
+
+	/**
+	 * Toggle the selection status of a point
+	 * @param {Boolean} selected Whether to select or unselect the point.
+	 * @param {Boolean} accumulate Whether to add to the previous selection. By default,
+	 *     this happens if the control key (Cmd on Mac) was pressed during clicking.
+	 */
+	select: function (selected, accumulate) {
+		var point = this,
+			series = point.series,
+			chart = series.chart;
+
+		selected = pick(selected, !point.selected);
+
+		// fire the event with the defalut handler
+		point.firePointEvent(selected ? 'select' : 'unselect', { accumulate: accumulate }, function () {
+			point.selected = selected;
+			point.setState(selected && SELECT_STATE);
+
+			// unselect all other points unless Ctrl or Cmd + click
+			if (!accumulate) {
+				each(chart.getSelectedPoints(), function (loopPoint) {
+					if (loopPoint.selected && loopPoint !== point) {
+						loopPoint.selected = false;
+						loopPoint.setState(NORMAL_STATE);
+						loopPoint.firePointEvent('unselect');
+					}
+				});
+			}
+		});
+	},
+
+	onMouseOver: function () {
+		var point = this,
+			chart = point.series.chart,
+			tooltip = chart.tooltip,
+			hoverPoint = chart.hoverPoint;
+
+		// set normal state to previous series
+		if (hoverPoint && hoverPoint !== point) {
+			hoverPoint.onMouseOut();
+		}
+
+		// trigger the event
+		point.firePointEvent('mouseOver');
+
+		// update the tooltip
+		if (tooltip && !tooltip.shared) {
+			tooltip.refresh(point);
+		}
+
+		// hover this
+		point.setState(HOVER_STATE);
+		chart.hoverPoint = point;
+	},
+
+	onMouseOut: function () {
+		var point = this;
+		point.firePointEvent('mouseOut');
+
+		point.setState();
+		point.series.chart.hoverPoint = null;
+	},
+
+	/**
+	 * Extendable method for formatting each point's tooltip line
+	 *
+	 * @param {Boolean} useHeader Whether a common header is used for multiple series in the tooltip
+	 *
+	 * @return {String} A string to be concatenated in to the common tooltip text
+	 */
+	tooltipFormatter: function (useHeader) {
+		var point = this,
+			series = point.series;
+
+		return ['<span style="color:' + series.color + '">', (point.name || series.name), '</span>: ',
+			(!useHeader ? ('<b>x = ' + (point.name || point.x) + ',</b> ') : ''),
+			'<b>', (!useHeader ? 'y = ' : ''), point.y, '</b>'].join('');
+
+	},
+
+	/**
+	 * Update the point with new options (typically x/y data) and optionally redraw the series.
+	 *
+	 * @param {Object} options Point options as defined in the series.data array
+	 * @param {Boolean} redraw Whether to redraw the chart or wait for an explicit call
+	 * @param {Boolean|Object} animation Whether to apply animation, and optionally animation
+	 *    configuration
+	 *
+	 */
+	update: function (options, redraw, animation) {
+		var point = this,
+			series = point.series,
+			graphic = point.graphic,
+			chart = series.chart;
+
+		redraw = pick(redraw, true);
+
+		// fire the event with a default handler of doing the update
+		point.firePointEvent('update', { options: options }, function () {
+
+			point.applyOptions(options);
+
+			// update visuals
+			if (isObject(options)) {
+				series.getAttribs();
+				if (graphic) {
+					graphic.attr(point.pointAttr[series.state]);
+				}
+			}
+
+			// redraw
+			series.isDirty = true;
+			if (redraw) {
+				chart.redraw(animation);
+			}
+		});
+	},
+
+	/**
+	 * Remove a point and optionally redraw the series and if necessary the axes
+	 * @param {Boolean} redraw Whether to redraw the chart or wait for an explicit call
+	 * @param {Boolean|Object} animation Whether to apply animation, and optionally animation
+	 *    configuration
+	 */
+	remove: function (redraw, animation) {
+		var point = this,
+			series = point.series,
+			chart = series.chart,
+			data = series.data;
+
+		setAnimation(animation, chart);
+		redraw = pick(redraw, true);
+
+		// fire the event with a default handler of removing the point
+		point.firePointEvent('remove', null, function () {
+
+			erase(data, point);
+
+			point.destroy();
+
+
+			// redraw
+			series.isDirty = true;
+			if (redraw) {
+				chart.redraw();
+			}
+		});
+
+
+	},
+
+	/**
+	 * Fire an event on the Point object. Must not be renamed to fireEvent, as this
+	 * causes a name clash in MooTools
+	 * @param {String} eventType
+	 * @param {Object} eventArgs Additional event arguments
+	 * @param {Function} defaultFunction Default event handler
+	 */
+	firePointEvent: function (eventType, eventArgs, defaultFunction) {
+		var point = this,
+			series = this.series,
+			seriesOptions = series.options;
+
+		// load event handlers on demand to save time on mouseover/out
+		if (seriesOptions.point.events[eventType] ||
+			(point.options && point.options.events && point.options.events[eventType])) {
+			this.importEvents();
+		}
+
+		// add default handler if in selection mode
+		if (eventType === 'click' && seriesOptions.allowPointSelect) {
+			defaultFunction = function (event) {
+				// Control key is for Windows, meta (= Cmd key) for Mac, Shift for Opera
+				point.select(null, event.ctrlKey || event.metaKey || event.shiftKey);
+			};
+		}
+
+		fireEvent(this, eventType, eventArgs, defaultFunction);
+	},
+	/**
+	 * Import events from the series' and point's options. Only do it on
+	 * demand, to save processing time on hovering.
+	 */
+	importEvents: function () {
+		if (!this.hasImportedEvents) {
+			var point = this,
+				options = merge(point.series.options.point, point.options),
+				events = options.events,
+				eventType;
+
+			point.events = events;
+
+			for (eventType in events) {
+				addEvent(point, eventType, events[eventType]);
+			}
+			this.hasImportedEvents = true;
+
+		}
+	},
+
+	/**
+	 * Set the point's state
+	 * @param {String} state
+	 */
+	setState: function (state) {
+		var point = this,
+			series = point.series,
+			stateOptions = series.options.states,
+			markerOptions = defaultPlotOptions[series.type].marker && series.options.marker,
+			normalDisabled = markerOptions && !markerOptions.enabled,
+			markerStateOptions = markerOptions && markerOptions.states[state],
+			stateDisabled = markerStateOptions && markerStateOptions.enabled === false,
+			stateMarkerGraphic = series.stateMarkerGraphic,
+			chart = series.chart,
+			pointAttr = point.pointAttr;
+
+		state = state || NORMAL_STATE; // empty string
+
+		if (
+				// already has this state
+				state === point.state ||
+				// selected points don't respond to hover
+				(point.selected && state !== SELECT_STATE) ||
+				// series' state options is disabled
+				(stateOptions[state] && stateOptions[state].enabled === false) ||
+				// point marker's state options is disabled
+				(state && (stateDisabled || (normalDisabled && !markerStateOptions.enabled)))
+
+			) {
+			return;
+		}
+
+		// apply hover styles to the existing point
+		if (point.graphic) {
+			point.graphic.attr(pointAttr[state]);
+		} else {
+			// if a graphic is not applied to each point in the normal state, create a shared
+			// graphic for the hover state
+			if (state) {
+				if (!stateMarkerGraphic) {
+					series.stateMarkerGraphic = stateMarkerGraphic = chart.renderer.circle(
+						0,
+						0,
+						pointAttr[state].r
+					)
+					.attr(pointAttr[state])
+					.add(series.group);
+				}
+
+				stateMarkerGraphic.translate(
+					point.plotX,
+					point.plotY
+				);
+			}
+
+			if (stateMarkerGraphic) {
+				stateMarkerGraphic[state ? 'show' : 'hide']();
+			}
+		}
+
+		point.state = state;
+	}
+};
+
+/**
+ * The base function which all other series types inherit from
+ * @param {Object} chart
+ * @param {Object} options
+ */
+var Series = function () {};
+
+Series.prototype = {
+
+	isCartesian: true,
+	type: 'line',
+	pointClass: Point,
+	pointAttrToOptions: { // mapping between SVG attributes and the corresponding options
+		stroke: 'lineColor',
+		'stroke-width': 'lineWidth',
+		fill: 'fillColor',
+		r: 'radius'
+	},
+	init: function (chart, options) {
+		var series = this,
+			eventType,
+			events,
+			//pointEvent,
+			index = chart.series.length;
+
+		series.chart = chart;
+		options = series.setOptions(options); // merge with plotOptions
+
+		// set some variables
+		extend(series, {
+			index: index,
+			options: options,
+			name: options.name || 'Series ' + (index + 1),
+			state: NORMAL_STATE,
+			pointAttr: {},
+			visible: options.visible !== false, // true by default
+			selected: options.selected === true // false by default
+		});
+
+		// register event listeners
+		events = options.events;
+		for (eventType in events) {
+			addEvent(series, eventType, events[eventType]);
+		}
+		if (
+			(events && events.click) ||
+			(options.point && options.point.events && options.point.events.click) ||
+			options.allowPointSelect
+		) {
+			chart.runTrackerClick = true;
+		}
+
+		series.getColor();
+		series.getSymbol();
+
+
+		// set the data
+		series.setData(options.data, false);
+
+	},
+
+
+	/**
+	 * Return an auto incremented x value based on the pointStart and pointInterval options.
+	 * This is only used if an x value is not given for the point that calls autoIncrement.
+	 */
+	autoIncrement: function () {
+		var series = this,
+			options = series.options,
+			xIncrement = series.xIncrement;
+
+		xIncrement = pick(xIncrement, options.pointStart, 0);
+
+		series.pointInterval = pick(series.pointInterval, options.pointInterval, 1);
+
+		series.xIncrement = xIncrement + series.pointInterval;
+		return xIncrement;
+	},
+
+	/**
+	 * Sort the data and remove duplicates
+	 */
+	cleanData: function () {
+		var series = this,
+			chart = series.chart,
+			data = series.data,
+			closestPoints,
+			smallestInterval,
+			chartSmallestInterval = chart.smallestInterval,
+			interval,
+			i;
+
+		// sort the data points
+		stableSort(data, function (a, b) {
+			return (a.x - b.x);
+		});
+
+		// remove points with equal x values
+		// record the closest distance for calculation of column widths
+		/*for (i = data.length - 1; i >= 0; i--) {
+			if (data[i - 1]) {
+				if (data[i - 1].x == data[i].x)	{
+					data[i - 1].destroy();
+					data.splice(i - 1, 1); // remove the duplicate
+				}
+			}
+		}*/
+
+		// connect nulls
+		if (series.options.connectNulls) {
+			for (i = data.length - 1; i >= 0; i--) {
+				if (data[i].y === null && data[i - 1] && data[i + 1]) {
+					data.splice(i, 1);
+				}
+			}
+		}
+
+		// find the closes pair of points
+		for (i = data.length - 1; i >= 0; i--) {
+			if (data[i - 1]) {
+				interval = data[i].x - data[i - 1].x;
+				if (interval > 0 && (smallestInterval === UNDEFINED || interval < smallestInterval)) {
+					smallestInterval = interval;
+					closestPoints = i;
+				}
+			}
+		}
+
+		if (chartSmallestInterval === UNDEFINED || smallestInterval < chartSmallestInterval) {
+			chart.smallestInterval = smallestInterval;
+		}
+		series.closestPoints = closestPoints;
+	},
+
+	/**
+	 * Divide the series data into segments divided by null values. Also sort
+	 * the data points and delete duplicate values.
+	 */
+	getSegments: function () {
+		var lastNull = -1,
+			segments = [],
+			data = this.data;
+
+		// create the segments
+		each(data, function (point, i) {
+			if (point.y === null) {
+				if (i > lastNull + 1) {
+					segments.push(data.slice(lastNull + 1, i));
+				}
+				lastNull = i;
+			} else if (i === data.length - 1) { // last value
+				segments.push(data.slice(lastNull + 1, i + 1));
+			}
+		});
+		this.segments = segments;
+
+
+	},
+	/**
+	 * Set the series options by merging from the options tree
+	 * @param {Object} itemOptions
+	 */
+	setOptions: function (itemOptions) {
+		var plotOptions = this.chart.options.plotOptions,
+			options = merge(
+				plotOptions[this.type],
+				plotOptions.series,
+				itemOptions
+			);
+
+		return options;
+
+	},
+	/**
+	 * Get the series' color
+	 */
+	getColor: function () {
+		var defaultColors = this.chart.options.colors,
+			counters = this.chart.counters;
+		this.color = this.options.color || defaultColors[counters.color++] || '#0000ff';
+		counters.wrapColor(defaultColors.length);
+	},
+	/**
+	 * Get the series' symbol
+	 */
+	getSymbol: function () {
+		var defaultSymbols = this.chart.options.symbols,
+			counters = this.chart.counters;
+		this.symbol = this.options.marker.symbol || defaultSymbols[counters.symbol++];
+		counters.wrapSymbol(defaultSymbols.length);
+	},
+
+	/**
+	 * Add a point dynamically after chart load time
+	 * @param {Object} options Point options as given in series.data
+	 * @param {Boolean} redraw Whether to redraw the chart or wait for an explicit call
+	 * @param {Boolean} shift If shift is true, a point is shifted off the start
+	 *    of the series as one is appended to the end.
+	 * @param {Boolean|Object} animation Whether to apply animation, and optionally animation
+	 *    configuration
+	 */
+	addPoint: function (options, redraw, shift, animation) {
+		var series = this,
+			data = series.data,
+			graph = series.graph,
+			area = series.area,
+			chart = series.chart,
+			point = (new series.pointClass()).init(series, options);
+
+		setAnimation(animation, chart);
+
+		if (graph && shift) { // make graph animate sideways
+			graph.shift = shift;
+		}
+		if (area) {
+			area.shift = shift;
+			area.isArea = true;
+		}
+
+		redraw = pick(redraw, true);
+
+		data.push(point);
+		if (shift) {
+			data[0].remove(false);
+		}
+		series.getAttribs();
+
+
+		// redraw
+		series.isDirty = true;
+		if (redraw) {
+			chart.redraw();
+		}
+	},
+
+	/**
+	 * Replace the series data with a new set of data
+	 * @param {Object} data
+	 * @param {Object} redraw
+	 */
+	setData: function (data, redraw) {
+		var series = this,
+			oldData = series.data,
+			initialColor = series.initialColor,
+			chart = series.chart,
+			i = (oldData && oldData.length) || 0;
+
+		series.xIncrement = null; // reset for new data
+		if (defined(initialColor)) { // reset colors for pie
+			chart.counters.color = initialColor;
+		}
+
+		data = map(splat(data || []), function (pointOptions) {
+			return (new series.pointClass()).init(series, pointOptions);
+		});
+
+		// destroy old points
+		while (i--) {
+			oldData[i].destroy();
+		}
+
+		// set the data
+		series.data = data;
+
+		series.cleanData();
+		series.getSegments();
+
+
+		// cache attributes for shapes
+		series.getAttribs();
+
+		// redraw
+		series.isDirty = true;
+		chart.isDirtyBox = true;
+		if (pick(redraw, true)) {
+			chart.redraw(false);
+		}
+	},
+
+	/**
+	 * Remove a series and optionally redraw the chart
+	 *
+	 * @param {Boolean} redraw Whether to redraw the chart or wait for an explicit call
+	 * @param {Boolean|Object} animation Whether to apply animation, and optionally animation
+	 *    configuration
+	 */
+
+	remove: function (redraw, animation) {
+		var series = this,
+			chart = series.chart;
+		redraw = pick(redraw, true);
+
+		if (!series.isRemoving) {  /* prevent triggering native event in jQuery
+				(calling the remove function from the remove event) */
+			series.isRemoving = true;
+
+			// fire the event with a default handler of removing the point
+			fireEvent(series, 'remove', null, function () {
+
+
+				// destroy elements
+				series.destroy();
+
+
+				// redraw
+				chart.isDirtyLegend = chart.isDirtyBox = true;
+				if (redraw) {
+					chart.redraw(animation);
+				}
+			});
+
+		}
+		series.isRemoving = false;
+	},
+
+	/**
+	 * Translate data points from raw data values to chart specific positioning data
+	 * needed later in drawPoints, drawGraph and drawTracker.
+	 */
+	translate: function () {
+		var series = this,
+			chart = series.chart,
+			stacking = series.options.stacking,
+			categories = series.xAxis.categories,
+			yAxis = series.yAxis,
+			data = series.data,
+			i = data.length;
+
+		// do the translation
+		while (i--) {
+			var point = data[i],
+				xValue = point.x,
+				yValue = point.y,
+				yBottom = point.low,
+				stack = yAxis.stacks[(yValue < 0 ? '-' : '') + series.stackKey],
+				pointStack,
+				pointStackTotal;
+			point.plotX = series.xAxis.translate(xValue);
+
+			// calculate the bottom y value for stacked series
+			if (stacking && series.visible && stack && stack[xValue]) {
+				pointStack = stack[xValue];
+				pointStackTotal = pointStack.total;
+				pointStack.cum = yBottom = pointStack.cum - yValue; // start from top
+				yValue = yBottom + yValue;
+
+				if (stacking === 'percent') {
+					yBottom = pointStackTotal ? yBottom * 100 / pointStackTotal : 0;
+					yValue = pointStackTotal ? yValue * 100 / pointStackTotal : 0;
+				}
+
+				point.percentage = pointStackTotal ? point.y * 100 / pointStackTotal : 0;
+				point.stackTotal = pointStackTotal;
+			}
+
+			if (defined(yBottom)) {
+				point.yBottom = yAxis.translate(yBottom, 0, 1, 0, 1);
+			}
+
+			// set the y value
+			if (yValue !== null) {
+				point.plotY = yAxis.translate(yValue, 0, 1, 0, 1);
+			}
+
+			// set client related positions for mouse tracking
+			point.clientX = chart.inverted ?
+				chart.plotHeight - point.plotX :
+				point.plotX; // for mouse tracking
+
+			// some API data
+			point.category = categories && categories[point.x] !== UNDEFINED ?
+				categories[point.x] : point.x;
+
+		}
+	},
+	/**
+	 * Memoize tooltip texts and positions
+	 */
+	setTooltipPoints: function (renew) {
+		var series = this,
+			chart = series.chart,
+			inverted = chart.inverted,
+			data = [],
+			plotSize = mathRound((inverted ? chart.plotTop : chart.plotLeft) + chart.plotSizeX),
+			low,
+			high,
+			tooltipPoints = []; // a lookup array for each pixel in the x dimension
+
+		// renew
+		if (renew) {
+			series.tooltipPoints = null;
+		}
+
+		// concat segments to overcome null values
+		each(series.segments, function (segment) {
+			data = data.concat(segment);
+		});
+
+		// loop the concatenated data and apply each point to all the closest
+		// pixel positions
+		if (series.xAxis && series.xAxis.reversed) {
+			data = data.reverse();//reverseArray(data);
+		}
+
+		each(data, function (point, i) {
+
+			low = data[i - 1] ? data[i - 1]._high + 1 : 0;
+			high = point._high = data[i + 1] ?
+				(mathFloor((point.plotX + (data[i + 1] ? data[i + 1].plotX : plotSize)) / 2)) :
+				plotSize;
+
+			while (low <= high) {
+				tooltipPoints[inverted ? plotSize - low++ : low++] = point;
+			}
+		});
+		series.tooltipPoints = tooltipPoints;
+	},
+
+
+
+
+	/**
+	 * Series mouse over handler
+	 */
+	onMouseOver: function () {
+		var series = this,
+			chart = series.chart,
+			hoverSeries = chart.hoverSeries;
+
+		if (!hasTouch && chart.mouseIsDown) {
+			return;
+		}
+
+		// set normal state to previous series
+		if (hoverSeries && hoverSeries !== series) {
+			hoverSeries.onMouseOut();
+		}
+
+		// trigger the event, but to save processing time,
+		// only if defined
+		if (series.options.events.mouseOver) {
+			fireEvent(series, 'mouseOver');
+		}
+
+
+		// bring to front
+		// Todo: optimize. This is one of two operations slowing down the tooltip in Firefox.
+		// Can the tracking be done otherwise?
+		if (series.tracker) {
+			series.tracker.toFront();
+		}
+
+		// hover this
+		series.setState(HOVER_STATE);
+		chart.hoverSeries = series;
+	},
+
+	/**
+	 * Series mouse out handler
+	 */
+	onMouseOut: function () {
+		// trigger the event only if listeners exist
+		var series = this,
+			options = series.options,
+			chart = series.chart,
+			tooltip = chart.tooltip,
+			hoverPoint = chart.hoverPoint;
+
+		// trigger mouse out on the point, which must be in this series
+		if (hoverPoint) {
+			hoverPoint.onMouseOut();
+		}
+
+		// fire the mouse out event
+		if (series && options.events.mouseOut) {
+			fireEvent(series, 'mouseOut');
+		}
+
+
+		// hide the tooltip
+		if (tooltip && !options.stickyTracking) {
+			tooltip.hide();
+		}
+
+		// set normal state
+		series.setState();
+		chart.hoverSeries = null;
+	},
+
+	/**
+	 * Animate in the series
+	 */
+	animate: function (init) {
+		var series = this,
+			chart = series.chart,
+			clipRect = series.clipRect,
+			animation = series.options.animation;
+
+		if (animation && !isObject(animation)) {
+			animation = {};
+		}
+
+		if (init) { // initialize the animation
+			if (!clipRect.isAnimating) { // apply it only for one of the series
+				clipRect.attr('width', 0);
+				clipRect.isAnimating = true;
+			}
+
+		} else { // run the animation
+			clipRect.animate({
+				width: chart.plotSizeX
+			}, animation);
+
+			// delete this function to allow it only once
+			this.animate = null;
+		}
+	},
+
+
+	/**
+	 * Draw the markers
+	 */
+	drawPoints: function () {
+		var series = this,
+			pointAttr,
+			data = series.data,
+			chart = series.chart,
+			plotX,
+			plotY,
+			i,
+			point,
+			radius,
+			graphic;
+
+		if (series.options.marker.enabled) {
+			i = data.length;
+			while (i--) {
+				point = data[i];
+				plotX = point.plotX;
+				plotY = point.plotY;
+				graphic = point.graphic;
+
+				// only draw the point if y is defined
+				if (plotY !== UNDEFINED && !isNaN(plotY)) {
+
+					/* && removed this code because points stayed after zoom
+						point.plotX >= 0 && point.plotX <= chart.plotSizeX &&
+						point.plotY >= 0 && point.plotY <= chart.plotSizeY*/
+
+					// shortcuts
+					pointAttr = point.pointAttr[point.selected ? SELECT_STATE : NORMAL_STATE];
+					radius = pointAttr.r;
+
+					if (graphic) { // update
+						graphic.animate({
+							x: plotX,
+							y: plotY,
+							r: radius
+						});
+					} else {
+						point.graphic = chart.renderer.symbol(
+							pick(point.marker && point.marker.symbol, series.symbol),
+							plotX,
+							plotY,
+							radius
+						)
+						.attr(pointAttr)
+						.add(series.group);
+					}
+				}
+			}
+		}
+
+	},
+
+	/**
+	 * Convert state properties from API naming conventions to SVG attributes
+	 *
+	 * @param {Object} options API options object
+	 * @param {Object} base1 SVG attribute object to inherit from
+	 * @param {Object} base2 Second level SVG attribute object to inherit from
+	 */
+	convertAttribs: function (options, base1, base2, base3) {
+		var conversion = this.pointAttrToOptions,
+			attr,
+			option,
+			obj = {};
+
+		options = options || {};
+		base1 = base1 || {};
+		base2 = base2 || {};
+		base3 = base3 || {};
+
+		for (attr in conversion) {
+			option = conversion[attr];
+			obj[attr] = pick(options[option], base1[attr], base2[attr], base3[attr]);
+		}
+		return obj;
+	},
+
+	/**
+	 * Get the state attributes. Each series type has its own set of attributes
+	 * that are allowed to change on a point's state change. Series wide attributes are stored for
+	 * all series, and additionally point specific attributes are stored for all
+	 * points with individual marker options. If such options are not defined for the point,
+	 * a reference to the series wide attributes is stored in point.pointAttr.
+	 */
+	getAttribs: function () {
+		var series = this,
+			normalOptions = defaultPlotOptions[series.type].marker ? series.options.marker : series.options,
+			stateOptions = normalOptions.states,
+			stateOptionsHover = stateOptions[HOVER_STATE],
+			pointStateOptionsHover,
+			seriesColor = series.color,
+			normalDefaults = {
+				stroke: seriesColor,
+				fill: seriesColor
+			},
+			data = series.data,
+			i,
+			point,
+			seriesPointAttr = [],
+			pointAttr,
+			pointAttrToOptions = series.pointAttrToOptions,
+			hasPointSpecificOptions,
+			key;
+
+		// series type specific modifications
+		if (series.options.marker) { // line, spline, area, areaspline, scatter
+
+			// if no hover radius is given, default to normal radius + 2
+			stateOptionsHover.radius = stateOptionsHover.radius || normalOptions.radius + 2;
+			stateOptionsHover.lineWidth = stateOptionsHover.lineWidth || normalOptions.lineWidth + 1;
+
+		} else { // column, bar, pie
+
+			// if no hover color is given, brighten the normal color
+			stateOptionsHover.color = stateOptionsHover.color ||
+				Color(stateOptionsHover.color || seriesColor)
+					.brighten(stateOptionsHover.brightness).get();
+		}
+
+		// general point attributes for the series normal state
+		seriesPointAttr[NORMAL_STATE] = series.convertAttribs(normalOptions, normalDefaults);
+
+		// HOVER_STATE and SELECT_STATE states inherit from normal state except the default radius
+		each([HOVER_STATE, SELECT_STATE], function (state) {
+			seriesPointAttr[state] =
+					series.convertAttribs(stateOptions[state], seriesPointAttr[NORMAL_STATE]);
+		});
+
+		// set it
+		series.pointAttr = seriesPointAttr;
+
+
+		// Generate the point-specific attribute collections if specific point
+		// options are given. If not, create a referance to the series wide point
+		// attributes
+		i = data.length;
+		while (i--) {
+			point = data[i];
+			normalOptions = (point.options && point.options.marker) || point.options;
+			if (normalOptions && normalOptions.enabled === false) {
+				normalOptions.radius = 0;
+			}
+			hasPointSpecificOptions = false;
+
+			// check if the point has specific visual options
+			if (point.options) {
+				for (key in pointAttrToOptions) {
+					if (defined(normalOptions[pointAttrToOptions[key]])) {
+						hasPointSpecificOptions = true;
+					}
+				}
+			}
+
+
+
+			// a specific marker config object is defined for the individual point:
+			// create it's own attribute collection
+			if (hasPointSpecificOptions) {
+
+				pointAttr = [];
+				stateOptions = normalOptions.states || {}; // reassign for individual point
+				pointStateOptionsHover = stateOptions[HOVER_STATE] = stateOptions[HOVER_STATE] || {};
+
+				// if no hover color is given, brighten the normal color
+				if (!series.options.marker) { // column, bar, point
+					pointStateOptionsHover.color =
+						Color(pointStateOptionsHover.color || point.options.color)
+							.brighten(pointStateOptionsHover.brightness ||
+								stateOptionsHover.brightness).get();
+
+				}
+
+				// normal point state inherits series wide normal state
+				pointAttr[NORMAL_STATE] = series.convertAttribs(normalOptions, seriesPointAttr[NORMAL_STATE]);
+
+				// inherit from point normal and series hover
+				pointAttr[HOVER_STATE] = series.convertAttribs(
+					stateOptions[HOVER_STATE],
+					seriesPointAttr[HOVER_STATE],
+					pointAttr[NORMAL_STATE]
+				);
+				// inherit from point normal and series hover
+				pointAttr[SELECT_STATE] = series.convertAttribs(
+					stateOptions[SELECT_STATE],
+					seriesPointAttr[SELECT_STATE],
+					pointAttr[NORMAL_STATE]
+				);
+
+
+
+			// no marker config object is created: copy a reference to the series-wide
+			// attribute collection
+			} else {
+				pointAttr = seriesPointAttr;
+			}
+
+			point.pointAttr = pointAttr;
+
+		}
+
+	},
+
+
+	/**
+	 * Clear DOM objects and free up memory
+	 */
+	destroy: function () {
+		var series = this,
+			chart = series.chart,
+			seriesClipRect = series.clipRect,
+			//chartSeries = series.chart.series,
+			issue134 = /\/5[0-9\.]+ (Safari|Mobile)\//.test(userAgent), // todo: update when Safari bug is fixed
+			destroy,
+			prop;
+
+		// add event hook
+		fireEvent(series, 'destroy');
+
+		// remove all events
+		removeEvent(series);
+
+		// remove legend items
+		if (series.legendItem) {
+			series.chart.legend.destroyItem(series);
+		}
+
+		// destroy all points with their elements
+		each(series.data, function (point) {
+			point.destroy();
+		});
+
+		// If this series clipRect is not the global one (which is removed on chart.destroy) we
+		// destroy it here.
+		if (seriesClipRect && seriesClipRect !== chart.clipRect) {
+			series.clipRect = seriesClipRect.destroy();
+		}
+
+		// destroy all SVGElements associated to the series
+		each(['area', 'graph', 'dataLabelsGroup', 'group', 'tracker'], function (prop) {
+			if (series[prop]) {
+
+				// issue 134 workaround
+				destroy = issue134 && prop === 'group' ?
+					'hide' :
+					'destroy';
+
+				series[prop][destroy]();
+			}
+		});
+
+		// remove from hoverSeries
+		if (chart.hoverSeries === series) {
+			chart.hoverSeries = null;
+		}
+		erase(chart.series, series);
+
+		// clear all members
+		for (prop in series) {
+			delete series[prop];
+		}
+	},
+
+	/**
+	 * Draw the data labels
+	 */
+	drawDataLabels: function () {
+		if (this.options.dataLabels.enabled) {
+			var series = this,
+				x,
+				y,
+				data = series.data,
+				seriesOptions = series.options,
+				options = seriesOptions.dataLabels,
+				str,
+				dataLabelsGroup = series.dataLabelsGroup,
+				chart = series.chart,
+				renderer = chart.renderer,
+				inverted = chart.inverted,
+				seriesType = series.type,
+				color,
+				stacking = seriesOptions.stacking,
+				isBarLike = seriesType === 'column' || seriesType === 'bar',
+				vAlignIsNull = options.verticalAlign === null,
+				yIsNull = options.y === null;
+
+			if (isBarLike) {
+				if (stacking) {
+					// In stacked series the default label placement is inside the bars
+					if (vAlignIsNull) {
+						options = merge(options, {verticalAlign: 'middle'});
+					}
+
+					// If no y delta is specified, try to create a good default
+					if (yIsNull) {
+						options = merge(options, {y: {top: 14, middle: 4, bottom: -6}[options.verticalAlign]});
+					}
+				} else {
+					// In non stacked series the default label placement is on top of the bars
+					if (vAlignIsNull) {
+						options = merge(options, {verticalAlign: 'top'});
+					}
+				}
+			}
+
+			// create a separate group for the data labels to avoid rotation
+			if (!dataLabelsGroup) {
+				dataLabelsGroup = series.dataLabelsGroup =
+					renderer.g('data-labels')
+						.attr({
+							visibility: series.visible ? VISIBLE : HIDDEN,
+							zIndex: 6
+						})
+						.translate(chart.plotLeft, chart.plotTop)
+						.add();
+			} else {
+				dataLabelsGroup.translate(chart.plotLeft, chart.plotTop);
+			}
+
+			// determine the color
+			color = options.color;
+			if (color === 'auto') { // 1.0 backwards compatibility
+				color = null;
+			}
+			options.style.color = pick(color, series.color, 'black');
+
+			// make the labels for each point
+			each(data, function (point) {
+				var barX = point.barX,
+					plotX = (barX && barX + point.barW / 2) || point.plotX || -999,
+					plotY = pick(point.plotY, -999),
+					dataLabel = point.dataLabel,
+					align = options.align,
+					individualYDelta = yIsNull ? (point.y >= 0 ? -6 : 12) : options.y;
+
+				// get the string
+				str = options.formatter.call(point.getLabelConfig());
+				x = (inverted ? chart.plotWidth - plotY : plotX) + options.x;
+				y = (inverted ? chart.plotHeight - plotX : plotY) + individualYDelta;
+
+				// in columns, align the string to the column
+				if (seriesType === 'column') {
+					x += { left: -1, right: 1 }[align] * point.barW / 2 || 0;
+				}
+
+				if (inverted && point.y < 0) {
+					align = 'right';
+					x -= 10;
+				}
+
+				// update existing label
+				if (dataLabel) {
+					// vertically centered
+					if (inverted && !options.y) {
+						y = y + pInt(dataLabel.styles.lineHeight) * 0.9 - dataLabel.getBBox().height / 2;
+					}
+					dataLabel
+						.attr({
+							text: str
+						}).animate({
+							x: x,
+							y: y
+						});
+				// create new label
+				} else if (defined(str)) {
+					dataLabel = point.dataLabel = renderer.text(
+						str,
+						x,
+						y
+					)
+					.attr({
+						align: align,
+						rotation: options.rotation,
+						zIndex: 1
+					})
+					.css(options.style)
+					.add(dataLabelsGroup);
+					// vertically centered
+					if (inverted && !options.y) {
+						dataLabel.attr({
+							y: y + pInt(dataLabel.styles.lineHeight) * 0.9 - dataLabel.getBBox().height / 2
+						});
+					}
+				}
+
+
+				/*if (series.isCartesian) {
+					dataLabel[chart.isInsidePlot(plotX, plotY) ? 'show' : 'hide']();
+				}*/
+
+				if (isBarLike && seriesOptions.stacking && dataLabel) {
+					var barY = point.barY,
+						barW = point.barW,
+						barH = point.barH;
+
+					dataLabel.align(options, null,
+						{
+							x: inverted ? chart.plotWidth - barY - barH : barX,
+							y: inverted ? chart.plotHeight - barX - barW : barY,
+							width: inverted ? barH : barW,
+							height: inverted ? barW : barH
+						});
+				}
+			});
+		}
+	},
+
+	/**
+	 * Draw the actual graph
+	 */
+	drawGraph: function () {
+		var series = this,
+			options = series.options,
+			chart = series.chart,
+			graph = series.graph,
+			graphPath = [],
+			fillColor,
+			area = series.area,
+			group = series.group,
+			color = options.lineColor || series.color,
+			lineWidth = options.lineWidth,
+			dashStyle =  options.dashStyle,
+			segmentPath,
+			renderer = chart.renderer,
+			translatedThreshold = series.yAxis.getThreshold(options.threshold || 0),
+			useArea = /^area/.test(series.type),
+			singlePoints = [], // used in drawTracker
+			areaPath = [],
+			attribs;
+
+
+		// divide into segments and build graph and area paths
+		each(series.segments, function (segment) {
+			segmentPath = [];
+
+			// build the segment line
+			each(segment, function (point, i) {
+
+				if (series.getPointSpline) { // generate the spline as defined in the SplineSeries object
+					segmentPath.push.apply(segmentPath, series.getPointSpline(segment, point, i));
+
+				} else {
+
+					// moveTo or lineTo
+					segmentPath.push(i ? L : M);
+
+					// step line?
+					if (i && options.step) {
+						var lastPoint = segment[i - 1];
+						segmentPath.push(
+							point.plotX,
+							lastPoint.plotY
+						);
+					}
+
+					// normal line to next point
+					segmentPath.push(
+						point.plotX,
+						point.plotY
+					);
+				}
+			});
+
+			// add the segment to the graph, or a single point for tracking
+			if (segment.length > 1) {
+				graphPath = graphPath.concat(segmentPath);
+			} else {
+				singlePoints.push(segment[0]);
+			}
+
+			// build the area
+			if (useArea) {
+				var areaSegmentPath = [],
+					i,
+					segLength = segmentPath.length;
+				for (i = 0; i < segLength; i++) {
+					areaSegmentPath.push(segmentPath[i]);
+				}
+				if (segLength === 3) { // for animation from 1 to two points
+					areaSegmentPath.push(L, segmentPath[1], segmentPath[2]);
+				}
+				if (options.stacking && series.type !== 'areaspline') {
+					// follow stack back. Todo: implement areaspline
+					for (i = segment.length - 1; i >= 0; i--) {
+						areaSegmentPath.push(segment[i].plotX, segment[i].yBottom);
+					}
+
+				} else { // follow zero line back
+					areaSegmentPath.push(
+						L,
+						segment[segment.length - 1].plotX,
+						translatedThreshold,
+						L,
+						segment[0].plotX,
+						translatedThreshold
+					);
+				}
+				areaPath = areaPath.concat(areaSegmentPath);
+			}
+		});
+
+		// used in drawTracker:
+		series.graphPath = graphPath;
+		series.singlePoints = singlePoints;
+
+		// draw the area if area series or areaspline
+		if (useArea) {
+			fillColor = pick(
+				options.fillColor,
+				Color(series.color).setOpacity(options.fillOpacity || 0.75).get()
+			);
+			if (area) {
+				area.animate({ d: areaPath });
+
+			} else {
+				// draw the area
+				series.area = series.chart.renderer.path(areaPath)
+					.attr({
+						fill: fillColor
+					}).add(group);
+			}
+		}
+
+		// draw the graph
+		if (graph) {
+			stop(graph); // cancel running animations, #459
+			graph.animate({ d: graphPath });
+
+		} else {
+			if (lineWidth) {
+				attribs = {
+					'stroke': color,
+					'stroke-width': lineWidth
+				};
+				if (dashStyle) {
+					attribs.dashstyle = dashStyle;
+				}
+
+				series.graph = renderer.path(graphPath)
+					.attr(attribs).add(group).shadow(options.shadow);
+			}
+		}
+	},
+
+
+	/**
+	 * Render the graph and markers
+	 */
+	render: function () {
+		var series = this,
+			chart = series.chart,
+			group,
+			setInvert,
+			options = series.options,
+			animation = options.animation,
+			doAnimation = animation && series.animate,
+			duration = doAnimation ? (animation && animation.duration) || 500 : 0,
+			clipRect = series.clipRect,
+			renderer = chart.renderer;
+
+
+		// Add plot area clipping rectangle. If this is before chart.hasRendered,
+		// create one shared clipRect.
+		if (!clipRect) {
+			clipRect = series.clipRect = !chart.hasRendered && chart.clipRect ?
+				chart.clipRect :
+				renderer.clipRect(0, 0, chart.plotSizeX, chart.plotSizeY);
+			if (!chart.clipRect) {
+				chart.clipRect = clipRect;
+			}
+		}
+
+
+		// the group
+		if (!series.group) {
+			group = series.group = renderer.g('series');
+
+			if (chart.inverted) {
+				setInvert = function () {
+					group.attr({
+						width: chart.plotWidth,
+						height: chart.plotHeight
+					}).invert();
+				};
+
+				setInvert(); // do it now
+				addEvent(chart, 'resize', setInvert); // do it on resize
+				addEvent(series, 'destroy', function () {
+					removeEvent(chart, 'resize', setInvert);
+				});
+			}
+			group.clip(series.clipRect)
+				.attr({
+					visibility: series.visible ? VISIBLE : HIDDEN,
+					zIndex: options.zIndex
+				})
+				.translate(chart.plotLeft, chart.plotTop)
+				.add(chart.seriesGroup);
+		}
+
+		series.drawDataLabels();
+
+		// initiate the animation
+		if (doAnimation) {
+			series.animate(true);
+		}
+
+		// cache attributes for shapes
+		//series.getAttribs();
+
+		// draw the graph if any
+		if (series.drawGraph) {
+			series.drawGraph();
+		}
+
+		// draw the points
+		series.drawPoints();
+
+		// draw the mouse tracking area
+		if (series.options.enableMouseTracking !== false) {
+			series.drawTracker();
+		}
+
+		// run the animation
+		if (doAnimation) {
+			series.animate();
+		}
+
+		// finish the individual clipRect
+		setTimeout(function () {
+			clipRect.isAnimating = false;
+			group = series.group; // can be destroyed during the timeout
+			if (group && clipRect !== chart.clipRect && clipRect.renderer) {
+				group.clip((series.clipRect = chart.clipRect));
+				clipRect.destroy();
+			}
+		}, duration);
+
+
+		series.isDirty = false; // means data is in accordance with what you see
+
+	},
+
+	/**
+	 * Redraw the series after an update in the axes.
+	 */
+	redraw: function () {
+		var series = this,
+			chart = series.chart,
+			group = series.group;
+
+		/*if (clipRect) {
+			stop(clipRect);
+			clipRect.animate({ // for chart resize
+				width: chart.plotSizeX,
+				height: chart.plotSizeY
+			});
+		}*/
+
+		// reposition on resize
+		if (group) {
+			if (chart.inverted) {
+				group.attr({
+					width: chart.plotWidth,
+					height: chart.plotHeight
+				});
+			}
+
+			group.animate({
+				translateX: chart.plotLeft,
+				translateY: chart.plotTop
+			});
+		}
+
+		series.translate();
+		series.setTooltipPoints(true);
+		series.render();
+	},
+
+	/**
+	 * Set the state of the graph
+	 */
+	setState: function (state) {
+		var series = this,
+			options = series.options,
+			graph = series.graph,
+			stateOptions = options.states,
+			lineWidth = options.lineWidth;
+
+		state = state || NORMAL_STATE;
+
+		if (series.state !== state) {
+			series.state = state;
+
+			if (stateOptions[state] && stateOptions[state].enabled === false) {
+				return;
+			}
+
+			if (state) {
+				lineWidth = stateOptions[state].lineWidth || lineWidth + 1;
+			}
+
+			if (graph && !graph.dashstyle) { // hover is turned off for dashed lines in VML
+				graph.attr({ // use attr because animate will cause any other animation on the graph to stop
+					'stroke-width': lineWidth
+				}, state ? 0 : 500);
+			}
+		}
+	},
+
+	/**
+	 * Set the visibility of the graph
+	 *
+	 * @param vis {Boolean} True to show the series, false to hide. If UNDEFINED,
+	 *        the visibility is toggled.
+	 */
+	setVisible: function (vis, redraw) {
+		var series = this,
+			chart = series.chart,
+			legendItem = series.legendItem,
+			seriesGroup = series.group,
+			seriesTracker = series.tracker,
+			dataLabelsGroup = series.dataLabelsGroup,
+			showOrHide,
+			i,
+			data = series.data,
+			point,
+			ignoreHiddenSeries = chart.options.chart.ignoreHiddenSeries,
+			oldVisibility = series.visible;
+
+		// if called without an argument, toggle visibility
+		series.visible = vis = vis === UNDEFINED ? !oldVisibility : vis;
+		showOrHide = vis ? 'show' : 'hide';
+
+		// show or hide series
+		if (seriesGroup) { // pies don't have one
+			seriesGroup[showOrHide]();
+		}
+
+		// show or hide trackers
+		if (seriesTracker) {
+			seriesTracker[showOrHide]();
+		} else {
+			i = data.length;
+			while (i--) {
+				point = data[i];
+				if (point.tracker) {
+					point.tracker[showOrHide]();
+				}
+			}
+		}
+
+
+		if (dataLabelsGroup) {
+			dataLabelsGroup[showOrHide]();
+		}
+
+		if (legendItem) {
+			chart.legend.colorizeItem(series, vis);
+		}
+
+
+		// rescale or adapt to resized chart
+		series.isDirty = true;
+		// in a stack, all other series are affected
+		if (series.options.stacking) {
+			each(chart.series, function (otherSeries) {
+				if (otherSeries.options.stacking && otherSeries.visible) {
+					otherSeries.isDirty = true;
+				}
+			});
+		}
+
+		if (ignoreHiddenSeries) {
+			chart.isDirtyBox = true;
+		}
+		if (redraw !== false) {
+			chart.redraw();
+		}
+
+		fireEvent(series, showOrHide);
+	},
+
+	/**
+	 * Show the graph
+	 */
+	show: function () {
+		this.setVisible(true);
+	},
+
+	/**
+	 * Hide the graph
+	 */
+	hide: function () {
+		this.setVisible(false);
+	},
+
+
+	/**
+	 * Set the selected state of the graph
+	 *
+	 * @param selected {Boolean} True to select the series, false to unselect. If
+	 *        UNDEFINED, the selection state is toggled.
+	 */
+	select: function (selected) {
+		var series = this;
+		// if called without an argument, toggle
+		series.selected = selected = (selected === UNDEFINED) ? !series.selected : selected;
+
+		if (series.checkbox) {
+			series.checkbox.checked = selected;
+		}
+
+		fireEvent(series, selected ? 'select' : 'unselect');
+	},
+
+
+	/**
+	 * Draw the tracker object that sits above all data labels and markers to
+	 * track mouse events on the graph or points. For the line type charts
+	 * the tracker uses the same graphPath, but with a greater stroke width
+	 * for better control.
+	 */
+	drawTracker: function () {
+		var series = this,
+			options = series.options,
+			trackerPath = [].concat(series.graphPath),
+			trackerPathLength = trackerPath.length,
+			chart = series.chart,
+			snap = chart.options.tooltip.snap,
+			tracker = series.tracker,
+			cursor = options.cursor,
+			css = cursor && { cursor: cursor },
+			singlePoints = series.singlePoints,
+			singlePoint,
+			i;
+
+		// Extend end points. A better way would be to use round linecaps,
+		// but those are not clickable in VML.
+		if (trackerPathLength) {
+			i = trackerPathLength + 1;
+			while (i--) {
+				if (trackerPath[i] === M) { // extend left side
+					trackerPath.splice(i + 1, 0, trackerPath[i + 1] - snap, trackerPath[i + 2], L);
+				}
+				if ((i && trackerPath[i] === M) || i === trackerPathLength) { // extend right side
+					trackerPath.splice(i, 0, L, trackerPath[i - 2] + snap, trackerPath[i - 1]);
+				}
+			}
+		}
+
+		// handle single points
+		for (i = 0; i < singlePoints.length; i++) {
+			singlePoint = singlePoints[i];
+			trackerPath.push(M, singlePoint.plotX - snap, singlePoint.plotY,
+				L, singlePoint.plotX + snap, singlePoint.plotY);
+		}
+
+		// draw the tracker
+		if (tracker) {
+			tracker.attr({ d: trackerPath });
+
+		} else { // create
+			series.tracker = chart.renderer.path(trackerPath)
+				.attr({
+					isTracker: true,
+					stroke: TRACKER_FILL,
+					fill: NONE,
+					'stroke-width' : options.lineWidth + 2 * snap,
+					visibility: series.visible ? VISIBLE : HIDDEN,
+					zIndex: options.zIndex || 1
+				})
+				.on(hasTouch ? 'touchstart' : 'mouseover', function () {
+					if (chart.hoverSeries !== series) {
+						series.onMouseOver();
+					}
+				})
+				.on('mouseout', function () {
+					if (!options.stickyTracking) {
+						series.onMouseOut();
+					}
+				})
+				.css(css)
+				.add(chart.trackerGroup);
+		}
+
+	}
+
+}; // end Series prototype
+
+
+/**
+ * LineSeries object
+ */
+var LineSeries = extendClass(Series);
+seriesTypes.line = LineSeries;
+
+/**
+ * AreaSeries object
+ */
+var AreaSeries = extendClass(Series, {
+	type: 'area'
+});
+seriesTypes.area = AreaSeries;
+
+
+
+
+/**
+ * SplineSeries object
+ */
+var SplineSeries = extendClass(Series, {
+	type: 'spline',
+
+	/**
+	 * Draw the actual graph
+	 */
+	getPointSpline: function (segment, point, i) {
+		var smoothing = 1.5, // 1 means control points midway between points, 2 means 1/3 from the point, 3 is 1/4 etc
+			denom = smoothing + 1,
+			plotX = point.plotX,
+			plotY = point.plotY,
+			lastPoint = segment[i - 1],
+			nextPoint = segment[i + 1],
+			leftContX,
+			leftContY,
+			rightContX,
+			rightContY,
+			ret;
+
+		// find control points
+		if (i && i < segment.length - 1) {
+			var lastX = lastPoint.plotX,
+				lastY = lastPoint.plotY,
+				nextX = nextPoint.plotX,
+				nextY = nextPoint.plotY,
+				correction;
+
+			leftContX = (smoothing * plotX + lastX) / denom;
+			leftContY = (smoothing * plotY + lastY) / denom;
+			rightContX = (smoothing * plotX + nextX) / denom;
+			rightContY = (smoothing * plotY + nextY) / denom;
+
+			// have the two control points make a straight line through main point
+			correction = ((rightContY - leftContY) * (rightContX - plotX)) /
+				(rightContX - leftContX) + plotY - rightContY;
+
+			leftContY += correction;
+			rightContY += correction;
+
+			// to prevent false extremes, check that control points are between
+			// neighbouring points' y values
+			if (leftContY > lastY && leftContY > plotY) {
+				leftContY = mathMax(lastY, plotY);
+				rightContY = 2 * plotY - leftContY; // mirror of left control point
+			} else if (leftContY < lastY && leftContY < plotY) {
+				leftContY = mathMin(lastY, plotY);
+				rightContY = 2 * plotY - leftContY;
+			}
+			if (rightContY > nextY && rightContY > plotY) {
+				rightContY = mathMax(nextY, plotY);
+				leftContY = 2 * plotY - rightContY;
+			} else if (rightContY < nextY && rightContY < plotY) {
+				rightContY = mathMin(nextY, plotY);
+				leftContY = 2 * plotY - rightContY;
+			}
+
+			// record for drawing in next point
+			point.rightContX = rightContX;
+			point.rightContY = rightContY;
+
+		}
+
+		// moveTo or lineTo
+		if (!i) {
+			ret = [M, plotX, plotY];
+		} else { // curve from last point to this
+			ret = [
+				'C',
+				lastPoint.rightContX || lastPoint.plotX,
+				lastPoint.rightContY || lastPoint.plotY,
+				leftContX || plotX,
+				leftContY || plotY,
+				plotX,
+				plotY
+			];
+			lastPoint.rightContX = lastPoint.rightContY = null; // reset for updating series later
+		}
+		return ret;
+	}
+});
+seriesTypes.spline = SplineSeries;
+
+
+
+/**
+ * AreaSplineSeries object
+ */
+var AreaSplineSeries = extendClass(SplineSeries, {
+	type: 'areaspline'
+});
+seriesTypes.areaspline = AreaSplineSeries;
+
+/**
+ * ColumnSeries object
+ */
+var ColumnSeries = extendClass(Series, {
+	type: 'column',
+	pointAttrToOptions: { // mapping between SVG attributes and the corresponding options
+		stroke: 'borderColor',
+		'stroke-width': 'borderWidth',
+		fill: 'color',
+		r: 'borderRadius'
+	},
+	init: function () {
+		Series.prototype.init.apply(this, arguments);
+
+		var series = this,
+			chart = series.chart;
+
+		// flag the chart in order to pad the x axis
+		chart.hasColumn = true;
+
+		// if the series is added dynamically, force redraw of other
+		// series affected by a new column
+		if (chart.hasRendered) {
+			each(chart.series, function (otherSeries) {
+				if (otherSeries.type === series.type) {
+					otherSeries.isDirty = true;
+				}
+			});
+		}
+	},
+
+	/**
+	 * Translate each point to the plot area coordinate system and find shape positions
+	 */
+	translate: function () {
+		var series = this,
+			chart = series.chart,
+			options = series.options,
+			stacking = options.stacking,
+			borderWidth = options.borderWidth,
+			columnCount = 0,
+			reversedXAxis = series.xAxis.reversed,
+			categories = series.xAxis.categories,
+			stackGroups = {},
+			stackKey,
+			columnIndex;
+
+		Series.prototype.translate.apply(series);
+
+		// Get the total number of column type series.
+		// This is called on every series. Consider moving this logic to a
+		// chart.orderStacks() function and call it on init, addSeries and removeSeries
+		each(chart.series, function (otherSeries) {
+			if (otherSeries.type === series.type && otherSeries.visible) {
+				if (otherSeries.options.stacking) {
+					stackKey = otherSeries.stackKey;
+					if (stackGroups[stackKey] === UNDEFINED) {
+						stackGroups[stackKey] = columnCount++;
+					}
+					columnIndex = stackGroups[stackKey];
+				} else {
+					columnIndex = columnCount++;
+				}
+				otherSeries.columnIndex = columnIndex;
+			}
+		});
+
+		// calculate the width and position of each column based on
+		// the number of column series in the plot, the groupPadding
+		// and the pointPadding options
+		var data = series.data,
+			closestPoints = series.closestPoints,
+			categoryWidth = mathAbs(
+				data[1] ? data[closestPoints].plotX - data[closestPoints - 1].plotX :
+				chart.plotSizeX / ((categories && categories.length) || 1)
+			),
+			groupPadding = categoryWidth * options.groupPadding,
+			groupWidth = categoryWidth - 2 * groupPadding,
+			pointOffsetWidth = groupWidth / columnCount,
+			optionPointWidth = options.pointWidth,
+			pointPadding = defined(optionPointWidth) ? (pointOffsetWidth - optionPointWidth) / 2 :
+				pointOffsetWidth * options.pointPadding,
+			pointWidth = mathMax(pick(optionPointWidth, pointOffsetWidth - 2 * pointPadding), 1),
+			colIndex = (reversedXAxis ? columnCount -
+				series.columnIndex : series.columnIndex) || 0,
+			pointXOffset = pointPadding + (groupPadding + colIndex *
+				pointOffsetWidth - (categoryWidth / 2)) *
+				(reversedXAxis ? -1 : 1),
+			threshold = options.threshold || 0,
+			translatedThreshold = series.yAxis.getThreshold(threshold),
+			minPointLength = pick(options.minPointLength, 5);
+
+		// record the new values
+		each(data, function (point) {
+			var plotY = point.plotY,
+				yBottom = point.yBottom || translatedThreshold,
+				barX = point.plotX + pointXOffset,
+				barY = mathCeil(mathMin(plotY, yBottom)),
+				barH = mathCeil(mathMax(plotY, yBottom) - barY),
+				stack = series.yAxis.stacks[(point.y < 0 ? '-' : '') + series.stackKey],
+				trackerY,
+				shapeArgs;
+
+			// Record the offset'ed position and width of the bar to be able to align the stacking total correctly
+			if (stacking && series.visible && stack && stack[point.x]) {
+				stack[point.x].setOffset(pointXOffset, pointWidth);
+			}
+
+			// handle options.minPointLength and tracker for small points
+			if (mathAbs(barH) < minPointLength) {
+				if (minPointLength) {
+					barH = minPointLength;
+					barY =
+						mathAbs(barY - translatedThreshold) > minPointLength ? // stacked
+							yBottom - minPointLength : // keep position
+							translatedThreshold - (plotY <= translatedThreshold ? minPointLength : 0);
+				}
+				trackerY = barY - 3;
+			}
+
+			extend(point, {
+				barX: barX,
+				barY: barY,
+				barW: pointWidth,
+				barH: barH
+			});
+
+			// create shape type and shape args that are reused in drawPoints and drawTracker
+			point.shapeType = 'rect';
+			shapeArgs = extend(chart.renderer.Element.prototype.crisp.apply({}, [
+				borderWidth,
+				barX,
+				barY,
+				pointWidth,
+				barH
+			]), {
+				r: options.borderRadius
+			});
+			if (borderWidth % 2) { // correct for shorting in crisp method, visible in stacked columns with 1px border
+				shapeArgs.y -= 1;
+				shapeArgs.height += 1;
+			}
+			point.shapeArgs = shapeArgs;
+
+			// make small columns responsive to mouse
+			point.trackerArgs = defined(trackerY) && merge(point.shapeArgs, {
+				height: mathMax(6, barH + 3),
+				y: trackerY
+			});
+		});
+
+	},
+
+	getSymbol: function () {
+	},
+
+	/**
+	 * Columns have no graph
+	 */
+	drawGraph: function () {},
+
+	/**
+	 * Draw the columns. For bars, the series.group is rotated, so the same coordinates
+	 * apply for columns and bars. This method is inherited by scatter series.
+	 *
+	 */
+	drawPoints: function () {
+		var series = this,
+			options = series.options,
+			renderer = series.chart.renderer,
+			graphic,
+			shapeArgs;
+
+
+		// draw the columns
+		each(series.data, function (point) {
+			var plotY = point.plotY;
+			if (plotY !== UNDEFINED && !isNaN(plotY) && point.y !== null) {
+				graphic = point.graphic;
+				shapeArgs = point.shapeArgs;
+				if (graphic) { // update
+					stop(graphic);
+					graphic.animate(shapeArgs);
+
+				} else {
+					point.graphic = renderer[point.shapeType](shapeArgs)
+						.attr(point.pointAttr[point.selected ? SELECT_STATE : NORMAL_STATE])
+						.add(series.group)
+						.shadow(options.shadow);
+				}
+
+			}
+		});
+	},
+	/**
+	 * Draw the individual tracker elements.
+	 * This method is inherited by scatter and pie charts too.
+	 */
+	drawTracker: function () {
+		var series = this,
+			chart = series.chart,
+			renderer = chart.renderer,
+			shapeArgs,
+			tracker,
+			trackerLabel = +new Date(),
+			options = series.options,
+			cursor = options.cursor,
+			css = cursor && { cursor: cursor },
+			rel;
+
+		each(series.data, function (point) {
+			tracker = point.tracker;
+			shapeArgs = point.trackerArgs || point.shapeArgs;
+			delete shapeArgs.strokeWidth;
+			if (point.y !== null) {
+				if (tracker) {// update
+					tracker.attr(shapeArgs);
+
+				} else {
+					point.tracker =
+						renderer[point.shapeType](shapeArgs)
+						.attr({
+							isTracker: trackerLabel,
+							fill: TRACKER_FILL,
+							visibility: series.visible ? VISIBLE : HIDDEN,
+							zIndex: options.zIndex || 1
+						})
+						.on(hasTouch ? 'touchstart' : 'mouseover', function (event) {
+							rel = event.relatedTarget || event.fromElement;
+							if (chart.hoverSeries !== series && attr(rel, 'isTracker') !== trackerLabel) {
+								series.onMouseOver();
+							}
+							point.onMouseOver();
+
+						})
+						.on('mouseout', function (event) {
+							if (!options.stickyTracking) {
+								rel = event.relatedTarget || event.toElement;
+								if (attr(rel, 'isTracker') !== trackerLabel) {
+									series.onMouseOut();
+								}
+							}
+						})
+						.css(css)
+						.add(point.group || chart.trackerGroup); // pies have point group - see issue #118
+				}
+			}
+		});
+	},
+
+
+	/**
+	 * Animate the column heights one by one from zero
+	 * @param {Boolean} init Whether to initialize the animation or run it
+	 */
+	animate: function (init) {
+		var series = this,
+			data = series.data;
+
+		if (!init) { // run the animation
+			/*
+			 * Note: Ideally the animation should be initialized by calling
+			 * series.group.hide(), and then calling series.group.show()
+			 * after the animation was started. But this rendered the shadows
+			 * invisible in IE8 standards mode. If the columns flicker on large
+			 * datasets, this is the cause.
+			 */
+
+			each(data, function (point) {
+				var graphic = point.graphic,
+					shapeArgs = point.shapeArgs;
+
+				if (graphic) {
+					// start values
+					graphic.attr({
+						height: 0,
+						y: series.yAxis.translate(0, 0, 1)
+					});
+
+					// animate
+					graphic.animate({
+						height: shapeArgs.height,
+						y: shapeArgs.y
+					}, series.options.animation);
+				}
+			});
+
+
+			// delete this function to allow it only once
+			series.animate = null;
+		}
+
+	},
+	/**
+	 * Remove this series from the chart
+	 */
+	remove: function () {
+		var series = this,
+			chart = series.chart;
+
+		// column and bar series affects other series of the same type
+		// as they are either stacked or grouped
+		if (chart.hasRendered) {
+			each(chart.series, function (otherSeries) {
+				if (otherSeries.type === series.type) {
+					otherSeries.isDirty = true;
+				}
+			});
+		}
+
+		Series.prototype.remove.apply(series, arguments);
+	}
+});
+seriesTypes.column = ColumnSeries;
+
+var BarSeries = extendClass(ColumnSeries, {
+	type: 'bar',
+	init: function (chart) {
+		chart.inverted = this.inverted = true;
+		ColumnSeries.prototype.init.apply(this, arguments);
+	}
+});
+seriesTypes.bar = BarSeries;
+
+/**
+ * The scatter series class
+ */
+var ScatterSeries = extendClass(Series, {
+	type: 'scatter',
+
+	/**
+	 * Extend the base Series' translate method by adding shape type and
+	 * arguments for the point trackers
+	 */
+	translate: function () {
+		var series = this;
+
+		Series.prototype.translate.apply(series);
+
+		each(series.data, function (point) {
+			point.shapeType = 'circle';
+			point.shapeArgs = {
+				x: point.plotX,
+				y: point.plotY,
+				r: series.chart.options.tooltip.snap
+			};
+		});
+	},
+
+
+	/**
+	 * Create individual tracker elements for each point
+	 */
+	//drawTracker: ColumnSeries.prototype.drawTracker,
+	drawTracker: function () {
+		var series = this,
+			cursor = series.options.cursor,
+			css = cursor && { cursor: cursor },
+			graphic;
+
+		each(series.data, function (point) {
+			graphic = point.graphic;
+			if (graphic) { // doesn't exist for null points
+				graphic
+					.attr({ isTracker: true })
+					.on('mouseover', function () {
+						series.onMouseOver();
+						point.onMouseOver();
+					})
+					.on('mouseout', function () {
+						if (!series.options.stickyTracking) {
+							series.onMouseOut();
+						}
+					})
+					.css(css);
+			}
+		});
+
+	},
+
+	/**
+	 * Cleaning the data is not necessary in a scatter plot
+	 */
+	cleanData: function () {}
+});
+seriesTypes.scatter = ScatterSeries;
+
+/**
+ * Extended point object for pies
+ */
+var PiePoint = extendClass(Point, {
+	/**
+	 * Initiate the pie slice
+	 */
+	init: function () {
+
+		Point.prototype.init.apply(this, arguments);
+
+		var point = this,
+			toggleSlice;
+
+		//visible: options.visible !== false,
+		extend(point, {
+			visible: point.visible !== false,
+			name: pick(point.name, 'Slice')
+		});
+
+		// add event listener for select
+		toggleSlice = function () {
+			point.slice();
+		};
+		addEvent(point, 'select', toggleSlice);
+		addEvent(point, 'unselect', toggleSlice);
+
+		return point;
+	},
+
+	/**
+	 * Toggle the visibility of the pie slice
+	 * @param {Boolean} vis Whether to show the slice or not. If undefined, the
+	 *    visibility is toggled
+	 */
+	setVisible: function (vis) {
+		var point = this,
+			chart = point.series.chart,
+			tracker = point.tracker,
+			dataLabel = point.dataLabel,
+			connector = point.connector,
+			shadowGroup = point.shadowGroup,
+			method;
+
+		// if called without an argument, toggle visibility
+		point.visible = vis = vis === UNDEFINED ? !point.visible : vis;
+
+		method = vis ? 'show' : 'hide';
+
+		point.group[method]();
+		if (tracker) {
+			tracker[method]();
+		}
+		if (dataLabel) {
+			dataLabel[method]();
+		}
+		if (connector) {
+			connector[method]();
+		}
+		if (shadowGroup) {
+			shadowGroup[method]();
+		}
+		if (point.legendItem) {
+			chart.legend.colorizeItem(point, vis);
+		}
+	},
+
+	/**
+	 * Set or toggle whether the slice is cut out from the pie
+	 * @param {Boolean} sliced When undefined, the slice state is toggled
+	 * @param {Boolean} redraw Whether to redraw the chart. True by default.
+	 */
+	slice: function (sliced, redraw, animation) {
+		var point = this,
+			series = point.series,
+			chart = series.chart,
+			slicedTranslation = point.slicedTranslation,
+			translation;
+
+		setAnimation(animation, chart);
+
+		// redraw is true by default
+		redraw = pick(redraw, true);
+
+		// if called without an argument, toggle
+		sliced = point.sliced = defined(sliced) ? sliced : !point.sliced;
+
+		translation = {
+			translateX: (sliced ? slicedTranslation[0] : chart.plotLeft),
+			translateY: (sliced ? slicedTranslation[1] : chart.plotTop)
+		};
+		point.group.animate(translation);
+		if (point.shadowGroup) {
+			point.shadowGroup.animate(translation);
+		}
+
+	}
+});
+
+/**
+ * The Pie series class
+ */
+var PieSeries = extendClass(Series, {
+	type: 'pie',
+	isCartesian: false,
+	pointClass: PiePoint,
+	pointAttrToOptions: { // mapping between SVG attributes and the corresponding options
+		stroke: 'borderColor',
+		'stroke-width': 'borderWidth',
+		fill: 'color'
+	},
+
+	/**
+	 * Pies have one color each point
+	 */
+	getColor: function () {
+		// record first color for use in setData
+		this.initialColor = this.chart.counters.color;
+	},
+
+	/**
+	 * Animate the column heights one by one from zero
+	 */
+	animate: function () {
+		var series = this,
+			data = series.data;
+
+		each(data, function (point) {
+			var graphic = point.graphic,
+				args = point.shapeArgs,
+				up = -mathPI / 2;
+
+			if (graphic) {
+				// start values
+				graphic.attr({
+					r: 0,
+					start: up,
+					end: up
+				});
+
+				// animate
+				graphic.animate({
+					r: args.r,
+					start: args.start,
+					end: args.end
+				}, series.options.animation);
+			}
+		});
+
+		// delete this function to allow it only once
+		series.animate = null;
+
+	},
+	/**
+	 * Do translation for pie slices
+	 */
+	translate: function () {
+		var total = 0,
+			series = this,
+			cumulative = -0.25, // start at top
+			precision = 1000, // issue #172
+			options = series.options,
+			slicedOffset = options.slicedOffset,
+			connectorOffset = slicedOffset + options.borderWidth,
+			positions = options.center.concat([options.size, options.innerSize || 0]),
+			chart = series.chart,
+			plotWidth = chart.plotWidth,
+			plotHeight = chart.plotHeight,
+			start,
+			end,
+			angle,
+			data = series.data,
+			circ = 2 * mathPI,
+			fraction,
+			smallestSize = mathMin(plotWidth, plotHeight),
+			isPercent,
+			radiusX, // the x component of the radius vector for a given point
+			radiusY,
+			labelDistance = options.dataLabels.distance;
+
+		// get positions - either an integer or a percentage string must be given
+		positions = map(positions, function (length, i) {
+
+			isPercent = /%$/.test(length);
+			return isPercent ?
+				// i == 0: centerX, relative to width
+				// i == 1: centerY, relative to height
+				// i == 2: size, relative to smallestSize
+				// i == 4: innerSize, relative to smallestSize
+				[plotWidth, plotHeight, smallestSize, smallestSize][i] *
+					pInt(length) / 100 :
+				length;
+		});
+
+		// utility for getting the x value from a given y, used for anticollision logic in data labels
+		series.getX = function (y, left) {
+
+			angle = math.asin((y - positions[1]) / (positions[2] / 2 + labelDistance));
+
+			return positions[0] +
+				(left ? -1 : 1) *
+				(mathCos(angle) * (positions[2] / 2 + labelDistance));
+		};
+
+		// set center for later use
+		series.center = positions;
+
+		// get the total sum
+		each(data, function (point) {
+			total += point.y;
+		});
+
+		each(data, function (point) {
+			// set start and end angle
+			fraction = total ? point.y / total : 0;
+			start = mathRound(cumulative * circ * precision) / precision;
+			cumulative += fraction;
+			end = mathRound(cumulative * circ * precision) / precision;
+
+			// set the shape
+			point.shapeType = 'arc';
+			point.shapeArgs = {
+				x: positions[0],
+				y: positions[1],
+				r: positions[2] / 2,
+				innerR: positions[3] / 2,
+				start: start,
+				end: end
+			};
+
+			// center for the sliced out slice
+			angle = (end + start) / 2;
+			point.slicedTranslation = map([
+				mathCos(angle) * slicedOffset + chart.plotLeft,
+				mathSin(angle) * slicedOffset + chart.plotTop
+			], mathRound);
+
+			// set the anchor point for tooltips
+			radiusX = mathCos(angle) * positions[2] / 2;
+			radiusY = mathSin(angle) * positions[2] / 2;
+			point.tooltipPos = [
+				positions[0] + radiusX * 0.7,
+				positions[1] + radiusY * 0.7
+			];
+
+			// set the anchor point for data labels
+			point.labelPos = [
+				positions[0] + radiusX + mathCos(angle) * labelDistance, // first break of connector
+				positions[1] + radiusY + mathSin(angle) * labelDistance, // a/a
+				positions[0] + radiusX + mathCos(angle) * connectorOffset, // second break, right outside pie
+				positions[1] + radiusY + mathSin(angle) * connectorOffset, // a/a
+				positions[0] + radiusX, // landing point for connector
+				positions[1] + radiusY, // a/a
+				labelDistance < 0 ? // alignment
+					'center' :
+					angle < circ / 4 ? 'left' : 'right', // alignment
+				angle // center angle
+			];
+
+			// API properties
+			point.percentage = fraction * 100;
+			point.total = total;
+
+		});
+
+
+		this.setTooltipPoints();
+	},
+
+	/**
+	 * Render the slices
+	 */
+	render: function () {
+		var series = this;
+
+		// cache attributes for shapes
+		//series.getAttribs();
+
+		this.drawPoints();
+
+		// draw the mouse tracking area
+		if (series.options.enableMouseTracking !== false) {
+			series.drawTracker();
+		}
+
+		this.drawDataLabels();
+
+		if (series.options.animation && series.animate) {
+			series.animate();
+		}
+
+		series.isDirty = false; // means data is in accordance with what you see
+	},
+
+	/**
+	 * Draw the data points
+	 */
+	drawPoints: function () {
+		var series = this,
+			chart = series.chart,
+			renderer = chart.renderer,
+			groupTranslation,
+			//center,
+			graphic,
+			group,
+			shadow = series.options.shadow,
+			shadowGroup,
+			shapeArgs;
+
+
+		// draw the slices
+		each(series.data, function (point) {
+			graphic = point.graphic;
+			shapeArgs = point.shapeArgs;
+			group = point.group;
+			shadowGroup = point.shadowGroup;
+
+			// put the shadow behind all points
+			if (shadow && !shadowGroup) {
+				shadowGroup = point.shadowGroup = renderer.g('shadow')
+					.attr({ zIndex: 4 })
+					.add();
+			}
+
+			// create the group the first time
+			if (!group) {
+				group = point.group = renderer.g('point')
+					.attr({ zIndex: 5 })
+					.add();
+			}
+
+			// if the point is sliced, use special translation, else use plot area traslation
+			groupTranslation = point.sliced ? point.slicedTranslation : [chart.plotLeft, chart.plotTop];
+			group.translate(groupTranslation[0], groupTranslation[1]);
+			if (shadowGroup) {
+				shadowGroup.translate(groupTranslation[0], groupTranslation[1]);
+			}
+
+
+			// draw the slice
+			if (graphic) {
+				graphic.animate(shapeArgs);
+			} else {
+				point.graphic =
+					renderer.arc(shapeArgs)
+					.attr(extend(
+						point.pointAttr[NORMAL_STATE],
+						{ 'stroke-linejoin': 'round' }
+					))
+					.add(point.group)
+					.shadow(shadow, shadowGroup);
+			}
+
+			// detect point specific visibility
+			if (point.visible === false) {
+				point.setVisible(false);
+			}
+
+		});
+
+	},
+
+	/**
+	 * Override the base drawDataLabels method by pie specific functionality
+	 */
+	drawDataLabels: function () {
+		var series = this,
+			data = series.data,
+			point,
+			chart = series.chart,
+			options = series.options.dataLabels,
+			connectorPadding = pick(options.connectorPadding, 10),
+			connectorWidth = pick(options.connectorWidth, 1),
+			connector,
+			connectorPath,
+			softConnector = pick(options.softConnector, true),
+			distanceOption = options.distance,
+			seriesCenter = series.center,
+			radius = seriesCenter[2] / 2,
+			centerY = seriesCenter[1],
+			outside = distanceOption > 0,
+			dataLabel,
+			labelPos,
+			labelHeight,
+			halves = [// divide the points into right and left halves for anti collision
+				[], // right
+				[]  // left
+			],
+			x,
+			y,
+			visibility,
+			rankArr,
+			sort,
+			i = 2,
+			j;
+
+		// get out if not enabled
+		if (!options.enabled) {
+			return;
+		}
+
+		// run parent method
+		Series.prototype.drawDataLabels.apply(series);
+
+		// arrange points for detection collision
+		each(data, function (point) {
+			if (point.dataLabel) { // it may have been cancelled in the base method (#407)
+				halves[
+					point.labelPos[7] < mathPI / 2 ? 0 : 1
+				].push(point);
+			}
+		});
+		halves[1].reverse();
+
+		// define the sorting algorithm
+		sort = function (a, b) {
+			return b.y - a.y;
+		};
+
+		// assume equal label heights
+		labelHeight = halves[0][0] && halves[0][0].dataLabel && pInt(halves[0][0].dataLabel.styles.lineHeight);
+
+		/* Loop over the points in each quartile, starting from the top and bottom
+		 * of the pie to detect overlapping labels.
+		 */
+		while (i--) {
+
+			var slots = [],
+				slotsLength,
+				usedSlots = [],
+				points = halves[i],
+				pos,
+				length = points.length,
+				slotIndex;
+
+
+			// build the slots
+			for (pos = centerY - radius - distanceOption; pos <= centerY + radius + distanceOption; pos += labelHeight) {
+				slots.push(pos);
+				// visualize the slot
+				/*
+				var slotX = series.getX(pos, i) + chart.plotLeft - (i ? 100 : 0),
+					slotY = pos + chart.plotTop;
+				if (!isNaN(slotX)) {
+					chart.renderer.rect(slotX, slotY - 7, 100, labelHeight)
+						.attr({
+							'stroke-width': 1,
+							stroke: 'silver'
+						})
+						.add();
+					chart.renderer.text('Slot '+ (slots.length - 1), slotX, slotY + 4)
+						.attr({
+							fill: 'silver'
+						}).add();
+				}
+				// */
+			}
+			slotsLength = slots.length;
+
+			// if there are more values than available slots, remove lowest values
+			if (length > slotsLength) {
+				// create an array for sorting and ranking the points within each quarter
+				rankArr = [].concat(points);
+				rankArr.sort(sort);
+				j = length;
+				while (j--) {
+					rankArr[j].rank = j;
+				}
+				j = length;
+				while (j--) {
+					if (points[j].rank >= slotsLength) {
+						points.splice(j, 1);
+					}
+				}
+				length = points.length;
+			}
+
+			// The label goes to the nearest open slot, but not closer to the edge than
+			// the label's index.
+			for (j = 0; j < length; j++) {
+
+				point = points[j];
+				labelPos = point.labelPos;
+
+				var closest = 9999,
+					distance,
+					slotI;
+
+				// find the closest slot index
+				for (slotI = 0; slotI < slotsLength; slotI++) {
+					distance = mathAbs(slots[slotI] - labelPos[1]);
+					if (distance < closest) {
+						closest = distance;
+						slotIndex = slotI;
+					}
+				}
+
+				// if that slot index is closer to the edges of the slots, move it
+				// to the closest appropriate slot
+				if (slotIndex < j && slots[j] !== null) { // cluster at the top
+					slotIndex = j;
+				} else if (slotsLength  < length - j + slotIndex && slots[j] !== null) { // cluster at the bottom
+					slotIndex = slotsLength - length + j;
+					while (slots[slotIndex] === null) { // make sure it is not taken
+						slotIndex++;
+					}
+				} else {
+					// Slot is taken, find next free slot below. In the next run, the next slice will find the
+					// slot above these, because it is the closest one
+					while (slots[slotIndex] === null) { // make sure it is not taken
+						slotIndex++;
+					}
+				}
+
+				usedSlots.push({ i: slotIndex, y: slots[slotIndex] });
+				slots[slotIndex] = null; // mark as taken
+			}
+			// sort them in order to fill in from the top
+			usedSlots.sort(sort);
+
+
+			// now the used slots are sorted, fill them up sequentially
+			for (j = 0; j < length; j++) {
+
+				point = points[j];
+				labelPos = point.labelPos;
+				dataLabel = point.dataLabel;
+				var slot = usedSlots.pop(),
+					naturalY = labelPos[1];
+
+				visibility = point.visible === false ? HIDDEN : VISIBLE;
+				slotIndex = slot.i;
+
+				// if the slot next to currrent slot is free, the y value is allowed
+				// to fall back to the natural position
+				y = slot.y;
+				if ((naturalY > y && slots[slotIndex + 1] !== null) ||
+						(naturalY < y &&  slots[slotIndex - 1] !== null)) {
+					y = naturalY;
+				}
+
+				// get the x - use the natural x position for first and last slot, to prevent the top
+				// and botton slice connectors from touching each other on either side
+				x = series.getX(slotIndex === 0 || slotIndex === slots.length - 1 ? naturalY : y, i);
+
+				// move or place the data label
+				dataLabel
+					.attr({
+						visibility: visibility,
+						align: labelPos[6]
+					})[dataLabel.moved ? 'animate' : 'attr']({
+						x: x + options.x +
+							({ left: connectorPadding, right: -connectorPadding }[labelPos[6]] || 0),
+						y: y + options.y
+					});
+				dataLabel.moved = true;
+
+				// draw the connector
+				if (outside && connectorWidth) {
+					connector = point.connector;
+
+					connectorPath = softConnector ? [
+						M,
+						x + (labelPos[6] === 'left' ? 5 : -5), y, // end of the string at the label
+						'C',
+						x, y, // first break, next to the label
+						2 * labelPos[2] - labelPos[4], 2 * labelPos[3] - labelPos[5],
+						labelPos[2], labelPos[3], // second break
+						L,
+						labelPos[4], labelPos[5] // base
+					] : [
+						M,
+						x + (labelPos[6] === 'left' ? 5 : -5), y, // end of the string at the label
+						L,
+						labelPos[2], labelPos[3], // second break
+						L,
+						labelPos[4], labelPos[5] // base
+					];
+
+					if (connector) {
+						connector.animate({ d: connectorPath });
+						connector.attr('visibility', visibility);
+
+					} else {
+						point.connector = connector = series.chart.renderer.path(connectorPath).attr({
+							'stroke-width': connectorWidth,
+							stroke: options.connectorColor || point.color || '#606060',
+							visibility: visibility,
+							zIndex: 3
+						})
+						.translate(chart.plotLeft, chart.plotTop)
+						.add();
+					}
+				}
+			}
+		}
+	},
+
+	/**
+	 * Draw point specific tracker objects. Inherit directly from column series.
+	 */
+	drawTracker: ColumnSeries.prototype.drawTracker,
+
+	/**
+	 * Pies don't have point marker symbols
+	 */
+	getSymbol: function () {}
+
+});
+seriesTypes.pie = PieSeries;
+
+
+// global variables
+win.Highcharts = {
+	Chart: Chart,
+	dateFormat: dateFormat,
+	pathAnim: pathAnim,
+	getOptions: getOptions,
+	hasRtlBug: hasRtlBug,
+	numberFormat: numberFormat,
+	Point: Point,
+	Color: Color,
+	Renderer: Renderer,
+	seriesTypes: seriesTypes,
+	setOptions: setOptions,
+	Series: Series,
+
+	// Expose utility funcitons for modules
+	addEvent: addEvent,
+	removeEvent: removeEvent,
+	createElement: createElement,
+	discardElement: discardElement,
+	css: css,
+	each: each,
+	extend: extend,
+	map: map,
+	merge: merge,
+	pick: pick,
+	extendClass: extendClass,
+	product: 'Highcharts',
+	version: '2.1.9'
+};
+}());

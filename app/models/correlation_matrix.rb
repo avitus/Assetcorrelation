@@ -164,19 +164,11 @@ class Correlation_matrix
     if shortest_history
       @start_date = historical_quotes[shortest_history].last.date
       @end_date   = historical_quotes[shortest_history].first.date  
-      
-      # 12/08/08 No longer adding one to period_actual calculation
-      # 12/10/08 Changed back to adding one 
-      # 12/16/08 Taking it out again 
-      @period_actual  = (@end_date - @start_date).to_i         
-          
+      @period_actual  = (@end_date - @start_date + 1).to_i         
     else
       Rails.logger.warn("Error: couldn't find asset with shortest history while adding #{tickers}")
     end
-
-    
-
-    
+   
     return historical_quotes, shortest_ticker, 0
   end
   
@@ -272,8 +264,7 @@ class Correlation_matrix
     return stock_sequences
   end
   
-  
-    def [](row, col)
+  def [](row, col)
     @correlation_matrix[row][col]
   end
   
@@ -313,7 +304,6 @@ class Correlation_matrix
     # For W=1: port_stdev = Sum ( i, j) [ Stdev(i) * Stdev(j) * Corr(i,j) ]
     # We can probably use a formula similar to the one for diversification_measure()
     
-    
     if @stock_names.empty? 
       return 0
     end
@@ -351,7 +341,6 @@ class Correlation_matrix
     @slots_open =  (MA - @stock_names.length) 
   end 
   
-   
   # ----------------------------------------------------------------------------------------------------------
   # Calculate the intra-portfolio correlation
   # ----------------------------------------------------------------------------------------------------------    
@@ -472,7 +461,6 @@ class Correlation_matrix
   #                               quote = [ date[0], open[1], high[2], low[3], close[4], vol[5], adj_close[6] ] 
   # 
   # ----------------------------------------------------------------------------------------------------------  
-  
   def quote_insertion(quote_array, required_trading_days )
     
     Rails.logger.info("== Setting all histories to length: #{required_trading_days}")
@@ -502,12 +490,9 @@ class Correlation_matrix
   
   end
  
-
   # ----------------------------------------------------------------------------------------------------------
   # Check to see whether start and end dates are the same for all quote histories
   # ---------------------------------------------------------------------------------------------------------- 
- 
- 
   def start_end_ok(quote_array)
     final_dates = Array.new
     start_dates = Array.new

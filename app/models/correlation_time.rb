@@ -66,12 +66,7 @@ class Correlation_time
     if shortest_history
       @start_date = historical_quotes[shortest_history].last.date
       @end_date   = historical_quotes[shortest_history].first.date  
-      
-      # 12/08/08 No longer adding one to period_actual calculation
-      # 12/10/08 Changed back to adding one 
-      # 12/16/08 Taking it out again 
-      @period_actual  = (@end_date - @start_date).to_i         
-          
+      @period_actual  = (@end_date - @start_date + 1).to_i         
     else
       Rails.logger.warn("Error: couldn't find asset with shortest history while adding #{tickers}")
     end

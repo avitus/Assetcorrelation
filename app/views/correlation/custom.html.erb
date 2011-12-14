@@ -20,7 +20,7 @@
   <h1><%= @portfolio.name %></h1>
   
   <p> 
-  	The following table shows return correlations between your positions over the past <%=days_to_words(@period)%>.
+  	The following table shows return correlations between your positions over the past <%=days_to_words(@correlation_matrix.period_actual)%>.
   </p>
 
   <%= render "correlation_matrix" %>

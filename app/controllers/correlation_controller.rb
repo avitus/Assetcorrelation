@@ -198,12 +198,17 @@ class CorrelationController < ApplicationController
       redirect_to portfolios_path      
     else
       @correlation_matrix = Correlation_matrix.new(@period.to_i)
-      @correlation_matrix.add_many_stocks(tickers[0..15])
+      shortest_ticker = @correlation_matrix.add_many_stocks(tickers[0..15])
     end    
     
     if tickers.length > 16
       flash.notice = 'Maximum number of assets for which we can calculate a correlation matrix is 16.'   
     end
+    
+    if shortest_ticker and @correlation_matrix.period_actual < @correlation_matrix.period_req 
+      flash.notice = shortest_ticker + " only has a stock history since " + @correlation_matrix.start_date.to_s + ". Shortening period accordingly"
+    end    
+    
   end
 
   def time
