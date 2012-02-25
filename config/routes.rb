@@ -46,11 +46,12 @@ Assetcorrelation::Application.routes.draw do
 	match '/account'             => 'users#show',                 :as => 'account'
 
   # old routes
-  match 'user/enter_time_corr'     => 'correlation#time'
-  match 'user/correlations/(:id)'  => 'correlation#correlations'
-  match 'user/bonds/(:id)'         => 'correlation#bonds'
-  match 'user/sectors/(:id)'       => 'correlation#sectors'
-  match 'user/countries/(:id)'     => 'correlation#countries'
+  match 'user/enter_time_corr'         => 'correlation#time'
+  match 'user/correlations/(:id)'      => 'correlation#correlations'
+  match 'user/bonds/(:id)'             => 'correlation#bonds'
+  match 'user/sectors/(:id)'           => 'correlation#sectors'
+  match 'user/countries/(:id)'         => 'correlation#countries'
+  match 'user/simple_asset_allocation' => 'home#index'   # page no longer exists
 
 
 end

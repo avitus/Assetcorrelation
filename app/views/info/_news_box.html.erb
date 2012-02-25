@@ -4,13 +4,11 @@
 		<h2>News</h2>
 		<div class="news-tweets">
             <ul>
-                <% @news.list.each do |tweet| %>
-                    <li><%= auto_link(tweet.content.html_safe) %></li>
-                <% end %>
+            	<li>
+            		<%= link_to "Dividing Assets to Minimize Asset Correlation", 'http://blog.arborinvestmentplanner.com/2011/08/asset-allocation-is-dividing-assets-to-minimize-asset-correlation/' %>            		
+            	</li>
             </ul>
 		</div> <!-- end: text-area2 -->
-		
-		
 		
 	</div>
 	</div>
