@@ -94,8 +94,11 @@ ActiveRecord::Schema.define(:version => 20111019204048) do
   end
 
   add_index "securities", ["asset_class"], :name => "index_assets_on_asset_class"
+  add_index "securities", ["asset_class"], :name => "index_securities_on_asset_class"
   add_index "securities", ["name"], :name => "index_assets_on_name", :unique => true
+  add_index "securities", ["name"], :name => "index_securities_on_name"
   add_index "securities", ["ticker"], :name => "index_assets_on_ticker", :unique => true
+  add_index "securities", ["ticker"], :name => "index_securities_on_ticker", :unique => true
 
   create_table "users", :force => true do |t|
     t.string   "email",                                 :default => "",    :null => false
