@@ -79,7 +79,7 @@ common: &default_settings
   # value as Frustrating transactions. 
   # For more about the Apdex standard, see
   # http://support.newrelic.com/faqs/general/apdex
-  apdex_t: 1.0
+  apdex_t: 2.0
 
   # Proxy settings for connecting to the New Relic server.
   #
