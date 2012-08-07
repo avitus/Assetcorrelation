@@ -3,25 +3,23 @@ HOST_OS = Config::CONFIG['host_os']
 
 source 'http://rubygems.org'
 
-gem 'rails', '3.1.1'
+gem 'rails', '3.2.7'
 
 group :development do
   gem 'sqlite3'
   gem "rails-footnotes", ">= 3.7"
-  gem "airbrake"                                                          # Error notification  
 end
 
 group :production do
   gem 'mysql2', '>= 0.3'
-  gem "airbrake"                                                          # Error notification
   gem 'memcache-client'
 end
 
 # Gems used only for assets and not required in production environments by default.
 group :assets do
-  gem 'sass-rails', "  ~> 3.1.0"
-  gem 'coffee-rails', "~> 3.1.0"
-  gem 'uglifier'
+  gem 'sass-rails',   " ~> 3.2.3 "
+  gem 'coffee-rails', " ~> 3.2.1 "
+  gem 'uglifier',     " >= 1.0.3 "
 end
 
 group :console do
@@ -60,4 +58,5 @@ gem "topsy"                                                             # Ruby w
 gem "simple_form"                                                       # Easier forms with no opinion on styling
 gem 'nested_form', :git => 'git://github.com/ryanb/nested_form.git'     # For handling multiple models in a single form
 gem 'newrelic_rpm'                                                      # Performance monitoring -- add as low in list of gems as possible
+gem "airbrake"                                                          # Error notification
 
