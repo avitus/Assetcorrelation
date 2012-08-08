@@ -1,26 +1,75 @@
-<h1>Listing portfolios</h1>
+<div class="port-list">
 
-<table class="nostradamus-standard">
-	<thead>
-		<tr>
-			<th>Name</th>
-			<th>Assets</th>
-		</tr>
-	</thead>
+	<h1>Listing portfolios</h1>
 
-	<tbody>
-		<% @portfolios.each do |portfolio| %>
+	<table class="nostradamus-standard">
+		<thead>
 			<tr>
-				<td					><%= link_to portfolio.name, portfolio %></td>
-				<td align="right"	><%= portfolio.positions.length %></td>
-				<td					><%= link_to 'Edit', portfolio %></td>
-				<td					><%= link_to 'Matrix', custom_path(:period =>  91, :portfolio => portfolio) %></td>
-				<td					><%= link_to '[x]', portfolio, confirm: 'Are you sure?', method: :delete %></td>
+				<th>Name</th>
+				<th>Assets</th>
 			</tr>
-		<% end %>	
-	</tbody>
-</table>
+		</thead>
 
-<br />
+		<tbody>
+			<% @portfolios.each do |portfolio| %>
+				<tr>
+					<td					><%= link_to portfolio.name, portfolio %></td>
+					<td align="right"	><%= portfolio.positions.length %></td>
+					<td					><%= link_to 'Edit', portfolio %></td>
+					<td					><%= link_to 'Matrix', custom_path(:period =>  91, :portfolio => portfolio) %></td>
+					<td					><%= link_to '[x]', portfolio, confirm: 'Are you sure?', method: :delete %></td>
+				</tr>
+			<% end %>	
+		</tbody>
+	</table>
 
-<%= link_to 'New Portfolio', new_portfolio_path %>
+	<br />
+
+	<%= link_to 'New Portfolio', new_portfolio_path %>
+
+</div>
+
+<div class="port-news">
+
+	<h1>Portfolio News</h1>
+
+	<ul class="port-news-items">
+
+	</ul>
+
+
+</div>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+
+		var ws = new WebSocket('ws://websocket.datasift.com/26300e0512111ce747044f49a01f9b5f?username=avitus&api_key=eb70061f6698584b4b79ca7d1d5ace4b');
+
+		ws.onopen = function(evt) {
+		    // connection event
+		}
+
+		ws.onmessage = function(evt) {
+		    // parse received message
+		    console.log(evt.data);
+
+			$('.port-news-items').append(
+			    $('<li>').append(
+			        $('<a>').attr('href', jQuery.parseJSON(evt.data).interaction.link ).append(
+			            $('<span>').attr('class', 'tab').append(jQuery.parseJSON(evt.data).interaction.content)
+			)));  
+
+		}
+
+		ws.onclose = function(evt) {
+		    // parse event
+		}
+
+		// No event object is passed to the event callback, so no useful debugging can be done
+		ws.onerror = function() {
+		    // Some error occurred
+		}
+
+	});
+</script>
+
