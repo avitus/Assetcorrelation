@@ -44,6 +44,7 @@ Assetcorrelation::Application.routes.draw do
 	match '/valid_security'		   => 'securities#valid_security',  :as => 'valid_security'
 	
 	match '/account'             => 'users#show',                 :as => 'account'
+  match '/user_csdl'           => 'users#custom_csdl',          :as => 'user_csdl'
 
   # old routes
   match 'user/enter_time_corr'         => 'correlation#time'

@@ -1,5 +1,9 @@
 class PortfoliosController < ApplicationController
 	
+  require "net/http"
+  require "uri"
+  require "json"
+
   before_filter :authenticate_user!
 		
 	
@@ -11,6 +15,15 @@ class PortfoliosController < ApplicationController
     @sub = "ports"   	
   	
     @portfolios = current_user.portfolios
+
+    csdl_code   = current_user.custom_news_csdl
+    url         = 'http://api.datasift.com/compile?csdl=' + csdl_code + '&username=avitus&api_key=eb70061f6698584b4b79ca7d1d5ace4b'
+    uri         = URI.parse(URI.escape(url))
+    json_resp   = JSON.parse(Net::HTTP.get(uri))
+
+    @stream_hash = json_resp["hash"]
+    Rails.logger.debug("Datasift CSDL code: #{csdl_code}")
+    Rails.logger.debug("Stream hash is #{@stream_hash}")
 
     respond_to do |format|
       format.html # index.html.erb

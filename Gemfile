@@ -53,10 +53,12 @@ gem "frontend-helpers"
 gem 'rails_autolink'                                                    # Restore auto_link functionality from Rails 3.0
 gem 'rails_admin', :git => 'git://github.com/sferik/rails_admin.git'    # Admin panel
 gem "breadcrumbs_on_rails", '>=2.0.0'                                   # For breadcrumb navigation bar
-gem "yahoofinance"
+gem "yahoofinance"                                                      # For stock quote retrieval
+gem "json"                                                              # Only required for parsing JSON response from Datasift API
 gem "topsy"                                                             # Ruby wrapper for Topsy API
 gem "simple_form"                                                       # Easier forms with no opinion on styling
 gem 'nested_form', :git => 'git://github.com/ryanb/nested_form.git'     # For handling multiple models in a single form
 gem 'newrelic_rpm'                                                      # Performance monitoring -- add as low in list of gems as possible
 gem "airbrake"                                                          # Error notification
+gem 'stripe'                                                            # Payment gateway
 

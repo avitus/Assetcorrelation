@@ -272,6 +272,7 @@ DEPENDENCIES
   frontend-helpers
   hirb
   jquery-rails
+  json
   launchy (>= 2.0.5)
   memcache-client
   mysql2 (>= 0.3)
