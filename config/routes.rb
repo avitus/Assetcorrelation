@@ -46,6 +46,8 @@ Assetcorrelation::Application.routes.draw do
 	match '/account'             => 'users#show',                 :as => 'account'
   match '/user_csdl'           => 'users#custom_csdl',          :as => 'user_csdl'
 
+  match '/payment'             => 'subscriptions#payment',      :as => 'payment'
+
   # old routes
   match 'user/enter_time_corr'         => 'correlation#time'
   match 'user/correlations/(:id)'      => 'correlation#correlations'
