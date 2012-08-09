@@ -61,8 +61,11 @@ helpful message in a noscript to indicate that users should enable JS.
 <script>if (window.Stripe) $("#example-form").show()</script>
 <noscript><p>JavaScript is required for the registration form.</p></noscript>
 
+<!-- Required for custom form validations; for some reason does not work when included in layout file -->
+<script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.9/jquery.validate.min.js"></script>
+
 <script type="text/javascript">
-  Stripe.setPublishableKey('pk_YOUR_PUBLISHABLE_KEY');
+  Stripe.setPublishableKey('pk_00XPA2buhuBow3Rt0LaorOk2ceKVT');
     $(document).ready(function() {
         function addInputNames() {
             // Not ideal, but jQuery's validate plugin requires fields to have names
