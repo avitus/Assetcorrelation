@@ -68,3 +68,6 @@ tmp/*
 
 # RVM config
 .rvmrc
+
+# Stripe keys
+/config/initializers/stripe.rb
