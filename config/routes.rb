@@ -1,5 +1,9 @@
 Assetcorrelation::Application.routes.draw do
 
+  resources :subscriptions
+
+  resources :plans
+
   devise_for :users
   
   resources :users, :only => :show
