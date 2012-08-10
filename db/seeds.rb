@@ -9,6 +9,10 @@ puts 'SETTING UP ADMIN USER LOGIN'
 user = User.find_or_create_by_email(:email => 'andy@scalevp.com', :name => 'Andy Vitus',  :password => 'please', :password_confirmation => 'please', :admin => true)
 puts 'New user created: ' << user.name
 
+puts 'CREATING SUBSCRIPTION PLANS'
+
+Plan.create!(:name => "Basic", :price => 9.99, :description => "Entry level plan")
+
 puts 'ADDING ASSETS'
 
 [ ["TIP",   "iShares Barclays TIPS Bond Fund"],
@@ -62,5 +66,7 @@ puts 'ADDING ASSETS'
   ["MBB",   "iShares Barclays MBS Bond"] ].each do |a|
     Security.find_or_create_by_ticker(:ticker => a[0], :name => a[1])
     end
+
+
 
 

@@ -41,6 +41,7 @@ ActiveRecord::Schema.define(:version => 20120810000922) do
   create_table "plans", :force => true do |t|
     t.string   "name"
     t.text     "description"
+    t.decimal  "price"
     t.datetime "created_at",  :null => false
     t.datetime "updated_at",  :null => false
   end

@@ -1,3 +1,4 @@
 class Plan < ActiveRecord::Base
-  attr_accessible :description, :name
+  has_many :subscriptions
+  attr_accessible :description, :name, :price
 end

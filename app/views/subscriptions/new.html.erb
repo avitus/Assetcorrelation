@@ -17,11 +17,10 @@
         <% end %>
 
         <%= f.hidden_field :plan_id %>
+        <%= f.hidden_field :user_id, :value => current_user.id %>
+        <%= f.hidden_field :stripe_card_token %>
 
-        <div class="field">
-            <%= f.label :email %>
-            <%= f.text_field :email %>
-        </div>  
+
 
         <div class="field">
             <%= label_tag :card_number, "Credit Card Number " %>
@@ -35,11 +34,15 @@
 
         <div class="field">
             <%= label_tag :card_month, "Card Expiration" %>
-            <%= select_month nil, {add_month_numbers_true: true}, {name: nil, id: "card_month"}%>
-            <%= select_year nil, {start_year: Date.today.year, end_year: Date.today.year+15}, {name: nil, id: "card_year"}%>
+            <%= select_month nil, {add_month_numbers_true: true}, {name: nil, id: "card-expiry-month"}%>
+            <%= select_year nil, {start_year: Date.today.year, end_year: Date.today.year+15}, {name: nil, id: "card-expiry-year"}%>
         </div>
 
         <div class="actions"><%= f.submit "Subscribe" %></div>
+
+        <div id="stripe_error">
+            <noscript>JavaScript is not enabled and is required for this form. First enable it in your web browser settings.</noscript>
+        </div>        
     
     <% end %>
 
@@ -50,28 +53,31 @@ The easiest way to indicate that the form requires JavaScript is to show
 the form with JavaScript (otherwise it will not render). You can add a
 helpful message in a noscript to indicate that users should enable JS.
 -->
-<script>if (window.Stripe) $("#subscription").show()</script>
+<script>if (window.Stripe) $("#new_subscription").show()</script>
 <noscript><p>JavaScript is required for the registration form.</p></noscript>
 
 <!-- Required for custom form validations; for some reason does not work when included in layout file -->
 <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.9/jquery.validate.min.js"></script>
 
 <script type="text/javascript">
-  Stripe.setPublishableKey('pk_00XPA2buhuBow3Rt0LaorOk2ceKVT');
+
+    Stripe.setPublishableKey('pk_00XPA2buhuBow3Rt0LaorOk2ceKVT');
+
     $(document).ready(function() {
+
         function addInputNames() {
             // Not ideal, but jQuery's validate plugin requires fields to have names
             // so we add them at the last possible minute, in case any javascript
             // exceptions have caused other parts of the script to fail.
-            $(".card-number").attr("name", "card-number")
-            $(".card-cvc").attr("name", "card-cvc")
-            $(".card-expiry-year").attr("name", "card-expiry-year")
+            $(".card-number"     ).attr("name", "card-number")
+            $(".card-cvc"        ).attr("name", "card-cvc")
+            $("#card-expiry-year").attr("name", "card-expiry-year")
         }
 
         function removeInputNames() {
-            $(".card-number").removeAttr("name")
-            $(".card-cvc").removeAttr("name")
-            $(".card-expiry-year").removeAttr("name")
+            $(".card-number"     ).removeAttr("name")
+            $(".card-cvc"        ).removeAttr("name")
+            $("#card-expiry-year").removeAttr("name")
         }
 
         function submit(form) {
@@ -83,12 +89,17 @@ helpful message in a noscript to indicate that users should enable JS.
             $(form['submit-button']).attr("disabled", "disabled")
 
             Stripe.createToken({
-                number: $('.card-number').val(),
-                cvc: $('.card-cvc').val(),
-                exp_month: $('.card-expiry-month').val(),
-                exp_year: $('.card-expiry-year').val()
+                number:     $('#card_number').val(),
+                cvc:        $('#card_code').val(),
+                exp_month:  $('#card-expiry-month').val(),
+                exp_year:   $('#card-expiry-year').val()
             }, function(status, response) {
                 if (response.error) {
+
+                    alert(response.error.message); // temporary alert popup
+                    $('#stripe_error').text(response.error.message)
+                    $('input[type=submit]').attr('disabled', false)                    
+
                     // re-enable the submit button
                     $(form['submit-button']).removeAttr("disabled")
 
@@ -102,8 +113,9 @@ helpful message in a noscript to indicate that users should enable JS.
                     var token = response['id'];
 
                     // insert the stripe token
-                    var input = $("<input name='stripeToken' value='" + token + "' style='display:none;' />");
-                    form.appendChild(input[0])
+                    $('#subscription_stripe_card_token').val(token);
+                    //var input = $("<input name='stripeToken' value='" + token + "' style='display:none;' />");
+                    //form.appendChild(input[0])
 
                     // and submit
                     form.submit();
@@ -117,12 +129,12 @@ helpful message in a noscript to indicate that users should enable JS.
         jQuery.validator.addMethod("cardNumber", Stripe.validateCardNumber, "Please enter a valid card number");
         jQuery.validator.addMethod("cardCVC", Stripe.validateCVC, "Please enter a valid security code");
         jQuery.validator.addMethod("cardExpiry", function() {
-            return Stripe.validateExpiry($(".card-expiry-month").val(),
-                                         $(".card-expiry-year").val())
+            return Stripe.validateExpiry($("#card-expiry-month").val(),
+                                         $("#card-expiry-year").val())
         }, "Please enter a valid expiration");
 
         // We use the jQuery validate plugin to validate required params on submit
-        $("#example-form").validate({
+        $("#new_subscription").validate({
             submitHandler: submit,
             rules: {
                 "card-cvc" : {
