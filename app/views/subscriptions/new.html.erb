@@ -61,9 +61,9 @@ helpful message in a noscript to indicate that users should enable JS.
 
 <script type="text/javascript">
 
-    Stripe.setPublishableKey('pk_00XPA2buhuBow3Rt0LaorOk2ceKVT');
-
     $(document).ready(function() {
+
+        Stripe.setPublishableKey($('meta[name="stripe-key"]').attr('content'));
 
         function addInputNames() {
             // Not ideal, but jQuery's validate plugin requires fields to have names
@@ -96,7 +96,6 @@ helpful message in a noscript to indicate that users should enable JS.
             }, function(status, response) {
                 if (response.error) {
 
-                    alert(response.error.message); // temporary alert popup
                     $('#stripe_error').text(response.error.message)
                     $('input[type=submit]').attr('disabled', false)                    
 
@@ -114,8 +113,6 @@ helpful message in a noscript to indicate that users should enable JS.
 
                     // insert the stripe token
                     $('#subscription_stripe_card_token').val(token);
-                    //var input = $("<input name='stripeToken' value='" + token + "' style='display:none;' />");
-                    //form.appendChild(input[0])
 
                     // and submit
                     form.submit();
@@ -138,12 +135,12 @@ helpful message in a noscript to indicate that users should enable JS.
             submitHandler: submit,
             rules: {
                 "card-cvc" : {
-                    cardCVC: true,
+                    cardCVC:  true,
                     required: true
                 },
                 "card-number" : {
                     cardNumber: true,
-                    required: true
+                    required:   true
                 },
                 "card-expiry-year" : "cardExpiry" // we don't validate month separately
             }
