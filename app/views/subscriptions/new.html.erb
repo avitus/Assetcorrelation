@@ -20,8 +20,6 @@
         <%= f.hidden_field :user_id, :value => current_user.id %>
         <%= f.hidden_field :stripe_card_token %>
 
-
-
         <div class="field">
             <%= label_tag :card_number, "Credit Card Number " %>
             <%= text_field_tag :card_number, nil, name: nil %>
@@ -124,7 +122,7 @@ helpful message in a noscript to indicate that users should enable JS.
         
         // add custom rules for credit card validating
         jQuery.validator.addMethod("cardNumber", Stripe.validateCardNumber, "Please enter a valid card number");
-        jQuery.validator.addMethod("cardCVC", Stripe.validateCVC, "Please enter a valid security code");
+        jQuery.validator.addMethod("cardCVC",    Stripe.validateCVC, "Please enter a valid security code");
         jQuery.validator.addMethod("cardExpiry", function() {
             return Stripe.validateExpiry($("#card-expiry-month").val(),
                                          $("#card-expiry-year").val())
