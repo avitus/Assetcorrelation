@@ -31,11 +31,11 @@ class User < ActiveRecord::Base
     # }
 
 
-    general_news_string = 'stream "61392d9974b126060243b7ff9edd6579" '
+    general_news_string = 'stream "92b274e78744b71fcf6e863ce869f796" '  # Investing Insights stream from Datasift
     interaction_string  = 'interaction.type != "twitter" AND interaction.content any "'
     twitter_string      = '    interaction.type == "twitter" 
                            AND klout.amplification > 7 
-                           AND klout.score > 40 
+                           AND klout.score > 30
                            AND klout.topics any "investing, stock market, finance, money, berkshire, business, markets, economics, debt, trading"
                            AND (salience.content.topics any "investing, business" OR salience.title.topics any "investing, business")
                            AND interaction.content any "'
