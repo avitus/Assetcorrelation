@@ -1,6 +1,6 @@
+# encoding: utf-8
 require 'rbconfig'
-HOST_OS = Config::CONFIG['host_os']
-
+HOST_OS = RbConfig::CONFIG['host_os']
 source 'http://rubygems.org'
 
 gem 'rails', '3.2.7'
@@ -26,12 +26,12 @@ group :console do
   gem 'hirb'
 end
 
-group :test do 
+group :test do
   gem "factory_girl_rails", ">= 1.2.0"
   gem "cucumber-rails", ">= 1.0.2"
   gem "capybara", ">= 1.1.1"
   gem "database_cleaner", ">= 0.6.7"
-  gem "launchy", ">= 2.0.5" 
+  gem "launchy", ">= 2.0.5"
 end
 
 # Deploy with Capistrano
