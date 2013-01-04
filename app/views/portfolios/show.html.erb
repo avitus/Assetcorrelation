@@ -20,7 +20,7 @@
 			<td align="left"  >	<%= p.security.name unless !p.security   %></td>
 			<td>  													</td>
 			<td align="right">	<%= p.holding_percentage %></td>
-				
+
     		<td><%= link_to '[x]', p, :method => :delete, :remote => true, :class => 'delete-position', 'data-type' => 'json' %></td>
 		</tr>
 		<% end %>
@@ -28,11 +28,13 @@
 </table>
 
 <%= nested_form_for @portfolio  do |f| %>
-    	
-	<p><%= f.link_to_add "Add a Position", :positions, :class => 'asset-add-link' %></p>  
-  
+
+    <%= f.fields_for :positions %>
+
+	<p><%= f.link_to_add "Add a Position", :positions, :class => 'asset-add-link' %></p>
+
   	<%= f.submit "Update Portfolio" %>
-  	
+
 <% end %>
 
 <br/>
@@ -42,18 +44,18 @@
 
 <script type="text/javascript">
 	$(document).ready(function(){
-	
+
 	  $('.delete-position')
 
 	    .live("ajax:success", function(evt, data, status, xhr){
-	      $position = $(this).closest('tr').fadeOut();			
+	      $position = $(this).closest('tr').fadeOut();
 	    })
-	    
+
 	    .live("ajax:error", function(evt, xhr, status, error){
 	      var $form = $(this),
 	          errors,
 	          errorText;
-	
+
 	      try {
 	        // Populate errorText with the comment errors
 	        errors = $.parseJSON(xhr.responseText);
@@ -61,43 +63,43 @@
 	        // If the responseText is not valid JSON (like if a 500 exception was thrown), populate errors with a generic error message.
 	        errors = {message: "Please reload the page and try again"};
 	      }
-	
+
 	      // Build an unordered list from the list of errors
 	      errorText = "There were errors with the submission: \n<ul>";
-	
+
 	      for ( error in errors ) {
 	        errorText += "<li>" + error + ': ' + errors[error] + "</li> ";
 	      }
-	
+
 	      errorText += "</ul>";
-	
+
 	      // Insert error list into form
 	      $form.find('div.validation-error').html(errorText);
 	    });
-	    
-	    
+
+
 		$('.asset-ticker').livequery(function() {
-		
+
 			$(this).observe_field( 0.5, function() {
-		  	
+
 			  	var $assetRowSelector = $(this);
-				
-				$.get('/valid_security', { query: this.value }, 
+
+				$.get('/valid_security', { query: this.value },
 					function(data) {
 						if(typeof(data) != 'undefined' && data != null) {
 							$assetRowSelector.siblings('.asset-name').html(data.name).removeClass("input-error");;
-							$assetRowSelector.siblings('.asset-num').val(data.id);							
+							$assetRowSelector.siblings('.asset-num').val(data.id);
 						}
 						else {
 							$assetRowSelector.siblings('.asset-name').html('Invalid ticker').addClass("input-error");
-							$assetRowSelector.siblings('.asset-num').val('-');								
+							$assetRowSelector.siblings('.asset-num').val('-');
 						}
 					}, "json" );
 				});
-		});	    
+		});
 
-	    
-	
+
+
 	});
 </script>
 
