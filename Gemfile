@@ -8,6 +8,8 @@ gem 'rails', '3.2.8'
 group :development do
   gem 'sqlite3'
   gem 'rails-footnotes', '>= 3.7'
+  gem 'better_errors'
+  gem 'binding_of_caller'
 end
 
 group :production do
@@ -48,7 +50,7 @@ end
 
 gem 'jquery-rails'
 gem 'rspec-rails', '>= 2.6.1', :group => [:development, :test]
-gem 'devise', '>= 1.4.4'
+gem 'devise'
 gem 'frontend-helpers'
 gem 'rails_autolink'                                                    # Restore auto_link functionality from Rails 3.0
 gem 'rails_admin', :git => 'git://github.com/sferik/rails_admin.git'    # Admin panel
