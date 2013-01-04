@@ -8,13 +8,13 @@ class User < ActiveRecord::Base
   has_many :positions, :through => :portfolios
 
   # Setup accessible (or protected) attributes for your model
-  attr_accessible :name, :email, :password, :password_confirmation, :remember_me
+  attr_accessible :name, :email, :password, :password_confirmation, :remember_me, :admin
 
   def custom_news_csdl
 
     # Example of Twitter stream CSDL
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # 
+    #
     # tag "tweet" { interaction.type == "twitter" }
     #
     # return {
@@ -33,8 +33,8 @@ class User < ActiveRecord::Base
 
     general_news_string = 'stream "92b274e78744b71fcf6e863ce869f796" '  # Investing Insights stream from Datasift
     interaction_string  = 'interaction.type != "twitter" AND interaction.content any "'
-    twitter_string      = '    interaction.type == "twitter" 
-                           AND klout.amplification > 7 
+    twitter_string      = '    interaction.type == "twitter"
+                           AND klout.amplification > 7
                            AND klout.score > 30
                            AND klout.topics any "investing, stock market, finance, money, berkshire, business, markets, economics, debt, trading"
                            AND (salience.content.topics any "investing, business" OR salience.title.topics any "investing, business")
@@ -45,10 +45,12 @@ class User < ActiveRecord::Base
     holdings = self.positions.includes(:security)
     tickers  = holdings.map { |h| h.security.ticker }.uniq!  # get array of all tickers a user has in her portfolios
 
-    tickers.each do |t|
-        interaction_string << '$' + t + ', ' 
-        twitter_string     << '$' + t + ', ' 
-        links_string       << '$' + t + ', '  # trailing comma doesn't seem to cause a problem
+    if tickers
+      tickers.each do |t|
+          interaction_string << '$' + t + ', '
+          twitter_string     << '$' + t + ', '
+          links_string       << '$' + t + ', '  # trailing comma doesn't seem to cause a problem
+      end
     end
 
     # close quotes
@@ -56,9 +58,9 @@ class User < ActiveRecord::Base
     twitter_string     << '"'
     links_string       << '"'
 
-    csdl_string << 'return { language.tag == "en" 
-                             AND (' + general_news_string + ' OR ' + interaction_string + ' OR ' + twitter_string + ' OR ' + links_string + ') 
-                           }' 
+    csdl_string << 'return { language.tag == "en"
+                             AND (' + general_news_string + ' OR ' + interaction_string + ' OR ' + twitter_string + ' OR ' + links_string + ')
+                           }'
 
     return csdl_string
 

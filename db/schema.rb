@@ -32,8 +32,8 @@ ActiveRecord::Schema.define(:version => 20120810000922) do
     t.decimal  "dividend_yield",    :precision => 10, :scale => 2
     t.decimal  "earnings_yield",    :precision => 10, :scale => 2
     t.decimal  "inflation",         :precision => 10, :scale => 2
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",                                       :null => false
+    t.datetime "updated_at",                                       :null => false
   end
 
   add_index "macrovals", ["year_month"], :name => "index_macrovals_on_year_month", :unique => true
@@ -49,8 +49,8 @@ ActiveRecord::Schema.define(:version => 20120810000922) do
   create_table "portfolios", :force => true do |t|
     t.string   "name"
     t.integer  "user_id"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
   end
 
   add_index "portfolios", ["name"], :name => "index_portfolios_on_name"
@@ -60,10 +60,10 @@ ActiveRecord::Schema.define(:version => 20120810000922) do
     t.integer  "portfolio_id"
     t.integer  "security_id"
     t.integer  "shares"
-    t.decimal  "price"
-    t.decimal  "holding_percentage"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.decimal  "price",              :precision => 10, :scale => 2
+    t.decimal  "holding_percentage", :precision => 10, :scale => 2
+    t.datetime "created_at",                                        :null => false
+    t.datetime "updated_at",                                        :null => false
   end
 
   add_index "positions", ["portfolio_id"], :name => "index_positions_on_portfolio_id"
@@ -72,12 +72,13 @@ ActiveRecord::Schema.define(:version => 20120810000922) do
   create_table "price_quotes", :force => true do |t|
     t.integer  "security_id"
     t.date     "date"
-    t.decimal  "price"
-    t.decimal  "daily_return"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.decimal  "price",        :precision => 10, :scale => 2
+    t.decimal  "daily_return", :precision => 10, :scale => 2
+    t.datetime "created_at",                                  :null => false
+    t.datetime "updated_at",                                  :null => false
   end
 
+  add_index "price_quotes", ["date"], :name => "index_price_quotes_on_date"
   add_index "price_quotes", ["security_id"], :name => "index_price_quotes_on_asset_id"
 
   create_table "rails_admin_histories", :force => true do |t|
@@ -87,8 +88,8 @@ ActiveRecord::Schema.define(:version => 20120810000922) do
     t.string   "table"
     t.integer  "month",      :limit => 2
     t.integer  "year",       :limit => 5
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",              :null => false
+    t.datetime "updated_at",              :null => false
   end
 
   add_index "rails_admin_histories", ["item", "table", "month", "year"], :name => "index_rails_admin_histories"
@@ -97,13 +98,16 @@ ActiveRecord::Schema.define(:version => 20120810000922) do
     t.string   "name"
     t.string   "ticker"
     t.string   "asset_class"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",  :null => false
+    t.datetime "updated_at",  :null => false
   end
 
   add_index "securities", ["asset_class"], :name => "index_assets_on_asset_class"
-  add_index "securities", ["name"], :name => "index_assets_on_name", :unique => true
+  add_index "securities", ["asset_class"], :name => "index_securities_on_asset_class"
+  add_index "securities", ["name"], :name => "index_assets_on_name"
+  add_index "securities", ["name"], :name => "index_securities_on_name"
   add_index "securities", ["ticker"], :name => "index_assets_on_ticker", :unique => true
+  add_index "securities", ["ticker"], :name => "index_securities_on_ticker", :unique => true
 
   create_table "subscriptions", :force => true do |t|
     t.integer  "user_id"
@@ -114,20 +118,20 @@ ActiveRecord::Schema.define(:version => 20120810000922) do
   end
 
   create_table "users", :force => true do |t|
-    t.string   "email",                                 :default => "",    :null => false
-    t.string   "encrypted_password",     :limit => 128, :default => "",    :null => false
+    t.string   "email",                  :default => "",    :null => false
+    t.string   "encrypted_password",     :default => "",    :null => false
     t.string   "reset_password_token"
     t.datetime "reset_password_sent_at"
     t.datetime "remember_created_at"
-    t.integer  "sign_in_count",                         :default => 0
+    t.integer  "sign_in_count",          :default => 0
     t.datetime "current_sign_in_at"
     t.datetime "last_sign_in_at"
     t.string   "current_sign_in_ip"
     t.string   "last_sign_in_ip"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",                                :null => false
+    t.datetime "updated_at",                                :null => false
     t.string   "name"
-    t.boolean  "admin",                                 :default => false
+    t.boolean  "admin",                  :default => false
   end
 
   add_index "users", ["email"], :name => "index_users_on_email", :unique => true
