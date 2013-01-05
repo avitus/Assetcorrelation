@@ -3,6 +3,7 @@
 <h1><%= @portfolio.name %></h1>
 
 <table class="nostradamus-standard">
+
 	<thead>
 		<tr>
 			<th>Ticker</th>
@@ -12,24 +13,27 @@
 			<th>% of Port</th>
 		</tr>
 	</thead>
-	<tbody>
-		<% for p in @portfolio.positions %>
-		<tr>
-			<td align="center">	<%= p.security.ticker unless !p.security %></td>
-			<td align="right" >	<%= p.shares %> </td>
-			<td align="left"  >	<%= p.security.name unless !p.security   %></td>
-			<td>  													</td>
-			<td align="right">	<%= p.holding_percentage %></td>
 
-    		<td><%= link_to '[x]', p, :method => :delete, :remote => true, :class => 'delete-position', 'data-type' => 'json' %></td>
-		</tr>
+	<tbody>
+
+		<% for p in @portfolio.positions %>
+			<tr>
+				<td align="center">	<%= p.security.ticker unless !p.security %></td>
+				<td align="right" >	<%= p.shares %> </td>
+				<td align="left"  >	<%= p.security.name unless !p.security   %></td>
+				<td>  													</td>
+				<td align="right">	<%= p.holding_percentage %></td>
+
+	    		<td><%= link_to '[x]', p, :method => :delete, :remote => true, :class => 'delete-position', 'data-type' => 'json' %></td>
+			</tr>
 		<% end %>
+
 	</tbody>
+
+
 </table>
 
 <%= nested_form_for @portfolio  do |f| %>
-
-    <%= f.fields_for :positions %>
 
 	<p><%= f.link_to_add "Add a Position", :positions, :class => 'asset-add-link' %></p>
 

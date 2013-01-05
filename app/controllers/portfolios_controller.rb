@@ -1,19 +1,19 @@
 class PortfoliosController < ApplicationController
-	
+
   require "net/http"
   require "uri"
   require "json"
 
   before_filter :authenticate_user!
-		
-	
+
+
   # GET /portfolios
   # GET /portfolios.json
   def index
-  	
-    @tab = "account" 
-    @sub = "ports"   	
-  	
+
+    @tab = "account"
+    @sub = "ports"
+
     @portfolios = current_user.portfolios
 
     csdl_code   = current_user.custom_news_csdl
@@ -45,19 +45,19 @@ class PortfoliosController < ApplicationController
   # GET /portfolios/new
   # GET /portfolios/new.json
   def new
-    
+
     if current_user.portfolios.length >= 2
       flash[:notice] = "You can only have two portfolios at this time."
       redirect_to portfolios_path
     else
       @portfolio = Portfolio.new
-  
+
       respond_to do |format|
         format.html # new.html.erb
         format.json { render json: @portfolio }
       end
     end
-    
+
   end
 
   # GET /portfolios/1/edit
@@ -109,5 +109,5 @@ class PortfoliosController < ApplicationController
       format.json { head :ok }
     end
   end
-    
+
 end
