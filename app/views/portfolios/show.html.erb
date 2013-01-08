@@ -21,7 +21,7 @@
 				<td align="center">	<%= p.security.ticker unless !p.security %></td>
 				<td align="right" >	<%= p.shares %> </td>
 				<td align="left"  >	<%= p.security.name unless !p.security   %></td>
-				<td>  													</td>
+				<td align="right" > <%= number_to_currency(p.security.closing_price, :unit => "$") unless !p.security %></td>
 				<td align="right">	<%= p.holding_percentage %></td>
 
 	    		<td><%= link_to '[x]', p, :method => :delete, :remote => true, :class => 'delete-position', 'data-type' => 'json' %></td>

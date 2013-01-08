@@ -40,6 +40,7 @@ class Security < ActiveRecord::Base
 	  end
 
     #===== Save data from Yahoo into DB
+    # TODO: extract this into a separate helper method
     h.each { |yahoo_quote|
 
       yahoo_date = Date.parse(yahoo_quote[0])
@@ -66,6 +67,43 @@ class Security < ActiveRecord::Base
     oldest_price_yahoo = YahooFinance::get_HistoricalQuotes( ticker.upcase, Date.parse( '2005-09-09' ), Date.today() )
   end
 
+  # ----------------------------------------------------------------------------------------------------------
+  # Latest closing price
+  # ----------------------------------------------------------------------------------------------------------
+  def closing_price
+
+    # Check whether we have the data in DB
+    last_close = self.price_quotes.where("date >= ?", Date.today - 1).first
+
+    # Get last 3 days to account for long weekends
+    if !last_close
+      Rails.logger.debug("*** Pinging Yahoo for closing price for #{self.ticker}")
+      last_close = Array.new
+      last_close += YahooFinance::get_historical_quotes_days( ticker.upcase, 3 )
+      Rails.logger.debug("***    Quote: #{last_close.inspect}")
+
+      # ===== Save data from Yahoo into DB
+      # TODO: extract this into a separate helper method
+      last_close.each { |yahoo_quote|
+
+        yahoo_date = Date.parse(yahoo_quote[0])
+        if self.price_quotes.exists?(:date => yahoo_date)
+          # Skip
+        else
+          self.price_quotes.create(:date => yahoo_date, :price => yahoo_quote[6].to_f)
+        end
+
+      }
+
+      return last_close.first[6]  # 6th element in array is adjusted closing price
+
+    else
+
+      return last_close.price
+
+    end
+
+  end
 
 
 end # of class
