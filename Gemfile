@@ -60,7 +60,7 @@ gem 'json'                                                              # Only r
 gem 'topsy'                                                             # Ruby wrapper for Topsy API
 
 gem 'simple_form'                                                       # Easier forms with no opinion on styling
-gem 'nested_form', :git => 'git://github.com/ryanb/nested_form.git'     # For handling multiple models in a single form
+gem 'nested_form', '=0.2.3'                                             # For handling multiple models in a single form (newer versions of gem break code)
 
 gem 'airbrake'                                                          # Error notification
 gem 'stripe'                                                            # Payment gateway

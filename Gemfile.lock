@@ -1,10 +1,4 @@
 GIT
-  remote: git://github.com/ryanb/nested_form.git
-  revision: f591c0d72d0119c50511c16153b3960fe2da8b71
-  specs:
-    nested_form (0.3.1)
-
-GIT
   remote: git://github.com/sferik/rails_admin.git
   revision: 9e17443c67f9568e7c409d36794a34aa3d21101c
   specs:
@@ -170,6 +164,7 @@ GEM
     multi_json (1.5.0)
     multi_xml (0.5.1)
     mysql2 (0.3.11)
+    nested_form (0.2.3)
     net-scp (1.0.4)
       net-ssh (>= 1.99.1)
     net-sftp (2.0.5)
@@ -297,7 +292,7 @@ DEPENDENCIES
   launchy (>= 2.0.5)
   memcache-client
   mysql2 (>= 0.3)
-  nested_form!
+  nested_form (= 0.2.3)
   newrelic_rpm
   rails (= 3.2.8)
   rails-footnotes (>= 3.7)
