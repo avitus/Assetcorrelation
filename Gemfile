@@ -45,7 +45,8 @@ gem 'capistrano-ext'
 
 # install a Javascript runtime for linux
 if HOST_OS =~ /linux/i
-  gem 'therubyracer', '>= 0.8.2'
+  gem 'libv8', '>= 3.11.8.3'
+  gem 'therubyracer', '>= 0.11.0'
 end
 
 gem 'jquery-rails'

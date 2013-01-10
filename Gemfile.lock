@@ -152,6 +152,7 @@ GEM
       activesupport (>= 3.0.0)
     launchy (2.1.2)
       addressable (~> 2.3)
+    libv8 (3.11.8.4)
     libwebsocket (0.1.7.1)
       addressable
       websocket
@@ -290,6 +291,7 @@ DEPENDENCIES
   jquery-rails
   json
   launchy (>= 2.0.5)
+  libv8 (>= 3.11.8.3)
   memcache-client
   mysql2 (>= 0.3)
   nested_form (= 0.2.3)
@@ -303,7 +305,7 @@ DEPENDENCIES
   simple_form
   sqlite3
   stripe
-  therubyracer (>= 0.8.2)
+  therubyracer (>= 0.11.0)
   topsy
   uglifier (>= 1.0.3)
   yahoofinance
