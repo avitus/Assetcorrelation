@@ -19,7 +19,7 @@
 					<td					><%= link_to 'Matrix', custom_path(:period =>  91, :portfolio => portfolio) %></td>
 					<td					><%= link_to '[x]', portfolio, :data => { :confirm => 'Are you sure?' }, method: :delete %></td>
 				</tr>
-			<% end %>	
+			<% end %>
 		</tbody>
 	</table>
 
@@ -28,6 +28,8 @@
 	<%= link_to 'New Portfolio', new_portfolio_path %>
 
 </div>
+
+<!--
 
 <div class="port-news">
 
@@ -58,7 +60,7 @@
 			    $('<li>').append(
 			        $('<a>').attr('href', jQuery.parseJSON(evt.data).interaction.link ).append(
 			            $('<span>').attr('class', 'tab').append(jQuery.parseJSON(evt.data).interaction.content.substring(0, 300))
-			)));  
+			)));
 
 		}
 
@@ -74,3 +76,4 @@
 	});
 </script>
 
+-->

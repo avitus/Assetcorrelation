@@ -62,9 +62,32 @@ class Security < ActiveRecord::Base
   def has_split?
 
     # Get oldest stock price
-    oldest_price_db    = self.price_quotes.where("date >= ?", Date.today - days).order("date ASC").first
+    oldest_quote_db    = self.price_quotes.order("date ASC").first
 
-    oldest_price_yahoo = YahooFinance::get_HistoricalQuotes( ticker.upcase, Date.parse( '2005-09-09' ), Date.today() )
+    if oldest_quote_db
+
+      oldest_date_db     = oldest_quote_db.date  unless !oldest_quote_db
+      oldest_price_db    = oldest_quote_db.price unless !oldest_quote_db
+
+      oldest_quote_yahoo = YahooFinance::get_HistoricalQuotes( ticker.upcase, oldest_date_db, oldest_date_db )
+
+      oldest_date_yahoo  = Date.parse(oldest_quote_yahoo[0].to_a[1]) unless !oldest_quote_yahoo
+      oldest_price_yahoo =            oldest_quote_yahoo[0].to_a[7]  unless !oldest_quote_yahoo
+
+      Rails.logger.debug("Yahoo date : #{oldest_date_yahoo}")
+      Rails.logger.debug("DB date    : #{oldest_date_db}")
+      Rails.logger.debug("Yahoo price: #{oldest_price_yahoo}")
+      Rails.logger.debug("DB date    : #{oldest_price_db}")
+
+      # check that we're comparing prices from the same day
+      return ( (oldest_date_yahoo == oldest_date_db) and (oldest_price_yahoo != oldest_price_db) )
+
+    else
+
+      return false
+
+    end
+
   end
 
   # ----------------------------------------------------------------------------------------------------------
