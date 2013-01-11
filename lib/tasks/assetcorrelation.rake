@@ -10,7 +10,8 @@ namespace :utils do
 
     Security.find_each { |s|
       if !s.has_history?
-        puts("#{s.created_at} : #{s.ticker} -- No history returned from Yahoo. Security is used in #{s.positions.count} portfolios")
+        puts("#{s.created_at} : #{s.ticker} -- No history returned from Yahoo. Deleting security used in #{s.positions.count} portfolios")
+        s.destroy
       elsif s.has_split?
         puts("#{s.created_at} : #{s.ticker} -- Price history does not account for splits or dividends")
         s.price_quotes.destroy_all

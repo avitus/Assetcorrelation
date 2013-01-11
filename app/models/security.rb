@@ -74,20 +74,22 @@ class Security < ActiveRecord::Base
 
       oldest_quote_yahoo = YahooFinance::get_HistoricalQuotes( ticker.upcase, oldest_date_db, oldest_date_db )
 
-      oldest_date_yahoo  = Date.parse(oldest_quote_yahoo[0].to_a[1]) unless !oldest_quote_yahoo
-      oldest_price_yahoo =            oldest_quote_yahoo[0].to_a[7]  unless !oldest_quote_yahoo
+      if !oldest_quote_yahoo.blank? # we were able to get a quote for that date
 
-      Rails.logger.debug("Yahoo date : #{oldest_date_yahoo}")
-      Rails.logger.debug("DB date    : #{oldest_date_db}")
-      Rails.logger.debug("Yahoo price: #{oldest_price_yahoo}")
-      Rails.logger.debug("DB date    : #{oldest_price_db}")
+        oldest_date_yahoo  = Date.parse(oldest_quote_yahoo[0].to_a[1])
+        oldest_price_yahoo =            oldest_quote_yahoo[0].to_a[7]
+        # check that we're comparing prices from the same day
+        return ( (oldest_date_yahoo == oldest_date_db) and (oldest_price_yahoo != oldest_price_db) )
 
-      # check that we're comparing prices from the same day
-      return ( (oldest_date_yahoo == oldest_date_db) and (oldest_price_yahoo != oldest_price_db) )
+      else # Yahoo returned []
+
+        return true  # we have data in our database that doesn't exist in the Yahoo DB --> throw out our data
+
+      end
 
     else
 
-      return false
+      return false  # we have no data so no need to do anything
 
     end
 
