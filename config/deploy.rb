@@ -51,7 +51,7 @@ set :rails_env, "production"
 ##############################################################
 ssh_options[:keys] = %w(/home/avitus/.ssh/id_rsa)
 ssh_options[:paranoid] = false
-default_run_options[:pty] = true 
+default_run_options[:pty] = true
 ssh_options[:forward_agent] = true                            # Use agent forwarding to simplify key management in order to use local keys
 # ssh_options[:verbose] = :debug
 # ssh_options[:port] = 22
@@ -67,23 +67,28 @@ set :default_stage, "production"
 ##  Hooks
 ##############################################################
 # after "deploy:update_code", "deploy:symlink_db" #, "deploy:set_rails_env"
-before "deploy:assets:precompile", "deploy:symlink_db"
+before "deploy:assets:precompile", "deploy:symlink_db", "deploy:symlink_stripe"
 
 
 ##############################################################
 ##  Database config and restart
 ##############################################################
-namespace :deploy do  
+namespace :deploy do
   desc "Symlinks the database.yml"                            # Link in the database config
   task :symlink_db, :roles => :app do
     run "ln -nfs #{deploy_to}/shared/config/database.yml #{latest_release}/config/database.yml"
   end
 
+  desc "Symlink Stripe keys"                                  # Link in Stripe config
+  task :symlink_stripe, :roles => :app do
+    run "ln -nfs #{deploy_to}/shared/config/initializers/stripe.rb #{latest_release}/config/initializers/stripe.rb"
+  end
+
   desc "Restarting mod_rails with restart.txt"                # Restart passenger on deploy
   task :restart, :roles => :app, :except => { :no_release => true } do
     run "touch #{current_path}/tmp/restart.txt"
-  end  
- 
+  end
+
 end
 
 ##############################################################
@@ -93,11 +98,11 @@ namespace :db do
   desc 'Dumps the production database to db/production_data.sql on the remote server'
   task :remote_db_dump, :roles => :db, :only => { :primary => true } do
     run "cd #{deploy_to}/#{current_dir} && " +
-      "rake RAILS_ENV=#{rails_env} db:database_dump --trace" 
+      "rake RAILS_ENV=#{rails_env} db:database_dump --trace"
   end
 
   desc 'Downloads db/production_data.sql from the remote production environment to your local machine'
-  task :remote_db_download, :roles => :db, :only => { :primary => true } do  
+  task :remote_db_download, :roles => :db, :only => { :primary => true } do
     execute_on_servers(options) do |servers|
       self.sessions[servers.first].sftp.connect do |tsftp|
         tsftp.download!("#{deploy_to}/#{current_dir}/db/production_data.sql", "db/production_data.sql")
@@ -109,10 +114,10 @@ namespace :db do
   task :remote_db_cleanup, :roles => :db, :only => { :primary => true } do
     execute_on_servers(options) do |servers|
       self.sessions[servers.first].sftp.connect do |tsftp|
-        tsftp.remove! "#{deploy_to}/#{current_dir}/db/production_data.sql" 
+        tsftp.remove! "#{deploy_to}/#{current_dir}/db/production_data.sql"
       end
     end
-  end 
+  end
 
   desc 'Dumps, downloads and then cleans up the production data dump'
   task :remote_db_runner do
