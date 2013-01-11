@@ -9,9 +9,13 @@ namespace :utils do
     puts "=== Locating securities with price splits not recorded in our database ==="
 
     Security.find_each { |s|
-      if s.has_split?
-        puts("#{s.created_at} : #{s.ticker}")
+      if !s.has_history?
+        puts("#{s.created_at} : #{s.ticker} -- No history returned from Yahoo. Security is used in #{s.positions.count} portfolios")
+      elsif s.has_split?
+        puts("#{s.created_at} : #{s.ticker} -- Price history does not account for splits or dividends")
         s.price_quotes.destroy_all
+      else
+        # Everything is ok
       end
     }
 
@@ -29,7 +33,7 @@ namespace :utils do
 
     Security.find_each { |s|
       if !s.has_history?
-        puts("#{s.created_at} : #{s.ticker} -- No history returned from Yahoo")
+        puts("#{s.created_at} : #{s.ticker} -- No history returned from Yahoo. Security is used in #{s.positions.count} portfolios")
         # s.destroy
       end
     }
