@@ -11,6 +11,7 @@ namespace :utils do
     Security.find_each { |s|
       if s.has_split?
         puts("#{s.created_at} : #{s.ticker}")
+        s.price_quotes.destroy_all
       end
     }
 

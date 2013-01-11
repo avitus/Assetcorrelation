@@ -9,12 +9,14 @@ class Security < ActiveRecord::Base
   # ----------------------------------------------------------------------------------------------------------
 	def price_history(days = 30)
 
-	  # Check whether we have the data in DB
-	  historical_prices = self.price_quotes.where("date >= ?", Date.today - days).order("date DESC")
 
     #===== TODO: Need to check for a stock split
 
     # ------ Insert stock split check here -----
+
+	  # Check whether we have the data in DB
+	  historical_prices = self.price_quotes.where("date >= ?", Date.today - days).order("date DESC")
+
 
 	  #===== Supplement missing data from Yahoo
 	  h = Array.new
