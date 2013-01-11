@@ -19,6 +19,25 @@ namespace :utils do
 
   end
 
+  #--------------------------------------------------------------------------------------------
+  # Remove invalid securities which no longer have a price history in Yahoo
+  #--------------------------------------------------------------------------------------------
+  desc "Remove invalid securities"
+  task :locate_splits => :environment do
+
+    puts "=== Locating invalid securities without any price history in Yahoo ==="
+
+    Security.find_each { |s|
+      if !s.has_history?
+        puts("#{s.created_at} : #{s.ticker} -- No history returned from Yahoo")
+        # s.destroy
+      end
+    }
+
+    puts "=== Finished ==="
+
+  end
+
 end
 
 

@@ -1,6 +1,7 @@
 class Security < ActiveRecord::Base
 
 	has_many	:price_quotes, :dependent => :destroy
+  has_many  :positions, :dependent => :destroy
 
 	validates :ticker, :uniqueness => true
 
@@ -130,5 +131,33 @@ class Security < ActiveRecord::Base
 
   end
 
+  # ----------------------------------------------------------------------------------------------------------
+  # Check whether security has any price history on Yahoo
+  # ----------------------------------------------------------------------------------------------------------
+  def has_history?
+
+    # Check with Yahoo
+    Rails.logger.info("=== Querying Yahoo for security: #{self.ticker}")
+    ticker = self.ticker
+    quote_type  = YahooFinance::StandardQuote
+    quote       = YahooFinance::get_quotes( quote_type, ticker )
+    # A valid return will result in quote[ticker].nil? and quote[ticker].blank? being false.
+    # However, even if the ticker does not exist, the call to YahooFinance will result in a
+    # valid quote but the date field will be "N/A"
+    # 10/15/2008 -- Some money market funds return a valid date field but have no trading history
+
+    if quote[ticker]
+
+      # Check for 5 days of history and a valid date field
+      has_history = YahooFinance::get_historical_quotes_days(ticker, 7).size > 0
+      return (quote[ticker].date != "N/A") && has_history
+
+    else
+
+      return false
+
+    end
+
+  end
 
 end # of class
