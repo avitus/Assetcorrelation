@@ -23,7 +23,7 @@ namespace :utils do
   # Remove invalid securities which no longer have a price history in Yahoo
   #--------------------------------------------------------------------------------------------
   desc "Remove invalid securities"
-  task :locate_splits => :environment do
+  task :remove_invalid_securities => :environment do
 
     puts "=== Locating invalid securities without any price history in Yahoo ==="
 
