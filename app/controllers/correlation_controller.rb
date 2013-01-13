@@ -94,7 +94,7 @@ class CorrelationController < ApplicationController
     if params[:id].nil? 
       @period=91
     else 
-      @period=[params[:id].to_i, 731].min 
+      @period=[params[:id].to_i, 1826].min 
     end
     tickers   =  %w{TIP GLD AGG EMB USO GSG VNQ RWX EEM EFA VB VV VO}
     @page_title = "Asset Correlations: Major Asset Classes"    
@@ -104,7 +104,8 @@ class CorrelationController < ApplicationController
     @correlation_matrix = Correlation_matrix.new(@period)
     @correlation_matrix.add_many_stocks(tickers) 
     
-    # EMB fund is most recent:Launched Dec 19th, 2007
+    # EMB fund is most recent:Launched Dec 19th, 2007. Be sure to update handling of params (line 97) at start of
+    # method if adding longer periods.
         
   end
 
