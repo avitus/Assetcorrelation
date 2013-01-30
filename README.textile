@@ -1,3 +1,5 @@
+"!https://codeclimate.com/badge.png!":https://codeclimate.com/github/avitus/Assetcorrelation
+
 h1. Assetcorrelation
 
 Generated using the following template: https://github.com/RailsApps/rails3-devise-rspec-cucumber/wiki/Tutorial
