@@ -6,6 +6,7 @@ require "action_controller/railtie"
 require "action_mailer/railtie"
 require "active_resource/railtie"
 require "sprockets/railtie"
+require 'active_support/core_ext/numeric/bytes'   # needed to specify megabytes in log file rotation config
 # require "rails/test_unit/railtie"
 
 # If you have a Gemfile, require the default gems, the ones in the
@@ -53,8 +54,8 @@ module Assetcorrelation
 
     # Enable the asset pipeline
     config.assets.enabled = true
-    
+
     # Version of your assets, change this if you want to expire all your assets
-    config.assets.version = '1.0'    
+    config.assets.version = '1.0'
   end
 end
