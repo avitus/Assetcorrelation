@@ -52,6 +52,7 @@ end
 gem 'jquery-rails'
 gem 'rspec-rails', '>= 2.6.1', :group => [:development, :test]
 gem 'devise'
+gem 'dalli'                                                             # Memcached client
 gem 'frontend-helpers'
 gem 'rails_autolink'                                                    # Restore auto_link functionality from Rails 3.0
 gem 'rails_admin', :git => 'git://github.com/sferik/rails_admin.git'    # Admin panel
