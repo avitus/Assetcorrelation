@@ -20,9 +20,13 @@ Assetcorrelation::Application.configure do
   # Generate digests for assets URLs
   config.assets.digest = true
 
-  # Specifies the header that your server uses for sending files
-  # (comment out if your front-end server doesn't support this)
-  config.action_dispatch.x_sendfile_header = "X-Sendfile" # Use 'X-Accel-Redirect' for nginx
+
+  #===============================
+  # Content Delivery Network
+  #===============================
+  config.action_controller.asset_host      = "http://cloudfront.assetcorrelation.com"  # Amazon Cloudfront
+  config.static_cache_control              = "public, max-age=86400"
+  config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect' # Header that Nginx uses for sending files
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   # config.force_ssl = true
