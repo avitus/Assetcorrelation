@@ -24,7 +24,7 @@ Assetcorrelation::Application.configure do
   #===============================
   # Content Delivery Network
   #===============================
-  config.action_controller.asset_host      = "http://cloudfront.assetcorrelation.com"  # Amazon Cloudfront
+  config.action_controller.asset_host      = "http://d2fi0e71yegorg.cloudfront.net"  # Amazon Cloudfront
   config.static_cache_control              = "public, max-age=86400"
   config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect' # Header that Nginx uses for sending files
 
