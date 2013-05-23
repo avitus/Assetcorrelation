@@ -25,7 +25,7 @@ Assetcorrelation::Application.configure do
   config.assets.precompile += %w(rails_admin/rails_admin.js rails_admin/rails_admin.css) # This is a temporary workaround until Rails 3.1.1 Should be able to remove
 
   # Ensure that Ckeditor assets are precompiled
-  config.assets.precompile += Ckeditor.assets
+  # config.assets.precompile += Ckeditor.assets
 
   # Defaults to Rails.root.join("public/assets")
   # config.assets.manifest = YOUR_PATH
