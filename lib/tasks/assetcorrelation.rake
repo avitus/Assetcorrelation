@@ -2,6 +2,7 @@ namespace :utils do
 
   #--------------------------------------------------------------------------------------------
   # Locate securities with price splits that aren't reflected in database
+  # Time duration: > 4 hours
   #--------------------------------------------------------------------------------------------
   desc "Locate securities with price splits"
   task :locate_splits => :environment do

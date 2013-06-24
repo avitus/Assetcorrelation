@@ -43,11 +43,11 @@ class CorrelationController < ApplicationController
 	require 'yahoofinance'
 
   caches_action :correlations, :countries, :sectors, :bonds, :simple_asset_allocation, :expires_in => 12.hours, :layout => false
-  
+
   # ----------------------------------------------------------------------------------------------------------
   # Stock quotes
-  # ----------------------------------------------------------------------------------------------------------  
-  def quote_publics      
+  # ----------------------------------------------------------------------------------------------------------
+  def quote_publics
     # http://www.transparentech.com/projects/yahoofinance
     # Set the type of quote we want to retrieve.
     # Available type are:
@@ -58,162 +58,166 @@ class CorrelationController < ApplicationController
     @quote_type_b  = YahooFinance::ExtendedQuote
 
     # Set the symbols for which we want to retrieve quotes.
-    # You can include more than one symbol by separating 
+    # You can include more than one symbol by separating
     # them with a ',' (comma).
     @quote_symbols = "TIP,AGG,EMB,IGE,GSG,VNQ,RWX,EEM,EFA,VB,VV,VO,VGK,VPL,^IXIC,^GSPC"
-    
+
     # Get the quotes from Yahoo! Finance.  The get_quotes method call
     # returns a Hash containing one quote object of type "quote_type" for
     # each symbol in "quote_symbols".  If a block is given, it will be
     # called with the quote object (as in the example below).
     @quotes      = YahooFinance::get_quotes( @quote_type_a, @quote_symbols )
     @quotes_ext  = YahooFinance::get_quotes( @quote_type_b, @quote_symbols )
-    
+
     # Create sparkline data
-    h = YahooFinance::get_historical_quotes_days("^IXIC", 90)   
+    h = YahooFinance::get_historical_quotes_days("^IXIC", 90)
     @nasdaq_yr = Array.new
     for day in 0...h.length
       @nasdaq_yr << h[day][4].to_f
     end
-    @nasdaq_yr.reverse! 
-    
+    @nasdaq_yr.reverse!
+
     # Calculate Shiller 10 Yr PE Ratio
-    @shiller_pe = @quotes['^GSPC'].lastTrade / Macroval.last.spcomposite.to_f * Macroval.last.pe_tenyear.to_f 
+    @shiller_pe = @quotes['^GSPC'].lastTrade / Macroval.last.spcomposite.to_f * Macroval.last.pe_tenyear.to_f
   end
-  
+
   # ----------------------------------------------------------------------------------------------------------
   # Correlation matrix for major asset classes
-  # ---------------------------------------------------------------------------------------------------------- 
+  # ----------------------------------------------------------------------------------------------------------
 
   def correlations
-  	
-    @tab = "corr" 
-    @sub = "all"  	
-  	
+
+    @tab = "corr"
+    @sub = "all"
+
     # 1) Locate list of tickers to create matrix
-    if params[:id].nil? 
+    if params[:id].nil?
       @period=91
-    else 
-      @period=[params[:id].to_i, 1826].min 
+    else
+      @period=[params[:id].to_i, 1826].min
     end
     tickers   =  %w{TIP GLD AGG EMB USO GSG VNQ RWX EEM EFA VB VV VO}
-    @page_title = "Asset Correlations: Major Asset Classes"    
-    
-        
+    @page_title = "Asset Correlations: Major Asset Classes"
+
+
     # 2) Build correlation matrix
     @correlation_matrix = Correlation_matrix.new(@period)
-    @correlation_matrix.add_many_stocks(tickers) 
-    
+    @correlation_matrix.add_many_stocks(tickers)
+
     # EMB fund is most recent:Launched Dec 19th, 2007. Be sure to update handling of params (line 97) at start of
     # method if adding longer periods.
-        
+
   end
 
- 
+
   # ----------------------------------------------------------------------------------------------------------
   # Country Correlation
-  # ----------------------------------------------------------------------------------------------------------    
+  # ----------------------------------------------------------------------------------------------------------
   def countries
 
-    @tab = "corr" 
-    @sub = "countries"    	
-  	
+    @tab = "corr"
+    @sub = "countries"
+
     # 1) Locate list of tickers to create matrix
-    if params[:id].nil? 
-      @period=90 
-    else 
-      @period=params[:id].to_i 
-    end     
+    if params[:id].nil?
+      @period=90
+    else
+      @period=params[:id].to_i
+    end
     tickers   = %w{^GSPC EZA EWQ EWG EWC EWD EWU EWA EWJ EWY EWT EWZ ECH EWW EIS TUR}
-    @page_title = "Asset Correlations: Country Index Funds"    
-    
-        
+    @page_title = "Asset Correlations: Country Index Funds"
+
+
     # 2) Build correlation matrix
     @correlation_matrix = Correlation_matrix.new(@period)
-    @correlation_matrix.add_many_stocks(tickers) 
-    
-    # TUR fund is most recent - launched April 1st 2008 
-    
+    @correlation_matrix.add_many_stocks(tickers)
+
+    # TUR fund is most recent - launched April 1st 2008
+
   end
-  
-    
+
+
   # ----------------------------------------------------------------------------------------------------------
   # Correlation matrix for 9 S&P sectors
-  # ----------------------------------------------------------------------------------------------------------    
+  # ----------------------------------------------------------------------------------------------------------
   def sectors
-  	
-    @tab = "corr" 
-    @sub = "sectors"  
-      	
+
+    @tab = "corr"
+    @sub = "sectors"
+
     # 1) Locate list of tickers to create matrix
     tickers   = %w{SPY XLY XLP XLE XLF XLV XLI XLB XLK XLU}
-    if params[:id].nil? 
-      @period=90 
-    else 
-      @period=params[:id].to_i 
+    if params[:id].nil?
+      @period=90
+    else
+      @period=params[:id].to_i
     end
-    @page_title = "Asset Correlations: S&P Sectors"    
-        
+    @page_title = "Asset Correlations: S&P Sectors"
+
     # 2) Build correlation matrix
     @correlation_matrix = Correlation_matrix.new(@period)
-    @correlation_matrix.add_many_stocks(tickers) 
-      
-  end   
+    @correlation_matrix.add_many_stocks(tickers)
+
+  end
 
   # ----------------------------------------------------------------------------------------------------------
   # Correlation matrix for bond sector
-  # ----------------------------------------------------------------------------------------------------------    
+  # ----------------------------------------------------------------------------------------------------------
   def bonds
 
-    @tab = "corr" 
-    @sub = "bonds"    	
-  	
+    @tab = "corr"
+    @sub = "bonds"
+
     # 1) Locate list of tickers to create matrix
     tickers   = %w{SHV SHY IEI IEF TLH TLT LQD HYG MUB EMB MBB}
-    if params[:id].nil? 
-      @period=90 
-    else 
-      @period=params[:id].to_i 
+    if params[:id].nil?
+      @period=90
+    else
+      @period=params[:id].to_i
     end
     @page_title = "Asset Correlations: Bond Sector"
-        
+
     # 2) Build correlation matrix
     @correlation_matrix = Correlation_matrix.new(@period)
-    @correlation_matrix.add_many_stocks(tickers) 
-    
-    # EMB Launched Dec 19th, 2007 
-    
-  end  
+    @correlation_matrix.add_many_stocks(tickers)
+
+    # EMB Launched Dec 19th, 2007
+
+  end
 
   # ----------------------------------------------------------------------------------------------------------
   # Correlation matrix for a user portfolio
-  # ---------------------------------------------------------------------------------------------------------- 
+  # ----------------------------------------------------------------------------------------------------------
   def custom
     @portfolio = Portfolio.find(params[:portfolio])
     @period    = params[:period] || 90
-    
+
     tickers    = @portfolio.securities.map { |security| security.ticker }
-    
+
     if tickers.empty?
       flash.notice = 'You have to add assets to your portfolio before we can calculate a correlation matrix'
-      redirect_to portfolios_path      
+      redirect_to portfolios_path
     else
       @correlation_matrix = Correlation_matrix.new(@period.to_i)
       shortest_ticker = @correlation_matrix.add_many_stocks(tickers[0..15])
-    end    
-    
-    if tickers.length > 16
-      flash.notice = 'Maximum number of assets for which we can calculate a correlation matrix is 16.'   
     end
-    
-    if shortest_ticker and @correlation_matrix.period_actual < @correlation_matrix.period_req 
+
+    if tickers.length > 16
+      flash.notice = 'Maximum number of assets for which we can calculate a correlation matrix is 16.'
+    end
+
+    # We only alert user if difference is more than four days since on a Monday before the closing prices are reported
+    # the gap can be four days.
+    if shortest_ticker and @correlation_matrix.period_actual < @correlation_matrix.period_req-4
+      Rails.logger.debug("Actual    period: #{@correlation_matrix.period_actual}")
+      Rails.logger.debug("Requested period: #{@correlation_matrix.period_req}")
       flash.notice = shortest_ticker + " only has a stock history since " + @correlation_matrix.start_date.to_s + ". Shortening period accordingly"
-    end    
-    
+    end
+
   end
 
   def time
-    
+
   end
 
   # ----------------------------------------------------------------------------------------------------------
@@ -224,83 +228,83 @@ class CorrelationController < ApplicationController
   # period - length of time eg. 5 years
   # interval - number of days over which to calculate rolling correlation eg. 90 days
   # Output: A cool graph
-  # ----------------------------------------------------------------------------------------------------------   
+  # ----------------------------------------------------------------------------------------------------------
   def corr_over_time
-    
+
     if params[:ticker1] and params[:ticker2]
       ticker1 = params[:ticker1].upcase
       ticker2 = params[:ticker2].upcase
       @tickers = Array.[]( ticker1, ticker2 )
       period = params[:period].to_i
-      interval = 21 # 3 month interval = 252 / 4 = 63      
+      interval = 21 # 3 month interval = 252 / 4 = 63
     else
       return
     end
-   
+
     if @tickers.ticker_check == true
       logger.debug "Building graph with tickers #{@tickers}"
       @x = Correlation_time.new(@tickers, period, interval)
       corr_series = @x.get_correlation_over_time
-      
+
       # Build Chart
       chart_data = Array.new
       x_data = Array.new
-       
+
       # Create X-axis labels
       start_date = @x.start_date
       end_date   = Date.today()
-      
+
       @period = (Date.today - start_date).to_i
-  
+
       step_size = (Date.today - start_date)/corr_series.length
       for i in 0...corr_series.length
          x_data << (start_date + i * step_size).to_s
       end
-  
+
       # Build up chart data object to pass to Ziya
       chart_data << corr_series
       chart_data << x_data
       chart_data << @tickers
-      
+
       respond_to do |format|
         format.json { render json: chart_data }
-      end 
-    else 
+      end
+    else
       respond_to do |format|
         format.json { render json: {error: "Invalid ticker"}.to_json }
-      end          
+      end
     end
   end
 
   # ----------------------------------------------------------------------------------------------------------
   # Scatter plot for efficient frontier
-  # ----------------------------------------------------------------------------------------------------------    
+  # ----------------------------------------------------------------------------------------------------------
   def efficient_frontier
-           
-    @page_title = "Risk vs Return : The Efficient Frontier"             
+
+    @page_title = "Risk vs Return : The Efficient Frontier"
 
     @query = quantalign(params[:period].to_i)
-    if @query < 30 then @query = 366 end    
-    session[:query] = @query     
-  end  
-    
-  
+    if @query < 30 then @query = 366 end
+    session[:query] = @query
+  end
+
+
   # ----------------------------------------------------------------------------------------------------------
   # Relationship between StdDev and Intra-portfolio Correlation
-  # ----------------------------------------------------------------------------------------------------------   
+  # ----------------------------------------------------------------------------------------------------------
   def corr_vs_risk
-           
+
     # Create graph data object
     chart_data   = Array.new
-    
+
     # Pull portfolios out of database
     query = quantalign(params[:period].to_i)
     if query < 30 then query = 31 end
-    
-    @portfolios = Portfolio.find(:all, :conditions => ["period = ?", query])    
+
+    @portfolios = Portfolio.find(:all, :conditions => ["period = ?", query])
     Rails.logger.info("== Querying database for portfolios with period  : #{query}")
     Rails.logger.info("== Number of portfolios found that match criteria: #{@portfolios.length}")
-  
+
     # Strip out risk and correlation and remove portfolios with too few assets
     @portfolios.each { |x|
       if ( num_assets_in_string(x.tickers) > 4 )
@@ -308,45 +312,45 @@ class CorrelationController < ApplicationController
         chart_data  << x.intra_corr
       end
     }
-        
+
     # Put chart data into session
-    session[:risk_data] = chart_data    
-  end    
+    session[:risk_data] = chart_data
+  end
 
   # ----------------------------------------------------------------------------------------------------------
   # Correlation matrix for 30 min asset allocation strategy
-  # ---------------------------------------------------------------------------------------------------------- 
+  # ----------------------------------------------------------------------------------------------------------
   def simple_asset_allocation
     # 1) Locate list of tickers to create matrix
-    if params[:id].nil? 
+    if params[:id].nil?
       @period=365
-    else 
-      @period=params[:id].to_i 
+    else
+      @period=params[:id].to_i
     end
     tickers   =  %w{VV VO VB VWO EFA VNQ AGG GSG}
-    @page_title = "Simple Asset Allocation"    
-    
-        
+    @page_title = "Simple Asset Allocation"
+
+
     # 2) Build correlation matrix
     @corr_matrix = Correlation_matrix.new(@period)
-    @corr_matrix.add_many_stocks(tickers, @period) 
-    
+    @corr_matrix.add_many_stocks(tickers, @period)
+
     # 3) Request a StandardQuote to get the company names
     quote_type = YahooFinance::StandardQuote
-    @quotes     = YahooFinance::get_quotes( quote_type, tickers ) 
-    
-    @quotes['VV'   ].name = "US Large Cap Stocks"   
+    @quotes     = YahooFinance::get_quotes( quote_type, tickers )
+
+    @quotes['VV'   ].name = "US Large Cap Stocks"
     @quotes['VO'   ].name = "US Mid Cap Stocks"
     @quotes['VB'   ].name = "US Small Cap Stocks"
     @quotes['VWO'  ].name = "Emerging Markets"
     @quotes['EFA'  ].name = "Europe, Australasia, Far East"
     @quotes['VNQ'  ].name = "US Real Estate"
     @quotes['AGG'  ].name = "US Bonds"
-    @quotes['GSG'  ].name = "Commodities Index"    
+    @quotes['GSG'  ].name = "Commodities Index"
   end
 
 
   private
 
-  
+
 end
