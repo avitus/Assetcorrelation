@@ -123,7 +123,11 @@ class Security < ActiveRecord::Base
 
       }
 
-      return last_close.first[6]  # 6th element in array is adjusted closing price
+      if !last_close.empty
+        return last_close.first[6]  # 6th element in array is adjusted closing price
+      else
+        return nil # handles case where Yahoo stops returning price history for a once valid security. Security should be removed
+      end
 
     else
 

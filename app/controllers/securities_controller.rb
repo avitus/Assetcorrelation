@@ -1,7 +1,7 @@
 class SecuritiesController < ApplicationController
-  
+
   before_filter :authenticate_user!, :except => :valid_security
-    
+
   # GET /assets
   # GET /assets.json
   def index
@@ -86,57 +86,57 @@ class SecuritiesController < ApplicationController
 
   # ----------------------------------------------------------------------------------------------------------
   # Check whether ticker represents valid security
-  # ----------------------------------------------------------------------------------------------------------   
+  # ----------------------------------------------------------------------------------------------------------
   def valid_security
   	query = params[:query]
-  	
+
   	if valid_ticker?(query)
-  	  
+
     	asset = Security.find_by_ticker( query.upcase )
-    		
+
     	unless asset
     		# Check with Yahoo
     		Rails.logger.info("=== Querying Yahoo for security: #{query}")
     		ticker = query.upcase
   		  quote_type  = YahooFinance::StandardQuote
   		  quote       = YahooFinance::get_quotes( quote_type, ticker )
-  		  # A valid return will result in quote[ticker].nil? and quote[ticker].blank? being false. 
-  		  # However, even if the ticker does not exist, the call to YahooFinance will result in a 
+  		  # A valid return will result in quote[ticker].nil? and quote[ticker].blank? being false.
+  		  # However, even if the ticker does not exist, the call to YahooFinance will result in a
   		  # valid quote but the date field will be "N/A"
-  		  # 10/15/2008 -- Some money market funds return a valid date field but have no trading history  	
-  		    
+  		  # 10/15/2008 -- Some money market funds return a valid date field but have no trading history
+
   		  if quote[ticker]
   		    # Check for 5 days of history and a valid date field
   		    has_history = YahooFinance::get_historical_quotes_days(ticker, 7).size > 0
-  		    if (quote[ticker].date != "N/A") && has_history		    	
+  		    if (quote[ticker].date != "N/A") && has_history
   		      if Security.exists?( :name => quote[ticker].name)
   		        # Create asset with unique name
   		        uniq_name = quote[ticker].name + " DUPLICATE-NAME" + " " + Time.now.to_s
-              asset = Security.create( :name => uniq_name, :ticker => quote[ticker].symbol )               		        
+              asset = Security.create( :name => uniq_name, :ticker => quote[ticker].symbol )
   		      else
               # Create new asset in DB
-              asset = Security.create( :name => quote[ticker].name, :ticker => quote[ticker].symbol )  		        
+              asset = Security.create( :name => quote[ticker].name, :ticker => quote[ticker].symbol )
   		      end
   		    else
-  		    	asset = nil
-  		    end 	
+  		    	asset = nil # no proper price history
+  		    end
   		  else
-  				asset = nil
-  		  end		    
-  		    		
+  				asset = nil  # no quote returned by Yahoo
+  		  end
+
     	end
-    
+
     else
-      asset = nil
+      asset = nil  # not a valid ticker
     end
-    	
-  		
+
+
     respond_to do |format|
       format.html # new.html.erb
       format.json { render json: asset }
-    end  		
-  		
+    end
+
   end
-  
-  
+
+
 end
