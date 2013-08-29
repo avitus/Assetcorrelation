@@ -13,7 +13,7 @@ load 'deploy/assets'                                            # Precompile ass
 ##  Application
 ##############################################################
 set :user, 'avitus'                                           # Your hosting account's username
-set :domain, 'pariday.com'                                    # Hosting servername where your account is located
+set :domain, 'assetcorrelation.com'                           # Hosting servername where your account is located
 set :project, 'Assetcorrelation'                              # App name in the repository
 set :application, 'assetcorrelation.com'                      # App's location (domain or subdomain)
 set :applicationdir, "/home/#{user}/#{application}"           # App location
