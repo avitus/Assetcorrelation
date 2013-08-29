@@ -43,10 +43,12 @@ gem 'capistrano-ext'
 # To use debugger
 # gem 'ruby-debug19', :require => 'ruby-debug'
 
-# install a Javascript runtime for linux
+############################################################
+# Javascript Engine
+############################################################
 if HOST_OS =~ /linux/i
-  gem 'libv8', '>= 3.11.8.3'
-  gem 'therubyracer', '>= 0.11.0'
+  gem 'libv8', '= 3.11.8.17', :platforms => :ruby               # Later versions have no binary support for x86
+  gem 'therubyracer', '= 0.11.4'                                # Can roll to 0.12 once binary support for libv8 3.16
 end
 
 gem 'jquery-rails'
