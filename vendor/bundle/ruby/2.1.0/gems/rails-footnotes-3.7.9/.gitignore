@@ -1,0 +1,13 @@
+.*
+!.gitignore
+!.gitmodules
+!.travis.yml
+!*.example
+*.gem
+.bundle
+Gemfile.lock
+pkg/*
+coverage
+tags
+doc
+bin

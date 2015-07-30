@@ -1,0 +1,28 @@
+/usr/local/bin/ruby -r ./siteconf20150730-54710-1f2rcy.rb extconf.rb 
+creating Makefile
+
+make "DESTDIR=" clean
+
+make "DESTDIR="
+compiling crypt_gensalt.c
+compiling crypt.c
+compiling wrapper.c
+In file included from wrapper.c:27:0:
+/usr/local/include/ruby-2.1.0/ruby/backward/util.h:2:2: warning: #warning use "ruby/util.h" instead of bare "util.h" [-Wcpp]
+ #warning use "ruby/util.h" instead of bare "util.h"
+  ^
+compiling bcrypt_ext.c
+bcrypt_ext.c: In function ‘bcrypt_wrapper’:
+bcrypt_ext.c:27:5: warning: implicit declaration of function ‘ruby_bcrypt’ [-Wimplicit-function-declaration]
+     return (VALUE)ruby_bcrypt(args->output, args->key, args->salt);
+     ^
+bcrypt_ext.c: At top level:
+bcrypt_ext.c:25:14: warning: ‘bcrypt_wrapper’ defined but not used [-Wunused-function]
+ static VALUE bcrypt_wrapper(void *_args) {
+              ^
+compiling crypt_blowfish.c
+linking shared-object bcrypt_ext.so
+
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 bcrypt_ext.so ./.gem.20150730-54710-r3azkj
+installing default bcrypt_ext libraries

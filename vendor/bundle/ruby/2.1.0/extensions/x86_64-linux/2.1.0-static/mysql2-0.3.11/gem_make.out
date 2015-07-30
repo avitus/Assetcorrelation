@@ -1,0 +1,70 @@
+/usr/local/bin/ruby -r ./siteconf20150730-54909-1p7k57p.rb extconf.rb 
+checking for rb_thread_blocking_region()... yes
+checking for rb_wait_for_single_fd()... yes
+checking for mysql.h... yes
+checking for errmsg.h... yes
+checking for mysqld_error.h... yes
+creating Makefile
+
+make "DESTDIR=" clean
+
+make "DESTDIR="
+compiling result.c
+result.c: In function ‘rb_mysql_result_fetch_row’:
+result.c:186:3: warning: ‘rb_thread_blocking_region’ is deprecated (declared at /usr/local/include/ruby-2.1.0/ruby/intern.h:870) [-Wdeprecated-declarations]
+   row = (MYSQL_ROW)rb_thread_blocking_region(nogvl_fetch_row, ptr, RUBY_UBF_IO, 0);
+   ^
+result.c:258:31: warning: variable ‘tokens’ set but not used [-Wunused-but-set-variable]
+           int hour, min, sec, tokens;
+                               ^
+result.c:272:58: warning: variable ‘tokens’ set but not used [-Wunused-but-set-variable]
+           unsigned int year, month, day, hour, min, sec, tokens;
+                                                          ^
+result.c:315:33: warning: variable ‘tokens’ set but not used [-Wunused-but-set-variable]
+           int year, month, day, tokens;
+                                 ^
+compiling mysql2_ext.c
+compiling client.c
+client.c: In function ‘rb_raise_mysql2_error’:
+client.c:98:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+   VALUE e = rb_exc_new3(cMysql2Error, rb_error_msg);
+   ^
+client.c: In function ‘rb_connect’:
+client.c:215:3: warning: ‘rb_thread_blocking_region’ is deprecated (declared at /usr/local/include/ruby-2.1.0/ruby/intern.h:870) [-Wdeprecated-declarations]
+   rv = rb_thread_blocking_region(nogvl_connect, &args, RUBY_UBF_IO, 0);
+   ^
+client.c:219:7: warning: ‘rb_thread_blocking_region’ is deprecated (declared at /usr/local/include/ruby-2.1.0/ruby/intern.h:870) [-Wdeprecated-declarations]
+       rv = rb_thread_blocking_region(nogvl_connect, &args, RUBY_UBF_IO, 0);
+       ^
+client.c: In function ‘rb_mysql_client_close’:
+client.c:238:5: warning: ‘rb_thread_blocking_region’ is deprecated (declared at /usr/local/include/ruby-2.1.0/ruby/intern.h:870) [-Wdeprecated-declarations]
+     rb_thread_blocking_region(nogvl_close, wrapper, RUBY_UBF_IO, 0);
+     ^
+client.c: In function ‘do_send_query’:
+client.c:261:3: warning: ‘rb_thread_blocking_region’ is deprecated (declared at /usr/local/include/ruby-2.1.0/ruby/intern.h:870) [-Wdeprecated-declarations]
+   if (rb_thread_blocking_region(nogvl_send_query, args, RUBY_UBF_IO, 0) == Qfalse) {
+   ^
+client.c: In function ‘rb_mysql_client_async_result’:
+client.c:309:3: warning: ‘rb_thread_blocking_region’ is deprecated (declared at /usr/local/include/ruby-2.1.0/ruby/intern.h:870) [-Wdeprecated-declarations]
+   if (rb_thread_blocking_region(nogvl_read_query_result, wrapper->client, RUBY_UBF_IO, 0) == Qfalse) {
+   ^
+client.c:315:3: warning: ‘rb_thread_blocking_region’ is deprecated (declared at /usr/local/include/ruby-2.1.0/ruby/intern.h:870) [-Wdeprecated-declarations]
+   result = (MYSQL_RES *)rb_thread_blocking_region(nogvl_store_result, wrapper, RUBY_UBF_IO, 0);
+   ^
+client.c: In function ‘rb_mysql_client_socket’:
+client.c:590:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+   int fd_set_fd = wrapper->client->net.fd;
+   ^
+client.c: In function ‘rb_mysql_client_ping’:
+client.c:636:5: warning: ‘rb_thread_blocking_region’ is deprecated (declared at /usr/local/include/ruby-2.1.0/ruby/intern.h:870) [-Wdeprecated-declarations]
+     return rb_thread_blocking_region(nogvl_ping, wrapper->client, RUBY_UBF_IO, 0);
+     ^
+client.c: In function ‘init_connection’:
+client.c:728:3: warning: ‘rb_thread_blocking_region’ is deprecated (declared at /usr/local/include/ruby-2.1.0/ruby/intern.h:870) [-Wdeprecated-declarations]
+   if (rb_thread_blocking_region(nogvl_init, wrapper->client, RUBY_UBF_IO, 0) == Qfalse) {
+   ^
+linking shared-object mysql2/mysql2.so
+
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 mysql2.so ./.gem.20150730-54909-tv767j/mysql2
+installing default mysql2 libraries
