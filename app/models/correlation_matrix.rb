@@ -427,8 +427,12 @@ class Correlation_matrix
     start_dates = Array.new
     
     quote_array.each do |x| 
-      final_dates << x.first.date # should be today or yesterday
-      start_dates << x.last.date
+      if x.empty?
+        return false
+      else
+        final_dates << x.first.date # should be today or yesterday
+        start_dates << x.last.date
+      end
     end
     
     if (final_dates.min == final_dates.max) and (start_dates.min == start_dates.max)
