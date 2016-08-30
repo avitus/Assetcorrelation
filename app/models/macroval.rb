@@ -112,7 +112,6 @@ class Macroval < ActiveRecord::Base
         data[i].inflation         = nil
       end
       
-      
       # Save month to database
       data[i].save
     end
@@ -123,10 +122,8 @@ class Macroval < ActiveRecord::Base
   # Inputs:   range eg. 10..15
   # Outputs:  array of all objects that meet criteria
   # ----------------------------------------------------------------------------------------------------------   
-  def self.find_pe(range, options = {})  
-    with_scope :find => options do  
-      find_all_by_pe_tenyear(range, :order => 'pe_tenyear DESC')  
-    end  
+  def self.find_pe(range)  
+    where(pe_tenyear: range).order('pe_tenyear DESC')
   end  
   
   # ----------------------------------------------------------------------------------------------------------
@@ -134,10 +131,8 @@ class Macroval < ActiveRecord::Base
   # Inputs:   range eg. 10..15
   # Outputs:  array of all objects that meet criteria
   # ----------------------------------------------------------------------------------------------------------   
-  def self.find_equity_risk_yield(range, options = {})  
-     with_scope :find => options do  
-       find_all_by_equity_risk_yield(range, :order => 'equity_risk_yield DESC')  
-     end  
+  def self.find_equity_risk_yield(range)  
+    where(equity_risk_yield: range).order('equity_risk_yield DESC')
   end    
 
   # ----------------------------------------------------------------------------------------------------------
@@ -145,10 +140,8 @@ class Macroval < ActiveRecord::Base
   # Inputs:   range eg. 10..15
   # Outputs:  array of all objects that meet criteria
   # ----------------------------------------------------------------------------------------------------------   
-  def self.find_year_month(range, options = {})  
-     with_scope :find => options do  
-       find_all_by_year_month(range)  
-     end  
+  def self.find_year_month(range)  
+    where(year_month: range).order('year_month DESC')
   end    
   
   # ----------------------------------------------------------------------------------------------------------
