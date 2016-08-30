@@ -1,140 +1,63 @@
-require 'bundler/capistrano'
-load 'deploy/assets'                                            # Precompile assets
+# config valid only for current version of Capistrano
+lock '3.6.0'
 
-##############################################################
-##  RVM Integration
-##############################################################
-# $:.unshift(File.expand_path('./lib', ENV['rvm_path']))        # Add RVM's lib directory to the load path.
-# require "rvm/capistrano"                                      # Load RVM's capistrano plugin.
-# set :rvm_type, :user                                          # use an rvm install in the deploying users home directory
-# set :rvm_ruby_string, "ruby-1.9.2-p290@pariday"
+set :user, 'avitus'
+set :application, 'assetcorrelation.com'
 
-##############################################################
-##  Application
-##############################################################
-set :user, 'avitus'                                           # Your hosting account's username
-set :domain, 'assetcorrelation.com'                           # Hosting servername where your account is located
-set :project, 'Assetcorrelation'                              # App name in the repository
-set :application, 'assetcorrelation.com'                      # App's location (domain or subdomain)
-set :applicationdir, "/home/#{user}/#{application}"           # App location
+set :repo_url, 'git@github.com:avitus/Assetcorrelation.git'
+set :branch, 'master'
 
-##############################################################
-##  Servers
-##############################################################
-role :web, domain
-role :app, domain
-role :db,  domain, :primary => true
+# Default branch is :master
+# ask :branch, `git rev-parse --abbrev-ref HEAD`.chomp
 
-##############################################################
-##  Git
-##############################################################
-set :scm, 'git'
-set :repository,  "git@github.com:avitus/Assetcorrelation.git"# Your git repository location
-set :branch, 'master'                                         # tell cap the branch to checkout during deployment
-set :scm_verbose, true
+# Default deploy_to directory is /var/www/my_app_name
+set :deploy_to, '/home/avitus/assetcorrelation.com'
 
-# set :scm_passphrase, "pa$$word"                             # The deploy user's password
-# set :git_shallow_clone, 1
+# Default value for :scm is :git
+# set :scm, :git
 
-##############################################################
-##  Deployment Config
-##############################################################
-set :deploy_to, applicationdir                                # deploy to directory set above
-set :deploy_via, :remote_cache                                # Remote caching will keep a local git repo on the server you’re deploying to and simply run a fetch from that rather than an entire clone. This is probably the best option as it will only fetch the changes since the last.
-default_run_options[:pty] = true                              # Forgo errors when deploying from windows, Must be set for the password prompt from git to work
-set :chmod755, "app config db lib public vendor script script/* public/disp*"
-set :use_sudo, false
-set :rails_env, "production"
+# Default value for :format is :airbrussh.
+# set :format, :airbrussh
 
-##############################################################
-##  Authentication
-##############################################################
-ssh_options[:keys] = %w(/home/avitus/.ssh/id_rsa)
-ssh_options[:paranoid] = false
-default_run_options[:pty] = true
-ssh_options[:forward_agent] = true                            # Use agent forwarding to simplify key management in order to use local keys
-# ssh_options[:verbose] = :debug
-# ssh_options[:port] = 22
+# You can configure the Airbrussh format using :format_options.
+# These are the defaults.
+# set :format_options, command_output: true, log_file: 'log/capistrano.log', color: :auto, truncate: :auto
 
-##############################################################
-##  Staging
-##############################################################
-set :stages, %w(dev testing staging production)
-set :default_stage, "production"
-# require File.expand_path("#{File.dirname(__FILE__)}/../vendor/gems/capistrano-ext-1.2.1/lib/capistrano/ext/multistage")
+# Default value for :pty is false
+# set :pty, true
 
-##############################################################
-##  Hooks
-##############################################################
-# after "deploy:update_code", "deploy:symlink_db" #, "deploy:set_rails_env"
-before "deploy:assets:precompile", "deploy:symlink_db", "deploy:symlink_stripe"
+# Default value for :linked_files is []
+set :linked_files, fetch(:linked_files, []).push('config/database.yml', 'config/secrets.yml')
 
+# Default value for linked_dirs is []
+# set :linked_dirs, fetch(:linked_dirs, []).push('log', 'tmp/pids', 'tmp/cache', 'tmp/sockets', 'public/system')
+set :linked_dirs, fetch(:linked_dirs, []).push('log', 'tmp/pids', 'tmp/cache', 'tmp/sockets')
 
-##############################################################
-##  Database config and restart
-##############################################################
+# Default value for default_env is {}
+# set :default_env, { path: "/opt/ruby/bin:$PATH" }
+
+# Default value for keep_releases is 5
+# set :keep_releases, 5
+
 namespace :deploy do
-  desc "Symlinks the database.yml"                            # Link in the database config
-  task :symlink_db, :roles => :app do
-    run "ln -nfs #{deploy_to}/shared/config/database.yml #{latest_release}/config/database.yml"
-  end
 
-  desc "Symlink Stripe keys"                                  # Link in Stripe config
-  task :symlink_stripe, :roles => :app do
-    run "ln -nfs #{deploy_to}/shared/config/initializers/stripe.rb #{latest_release}/config/initializers/stripe.rb"
-  end
+  after :restart, :clear_cache do
+    on roles(:all), in: :groups, limit: 3, wait: 10 do
 
-  desc "Restarting mod_rails with restart.txt"                # Restart passenger on deploy
-  task :restart, :roles => :app, :except => { :no_release => true } do
-    run "touch #{current_path}/tmp/restart.txt"
-  end
+      # Here we can do anything such as:
+      # within release_path do
+      #   execute :rake, 'cache:clear'
+      # end
 
-end
-
-##############################################################
-##  Database tasks
-##############################################################
-namespace :db do
-  desc 'Dumps the production database to db/production_data.sql on the remote server'
-  task :remote_db_dump, :roles => :db, :only => { :primary => true } do
-    run "cd #{deploy_to}/#{current_dir} && " +
-      "rake RAILS_ENV=#{rails_env} db:database_dump --trace"
-  end
-
-  desc 'Downloads db/production_data.sql from the remote production environment to your local machine'
-  task :remote_db_download, :roles => :db, :only => { :primary => true } do
-    execute_on_servers(options) do |servers|
-      self.sessions[servers.first].sftp.connect do |tsftp|
-        tsftp.download!("#{deploy_to}/#{current_dir}/db/production_data.sql", "db/production_data.sql")
+      within release_path do
+        execute :touch, release_path.join('tmp/restart.txt')
       end
+
     end
   end
 
-  desc 'Cleans up data dump file'
-  task :remote_db_cleanup, :roles => :db, :only => { :primary => true } do
-    execute_on_servers(options) do |servers|
-      self.sessions[servers.first].sftp.connect do |tsftp|
-        tsftp.remove! "#{deploy_to}/#{current_dir}/db/production_data.sql"
-      end
-    end
-  end
+  after :publishing,  'deploy:restart'
+  after :finishing,   'deploy:cleanup'
+  after :finished,    'airbrake:deploy'
 
-  desc 'Dumps, downloads and then cleans up the production data dump'
-  task :remote_db_runner do
-    remote_db_dump
-    remote_db_download
-    remote_db_cleanup
-  end
 end
-
-##############################################################
-##  Hoptoad
-##############################################################
-Dir[File.join(File.dirname(__FILE__), '..', 'vendor', 'gems', 'hoptoad_notifier-*')].each do |vendored_notifier|
-  $: << File.join(vendored_notifier, 'lib')
-end
-
-# require 'hoptoad_notifier/capistrano'
-
-        require './config/boot'
-        require 'airbrake/capistrano'

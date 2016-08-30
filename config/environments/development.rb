@@ -21,9 +21,6 @@ Assetcorrelation::Application.configure do
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.default :charset => "utf-8"
 
-  # Rotate logs every 5 MB, only keep 3 latest logs
-  config.logger = Logger.new(Rails.root.join("log",Rails.env + ".log"),3,5*1024*1024)
-
   # Print deprecation notices to the Rails logger
   config.active_support.deprecation = :log
 
@@ -32,12 +29,7 @@ Assetcorrelation::Application.configure do
 
   # Do not compress assets
   config.assets.compress = false
-
-  # Raise exception on mass assignment protection for Active Record models
-  config.active_record.mass_assignment_sanitizer = :strict
    
-  # Log the query plan for queries taking more than this (works
-  # with SQLite, MySQL, and PostgreSQL)
-  config.active_record.auto_explain_threshold_in_seconds = 0.5
+  config.eager_load = false
  
 end

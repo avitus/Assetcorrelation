@@ -30,6 +30,8 @@ Assetcorrelation::Application.configure do
   # Defaults to Rails.root.join("public/assets")
   # config.assets.manifest = YOUR_PATH
 
+  config.eager_load = true
+
   #===============================
   # Content Delivery Network
   #===============================

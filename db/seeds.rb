@@ -6,7 +6,14 @@
 #   cities = City.create([{ name: 'Chicago' }, { name: 'Copenhagen' }])
 #   Mayor.create(name: 'Emanuel', city: cities.first)
 puts 'SETTING UP ADMIN USER LOGIN'
-user = User.find_or_create_by_email(:email => 'andy@scalevp.com', :name => 'Andy Vitus',  :password => 'please', :password_confirmation => 'please', :admin => true)
+
+user = User.find_or_create_by(email: 'avitus@gmail.com') do |user|
+  user.name                   = 'Andy Vitus'
+  user.password               = 'please'
+  user.password_confirmation  = 'please'
+  user.admin                  = true
+end
+
 puts 'New user created: ' << user.name
 
 puts 'CREATING SUBSCRIPTION PLANS'
@@ -64,8 +71,10 @@ puts 'ADDING ASSETS'
   ["HYG",   "iShares iBoxx $ HY Corp Bond Fund"],
   ["MUB",   "iShares S&P National AMT-Free Muni Bd"],
   ["MBB",   "iShares Barclays MBS Bond"] ].each do |a|
-    Security.find_or_create_by_ticker(:ticker => a[0], :name => a[1])
+    Security.find_or_create_by(ticker: a[0]) do |ticker|
+     ticker.name = a[1]
     end
+  end
 
 
 
