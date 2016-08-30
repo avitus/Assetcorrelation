@@ -15,7 +15,7 @@ Assetcorrelation::Application.configure do
   config.assets.compress = true               # Compress Javascript and CSS
   config.assets.js_compressor  = :uglifier    # Javascript compression
   config.assets.digest = true                 # Generate digests for assets URLs
-  config.serve_static_assets = false          # Disable Rails's static asset server (Apache or nginx will already do this)
+  config.serve_static_files = false          # Disable Rails's static asset server (Apache or nginx will already do this)
 
   # Don't fallback to assets pipeline if a precompiled asset is missed
   config.assets.compile = true # This should be false but seems to be a problem with Rails Admin ... try again with Rails 3.1.3
