@@ -10,12 +10,17 @@
 
 # bundler state
 # /.bundle
-# /vendor/bundle/
+/vendor/bundle/*
+/vendor/cache/*
 
 # minimal Rails specific artifacts
 db/*.sqlite3
 /log/*
 tmp/*
+
+# databases
+db/assetcorrelation_development
+db/assetcorrelation_test
 
 # various artifacts
 **.war
