@@ -2,6 +2,7 @@
 
 <h1><%= @portfolio.name %></h1>
 
+<!-- Existing positions in portfolio -->
 <table class="nostradamus-standard">
 
 	<thead>
@@ -32,6 +33,7 @@
 
 </table>
 
+<!-- Form to add a new position -->
 <%= simple_form_for :position, url: positions_path, method: :post  do |l| %>
 
 	<%= l.hidden_field :portfolio_id, value: @portfolio.id %>

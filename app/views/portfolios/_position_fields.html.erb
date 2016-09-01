@@ -1,12 +1,17 @@
+<!-- Form to add a new position -->
+<%= simple_form_for :position, url: positions_path, method: :post  do |l| %>
 
+	<%= l.hidden_field :portfolio_id, value: @portfolio.id %>
+	<%= l.input :security_id, :as => :hidden, :input_html => { value: "-", class: 'asset-id' } %>
 
-<%= text_field 'asset-ticker', nil, :autocomplete => :off, :placeholder => 'Ticker', :class => 'asset-ticker' %>
+	<%= l.simple_fields_for :security do |s| %>
+		<%= s.input :ticker, autofocus: true, input_html: {class: 'asset-ticker'}, placeholder: 'Ticker', label: false %>
+		<%= s.input :name, input_html: {class: 'asset-name'}, label: false, required: false %>
+		<%= s.input :id, input_html: {class: 'asset-id', type: 'hidden'}, label: false, required: false %>
+		<% end %>
 
-<%= f.text_field :shares, :autocomplete => :off, :placeholder => 'Optional', :class => 'asset-shares' %>
+	<%= l.input :shares, input_html: {class: 'asset-shares'}, placeholder: 'No. shares', label: false, required: false %>
 
-<span class="asset-name"></span>
+	<%= l.submit "Add a Position", class: 'asset-add-link' %>
 
-<%= f.hidden_field :security_id, :class => 'asset-id' %>
-
-<%= f.link_to_remove "[x]", :class => 'asset-rem-link' %>
-
+<% end %>

@@ -63,7 +63,7 @@ class PositionsController < ApplicationController
 
     respond_to do |format|
       if @position.update( position_params )
-        format.html { redirect_to @position.portfolio, notice: 'Position was successfully updated.' }
+        format.html { redirect_to portfolio_path(@position.portfolio_id), notice: 'Position was successfully updated.' }
         format.json { head :ok }
       else
         format.html { render action: "edit" }
@@ -88,7 +88,7 @@ class PositionsController < ApplicationController
 
   def position_params
     params.require(:position).permit(:shares, :portfolio_id, :security_id, 
-                                     securities_attributes: [:id, :name, :ticker, :asset_class, :created_at, :updated_at])
+                                     securities_attributes: [:id, :name, :ticker, :asset_class])
   end
 
 end
