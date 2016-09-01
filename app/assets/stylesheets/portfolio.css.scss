@@ -49,19 +49,22 @@
 
 /* Portfolio Show */
 .asset-ticker {
-  width: 4.9em;
+  width: 4.45em;
+  float: left;
 }
 
 .asset-name {
   display: inline-block;
-  width: 25em;
+  width: 17.5em;
   padding-left: 0.1em;
+  float: left;
 }
 
-.asset-num {
+.asset-id {
   display: inline-block;
   width: 4em;
   text-align: right;
+  float: left;
 }
 
 .asset-perc {
@@ -70,8 +73,9 @@
 }
 
 .asset-shares {
-  width: 4.8em;
+  width: 4.85em;
   text-align: right;
+  float: left;
 }
 
 

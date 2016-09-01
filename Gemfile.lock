@@ -377,7 +377,6 @@ DEPENDENCIES
   launchy
   memcache-client
   mysql2 (>= 0.4)
-  nested_form
   newrelic_rpm
   protected_attributes
   rails (= 4.2.6)

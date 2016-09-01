@@ -63,12 +63,13 @@ class PortfoliosController < ApplicationController
   # GET /portfolios/1/edit
   def edit
     @portfolio = Portfolio.find(params[:id])
+    # @position  = Position.new(portfolio: @portfolio)
   end
 
   # POST /portfolios
   # POST /portfolios.json
   def create
-    @portfolio 					= Portfolio.new(params[:portfolio])
+    @portfolio 					= Portfolio.new( portfolio_params )
     @portfolio.user_id	= current_user.id
 
     respond_to do |format|
@@ -88,7 +89,7 @@ class PortfoliosController < ApplicationController
     @portfolio = Portfolio.find(params[:id])
 
     respond_to do |format|
-      if @portfolio.update_attributes(params[:portfolio])
+      if @portfolio.update( portfolio_params )
         format.html { redirect_to @portfolio, notice: 'Portfolio was successfully updated.' }
         format.json { head :ok }
       else
@@ -108,6 +109,13 @@ class PortfoliosController < ApplicationController
       format.html { redirect_to portfolios_url }
       format.json { head :ok }
     end
+  end
+
+  private
+
+  def portfolio_params
+    params.require(:portfolio)
+          .permit(:name, position: [:shares, security: [:id, :name, :ticker]])
   end
 
 end

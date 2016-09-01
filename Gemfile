@@ -52,7 +52,6 @@ gem 'yahoofinance'                                                      # For st
 gem 'json'                                                              # Only required for parsing JSON response from Datasift API
 gem 'topsy'                                                             # Ruby wrapper for Topsy API
 gem 'simple_form'                                                       # Easier forms with no opinion on styling
-gem 'nested_form'                                                       # For handling multiple models in a single form (newer versions of gem break code)
 gem 'airbrake'                                                          # Error notification
 gem 'stripe'                                                            # Payment gateway
 gem 'newrelic_rpm'                                                      # Performance monitoring -- add as low in list of gems as possible

@@ -1,4 +1,4 @@
-<%= nested_form_for @portfolio  do |f| %>
+<%= simple_form_for @portfolio  do |f| %>
 	
 	<div>
 		<%= f.text_field(:name, :placeholder => 'Your portfolio name') %>
@@ -40,11 +40,11 @@
 					function(data) {
 						if(typeof(data) != 'undefined' && data != null) {
 							$assetRowSelector.siblings('.asset-name').html(data.name).removeClass("input-error");;
-							$assetRowSelector.siblings('.asset-num').val(data.id);							
+							$assetRowSelector.siblings('.asset-id').val(data.id);							
 						}
 						else {
 							$assetRowSelector.siblings('.asset-name').html('Invalid ticker').addClass("input-error");
-							$assetRowSelector.siblings('.asset-num').val('-');								
+							$assetRowSelector.siblings('.asset-id').val('-');								
 						}
 					}, "json" );
 				});

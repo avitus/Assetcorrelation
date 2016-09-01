@@ -7,8 +7,8 @@
 	<thead>
 		<tr>
 			<th>Ticker</th>
-			<th>Shares</th>
 			<th>Asset Name</th>
+			<th>Shares</th>
 			<th>Price</th>
 			<th>% of Port</th>
 		</tr>
@@ -19,8 +19,8 @@
 		<% for p in @portfolio.positions %>
 			<tr>
 				<td align="center">	<%= p.security.ticker unless !p.security %></td>
-				<td align="right" >	<%= p.shares %> </td>
 				<td align="left"  >	<%= p.security.name unless !p.security   %></td>
+				<td align="right" >	<%= p.shares %> </td>
 				<td align="right" > <%= number_to_currency(p.security.closing_price, :unit => "$") unless !p.security %></td>
 				<td align="right">	<%= p.holding_percentage %></td>
 
@@ -30,14 +30,22 @@
 
 	</tbody>
 
-
 </table>
 
-<%= nested_form_for @portfolio  do |f| %>
+<%= simple_form_for :position, url: positions_path, method: :post  do |l| %>
 
-	<p><%= f.link_to_add "Add a Position", :positions, :class => 'asset-add-link' %></p>
+	<%= l.hidden_field :portfolio_id, value: @portfolio.id %>
+	<%= l.input :security_id, :as => :hidden, :input_html => { value: "-", class: 'asset-id' } %>
 
-  	<%= f.submit "Update Portfolio" %>
+	<%= l.simple_fields_for :security do |s| %>
+		<%= s.input :ticker, autofocus: true, input_html: {class: 'asset-ticker'}, placeholder: 'Ticker', label: false %>
+		<%= s.input :name, input_html: {class: 'asset-name'}, label: false, required: false %>
+		<%= s.input :id, input_html: {class: 'asset-id', type: 'hidden'}, label: false, required: false %>
+		<% end %>
+
+	<%= l.input :shares, input_html: {class: 'asset-shares'}, placeholder: 'No. shares', label: false, required: false %>
+
+	<%= l.submit "Add a Position", class: 'asset-add-link' %>
 
 <% end %>
 
@@ -49,60 +57,56 @@
 <script type="text/javascript">
 	$(document).ready(function(){
 
-	  $('.delete-position')
+	  	$('.delete-position')
 
-	    .live("ajax:success", function(evt, data, status, xhr){
-	      $position = $(this).closest('tr').fadeOut();
-	    })
+		    .on("ajax:success", null, function(evt, data, status, xhr){
+		      $position = $(this).closest('tr').fadeOut();
+		    })
 
-	    .live("ajax:error", function(evt, xhr, status, error){
-	      var $form = $(this),
-	          errors,
-	          errorText;
+		    .on("ajax:error", null, function(evt, xhr, status, error){
+		      var $form = $(this),
+		          errors,
+		          errorText;
 
-	      try {
-	        // Populate errorText with the comment errors
-	        errors = $.parseJSON(xhr.responseText);
-	      } catch(err) {
-	        // If the responseText is not valid JSON (like if a 500 exception was thrown), populate errors with a generic error message.
-	        errors = {message: "Please reload the page and try again"};
-	      }
+		      try {
+		        // Populate errorText with the comment errors
+		        errors = $.parseJSON(xhr.responseText);
+		      } catch(err) {
+		        // If the responseText is not valid JSON (like if a 500 exception was thrown), populate errors with a generic error message.
+		        errors = {message: "Please reload the page and try again"};
+		      }
 
-	      // Build an unordered list from the list of errors
-	      errorText = "There were errors with the submission: \n<ul>";
+		      // Build an unordered list from the list of errors
+		      errorText = "There were errors with the submission: \n<ul>";
 
-	      for ( error in errors ) {
-	        errorText += "<li>" + error + ': ' + errors[error] + "</li> ";
-	      }
+		      for ( error in errors ) {
+		        errorText += "<li>" + error + ': ' + errors[error] + "</li> ";
+		      }
 
-	      errorText += "</ul>";
+		      errorText += "</ul>";
 
-	      // Insert error list into form
-	      $form.find('div.validation-error').html(errorText);
-	    });
+		      // Insert error list into form
+		      $form.find('div.validation-error').html(errorText);
+		    });
 
 
-		$('.asset-ticker').livequery(function() {
+		$('.asset-ticker').bind("keyup", function() {
 
-			$(this).observe_field( 0.5, function() {
+		  	var $assetRowSelector = $(this);
 
-			  	var $assetRowSelector = $(this);
-
-				$.get('/valid_security', { query: this.value },
-					function(data) {
-						if(typeof(data) != 'undefined' && data != null) {
-							$assetRowSelector.siblings('.asset-name').html(data.name).removeClass("input-error");;
-							$assetRowSelector.siblings('.asset-num').val(data.id);
-						}
-						else {
-							$assetRowSelector.siblings('.asset-name').html('Invalid ticker').addClass("input-error");
-							$assetRowSelector.siblings('.asset-num').val('-');
-						}
-					}, "json" );
-				});
+			$.get('/valid_security', { query: this.value }, function(data) {
+				if(typeof(data) != 'undefined' && data != null) {
+					console.log( data )
+					console.log( $assetRowSelector.siblings('.asset-name') )
+					$('.asset-name').val(data.name).removeClass("input-error");;
+					$('.asset-id').val(data.id);
+				}
+				else {
+					$('.asset-name').val('Invalid ticker').addClass("input-error");
+					$('.asset-id').val('-');
+				}
+			}, "json" );
 		});
-
-
 
 	});
 </script>

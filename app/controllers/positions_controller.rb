@@ -43,11 +43,11 @@ class PositionsController < ApplicationController
   # POST /positions
   # POST /positions.json
   def create
-    @position = Position.new(params[:position])
+    @position = Position.new( position_params )
 
     respond_to do |format|
       if @position.save
-        format.html { redirect_to @position, notice: 'Position was successfully created.' }
+        format.html { redirect_to portfolio_path(@position.portfolio_id), notice: 'Position was successfully created.' }
         format.json { render json: @position, status: :created, location: @position }
       else
         format.html { render action: "new" }
@@ -62,8 +62,8 @@ class PositionsController < ApplicationController
     @position = Position.find(params[:id])
 
     respond_to do |format|
-      if @position.update_attributes(params[:position])
-        format.html { redirect_to @position, notice: 'Position was successfully updated.' }
+      if @position.update( position_params )
+        format.html { redirect_to @position.portfolio, notice: 'Position was successfully updated.' }
         format.json { head :ok }
       else
         format.html { render action: "edit" }
@@ -83,4 +83,12 @@ class PositionsController < ApplicationController
       format.html { redirect_to positions_url }
     end
   end
+
+  private
+
+  def position_params
+    params.require(:position).permit(:shares, :portfolio_id, :security_id, 
+                                     securities_attributes: [:id, :name, :ticker, :asset_class, :created_at, :updated_at])
+  end
+
 end
