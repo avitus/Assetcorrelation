@@ -443,12 +443,12 @@ class Correlation_matrix
       
       quote_array.each do |x|
         if x.first.date > final_date
-          x.shift
+          x.to_a.shift
         end
         
         # Does this mess up the case where one stock has a much shorter history?
         if x.last.date < start_date
-          x.pop
+          x.to_a.pop
         end     
       end
       Rails.logger.info("***** Historical quote array was adjusted: #{Time.now}")
