@@ -1,5 +1,4 @@
 development: &default
-
   database: assetcorrelation_development
   adapter: mysql2
   encoding: utf8
@@ -8,11 +7,9 @@ development: &default
   password: demo
   host: 127.0.0.1
   socket: /run/mysqld/mysqld.sock
-
 test: &test
   <<: *default
   database: assetcorrelation_test
-
 production:
    adapter: mysql2
    database: assetcorrelation_production
