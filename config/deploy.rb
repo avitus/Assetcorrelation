@@ -3,6 +3,7 @@ lock '3.10.1'
 
 set :user, 'avitus'
 set :application, 'assetcorrelation.com'
+set :app_version, '2018.01.17'
 
 set :repo_url, 'git@github.com:avitus/Assetcorrelation.git'
 set :branch, 'master'
@@ -27,7 +28,7 @@ set :deploy_to, '/home/avitus/assetcorrelation.com'
 # set :pty, true
 
 # Default value for :linked_files is []
-set :linked_files, fetch(:linked_files, []).push('config/database.yml')
+set :linked_files, fetch(:linked_files, []).push('config/secrets.yml.key')
 
 # Default value for linked_dirs is []
 # set :linked_dirs, fetch(:linked_dirs, []).push('log', 'tmp/pids', 'tmp/cache', 'tmp/sockets', 'public/system')
