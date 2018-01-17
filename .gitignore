@@ -9,7 +9,7 @@
 #----------------------------------------------------------------------------
 
 # bundler state
-# /.bundle
+.bundle/
 /vendor/bundle/*
 
 # minimal Rails specific artifacts
@@ -29,7 +29,6 @@ db/assetcorrelation_test
 .redcar/
 .sass-cache
 /config/config.yml
-/config/database.yml
 /coverage.data
 /coverage/
 /db/*.javadb/
@@ -75,3 +74,6 @@ db/assetcorrelation_test
 
 # Stripe keys
 /config/initializers/stripe.rb
+
+# Ignore encrypted secrets key file.
+config/secrets.yml.key

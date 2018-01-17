@@ -1,6 +1,8 @@
 Assetcorrelation::Application.configure do
   # Settings specified here will take precedence over those in config/application.rb
 
+  config.read_encrypted_secrets = true
+
   #===============================
   # Caching
   #===============================
