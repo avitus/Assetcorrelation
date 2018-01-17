@@ -5,21 +5,10 @@ require 'rbconfig'
 ############################################################
 # Frameworks
 ############################################################
-ruby "2.3.1"
-gem 'rails', '4.2.6'                                                           
+ruby "2.4.3"
+gem 'rails', '5.1'                                                           
 gem 'jquery-rails'
 gem 'jquery-ui-rails'
-
-############################################################
-# Rails 4 Upgrade (Should be removed eventually)
-############################################################
-gem 'protected_attributes'                                              # Only officially supported until Rails 5
-gem 'rails-observers'
-gem 'actionpack-page_caching'
-gem 'actionpack-action_caching'
-gem 'activerecord-deprecated_finders'
-gem 'activerecord-session_store'                                        # We should store sessions in cookies
-gem 'activeresource', require: 'active_resource'
 
 ############################################################
 # Databases
@@ -44,9 +33,9 @@ end
 # Application Gems
 ############################################################
 gem 'devise'
-gem 'frontend-helpers'
+# gem 'frontend-helpers'
 gem 'rails_autolink'                                                    # Restore auto_link functionality from Rails 3.0
-gem 'rails_admin', :git => 'git://github.com/sferik/rails_admin.git'    # Admin panel
+gem 'rails_admin'                                                       # Admin panel
 gem 'breadcrumbs_on_rails', '>=2.0.0'                                   # For breadcrumb navigation bar
 gem 'yahoofinance'                                                      # For stock quote retrieval
 gem 'json'                                                              # Only required for parsing JSON response from Datasift API
@@ -71,7 +60,7 @@ end
 group :test do
   gem 'factory_girl_rails'
   gem 'rspec-rails'
-  gem 'cucumber-rails'
+  gem 'cucumber-rails', require: false 
   gem 'capybara'
   gem 'database_cleaner'
   gem 'launchy'
@@ -80,7 +69,7 @@ end
 ############################################################
 # Deployment
 ############################################################
-gem 'capistrano', "~> 3.5"                                              # Deploy with Capistrano
+gem 'capistrano', "~> 3.8"                                              # Deploy with Capistrano
 gem 'capistrano-rails'                                                  # Rails-specific tasks for Capistrano
 gem 'capistrano-rvm' 
 
