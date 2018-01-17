@@ -1,6 +1,6 @@
 class UsersController < ApplicationController
   
-  before_filter :authenticate_user!
+  before_action :authenticate_user!
 
   # ----------------------------------------------------------------------------------------------------------
   # Show user
@@ -23,6 +23,12 @@ class UsersController < ApplicationController
       format.json { render :json => { :csdl => csdl_string } }
     end 
        
+  end
+
+  private
+
+  def user_params
+    params.requrie(:user).permit(:name, :email, :password, :password_confirmation, :remember_me, :admin)
   end
 
 end

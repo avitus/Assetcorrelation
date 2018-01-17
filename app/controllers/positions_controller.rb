@@ -1,6 +1,6 @@
 class PositionsController < ApplicationController
 
-  before_filter :authenticate_user!  
+  before_action :authenticate_user!  
   
   # GET /positions
   # GET /positions.json

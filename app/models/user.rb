@@ -7,9 +7,6 @@ class User < ActiveRecord::Base
   has_many :portfolios
   has_many :positions, :through => :portfolios
 
-  # Setup accessible (or protected) attributes for your model
-  attr_accessible :name, :email, :password, :password_confirmation, :remember_me, :admin
-
   def custom_news_csdl
 
     # Example of Twitter stream CSDL

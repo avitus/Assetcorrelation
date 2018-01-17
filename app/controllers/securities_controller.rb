@@ -1,6 +1,6 @@
 class SecuritiesController < ApplicationController
 
-  before_filter :authenticate_user!, :except => :valid_security
+  before_action :authenticate_user!, :except => :valid_security
 
   # GET /assets
   # GET /assets.json

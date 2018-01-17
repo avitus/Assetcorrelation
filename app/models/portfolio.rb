@@ -7,6 +7,4 @@ class Portfolio < ActiveRecord::Base
   accepts_nested_attributes_for :positions, :reject_if => lambda { |a| a[:security_id].blank? }, :allow_destroy => true
   accepts_nested_attributes_for :securities
   
-  attr_accessible :name, :positions_attributes, :securities_attributes, :position, :security
-
 end

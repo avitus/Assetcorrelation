@@ -1,7 +1,7 @@
 class MacrovalsController < ApplicationController
   
-  before_filter :authenticate_user!
-  before_filter :authorize, :except => [:dashboard, :index]
+  before_action :authenticate_user!
+  before_action :authorize, :except => [:dashboard, :index]
     
   # GET /macrovals
   # GET /macrovals.json
