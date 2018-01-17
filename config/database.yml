@@ -1,22 +1,24 @@
-# development: &default
-#   database: assetcorrelation_development
-#   adapter: mysql2
-#   encoding: utf8
-#   pool: 5
-#   username: root
-#   password: demo
-#   host: 127.0.0.1
-#   socket: /run/mysqld/mysqld.sock
-# test: &test
-#   <<: *default
-#   database: assetcorrelation_test
+development: &default
+  database: assetcorrelation_development
+  adapter: mysql2
+  encoding: utf8
+  pool: 5
+  username: root
+  password: demo
+  host: 127.0.0.1
+  socket: /run/mysqld/mysqld.sock
+
+test: &test
+  <<: *default
+  database: assetcorrelation_test
+  
 production:
-   adapter: mysql2
-   database: assetcorrelation_production
-   username: assetcorrelation
-   password: <%= Rails.application.secrets[:mysql] %>
-   host: localhost
-   socket: /var/run/mysqld/mysqld.sock
-   reconnect: true
-   encoding: utf8
-   collation: utf8_general_ci
+  adapter: mysql2
+  database: assetcorrelation_production
+  username: assetcorrelation
+  password: <%= Rails.application.secrets[:mysql] %>
+  host: localhost
+  socket: /var/run/mysqld/mysqld.sock
+  reconnect: true
+  encoding: utf8
+  collation: utf8_general_ci
